@@ -38,18 +38,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Linux packaging dependencies
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y fakeroot rpm
-
       - name: Publish installers
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO: false
         run: npm run publish
       
-      - name: Generate latest.yml
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: node latest-yml.js
