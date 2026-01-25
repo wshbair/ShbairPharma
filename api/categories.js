@@ -13,9 +13,7 @@ const dbPath = path.join(
     "categories.db",
 );
 
-
 app.use(bodyParser.json());
-
 module.exports = app;
 
 let categoryDB = new Datastore({
@@ -49,12 +47,21 @@ app.get("/all", function (req, res) {
     });
 });
 
+/**
+ * GET endpoint: Retrieve a single category by its name.
+ *
+ * @param {Object} req  request object containing the category name as a URL parameter.
+ * @param {Object} res  response object.
+ * @returns {void}
+ */
 app.get("/category/:name", function (req, res) {
+    // Query the NeDB datastore for documents whose 'name' field matches the provided parameter
     categoryDB.find(
         {
             name: req.params.name,
         },
         function (err, docs) {
+            // Send the array of matching documents back to the client
             res.send(docs);
         },
     );

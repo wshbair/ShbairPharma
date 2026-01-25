@@ -1,6 +1,6 @@
 {
   "name": "ShbairPharma",
-  "productName": "ShbairPharma",
+  "productName": "ShbairPharmacy",
   "version": "1.0.0",
   "description": "Point of Sale for Shbair Pharmacies",
   "author": "Wazen SHBAIR",
@@ -9,7 +9,7 @@
   "private": true,
   "main": "start.js",
   "build": {
-    "appId": "com.patternsdigital.pharmaspot",
+    "appId": "com.shbair.pharmacy",
     "directories": {
       "buildResources": "assets"
     }
@@ -56,7 +56,7 @@
   "scripts": {
     "electron": "cross-env NODE_ENV=dev nodemon --exec \"\"electron .\"\"",
     "electron-build": "electron-builder",
-    "package-win": "electron-packager . ShbairPharma --overwrite --asar=false --platform=win32 --arch=x64 --icon=assets/images/icon.ico --prune=true --out=release-builds --version-string.ProductName=\"ShbairPharma\"",
+    "package-win": "electron-packager . ShbairPharma --overwrite --platform=win32 --arch=x64 --icon=assets/images/icon.ico --prune=true --out=release-builds --version-string.ProductName=\"ShbairPharma\"",
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",

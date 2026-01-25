@@ -1332,6 +1332,7 @@ if (auth == undefined) {
       });
     });
 
+    // Upload products in batch using csv file
     $("#upload_products").on("click", function (e) {
       e.preventDefault();
       var $btn = $(this);
@@ -1403,7 +1404,6 @@ if (auth == undefined) {
           return $(this).val() == allProducts[index].category;
         })
         .prop("selected", true);
-      console.log(allProducts[index])
       $("#productName").val(allProducts[index].name);
       $("#product_price").val(allProducts[index].price);
       $("#quantity").val(allProducts[index].quantity);
@@ -1726,11 +1726,11 @@ if (auth == undefined) {
 
       $("#productList").DataTable({
         order: [[1, "desc"]],
-        autoWidth: false,
+        autoWidth: true,
         info: true,
         JQueryUI: true,
         ordering: true,
-        paging: false,
+        paging: true,
         dom: "Bfrtip",
         buttons: [
           {
@@ -1763,7 +1763,7 @@ if (auth == undefined) {
           info: true,
           JQueryUI: true,
           ordering: true,
-          paging: false,
+          paging: true,
         });
       }
     }
