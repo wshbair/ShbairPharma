@@ -1,7 +1,7 @@
 {
   "name": "ShbairPharma",
   "productName": "ShbairPharma",
-  "version": "1.6.6",
+  "version": "1.6.8",
   "description": "Point of Sale for Shbair Pharmacies",
   "author": "Wazen SHBAIR",
   "credits": "https://patternsdigital.com/pharmaspot",
@@ -60,7 +60,7 @@
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
-    "publish": "electron-forge publish",
+    "publish": "electron-forge publish --arch x64 ",
     "test": "jest"
   },
   "browserslist": {

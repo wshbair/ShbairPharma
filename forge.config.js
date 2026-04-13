@@ -19,22 +19,19 @@ module.exports = {
   },
   rebuildConfig: {},
   makers: [
-    // Generic zip archive
-    { name: '@electron-forge/maker-zip' },
+    // All platforms — zip archive
+    { name: '@electron-forge/maker-zip', platforms: ['darwin', 'win32', 'linux'] },
 
-  // Windows
-  { name: '@electron-forge/maker-squirrel', config: {} },
-  { name: '@electron-forge/maker-wix', config: { language: 1033, manufacturer: pkg.author} },
-  // { name: '@electron-forge/maker-appx', config: {} },
+    // Windows — Squirrel installer (.exe setup)
+    // maker-wix removed: requires WiX 4.x which is not on GitHub Actions windows-latest
+    { name: '@electron-forge/maker-squirrel', config: {}, platforms: ['win32'] },
 
-  // Linux
-  { name: '@electron-forge/maker-deb', config: {} },
-  { name: '@electron-forge/maker-rpm', config: {} },
-  // { name: '@electron-forge/maker-snap', config: {} },
+    // Linux
+    { name: '@electron-forge/maker-deb', config: {}, platforms: ['linux'] },
+    { name: '@electron-forge/maker-rpm', config: {}, platforms: ['linux'] },
 
-  // macOS
-  { name: '@electron-forge/maker-dmg', config: { format: 'ULFO' } },
-  // { name: '@electron-forge/maker-pkg', config: {} }
+    // macOS
+    { name: '@electron-forge/maker-dmg', config: { format: 'ULFO' }, platforms: ['darwin'] },
   ],
 
   publishers: [
@@ -42,10 +39,11 @@ module.exports = {
       name: '@electron-forge/publisher-github',
       config: {
         repository: {
-          owner: 'drkNsubuga',
-          name: 'PharmaSpot',
-          draft: true,
+          owner: 'wshbair',
+          name: 'ShbairPharma',
         },
+        draft: true,
+        authToken: process.env.GITHUB_TOKEN,
       },
     },
   ],

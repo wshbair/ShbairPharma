@@ -8,3 +8,4 @@ LICENSE
 coverage
 *.old*
 /release-builds
+.github/.env
