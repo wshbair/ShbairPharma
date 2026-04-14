@@ -742,7 +742,7 @@ if (auth == undefined) {
           type = "Cash";
           break;
         case 3:
-          type = "Card";
+          type = "Mobile App (PalPay)";
           break;
       }
 
@@ -923,6 +923,7 @@ if (auth == undefined) {
         processData: false,
         success: function (data) {
           cart = [];
+          $("#inputDiscount").val(0);
           receipt = DOMPurify.sanitize(receipt,{ ALLOW_UNKNOWN_PROTOCOLS: true });
           $("#viewTransaction").html("");
           $("#viewTransaction").html(receipt);
@@ -1281,14 +1282,13 @@ if (auth == undefined) {
           );
         },
         //error for product
-       error: function (jqXHR,textStatus, errorThrown) {
-      console.error(jqXHR.responseJSON.message);
-      notiflix.Report.failure(
-        jqXHR.responseJSON.error,
-        jqXHR.responseJSON.message,
-        "Ok",
-      );
-      }
+        error: function (jqXHR, _textStatus, errorThrown) {
+          const errObj = jqXHR.responseJSON;
+          const errTitle = errObj ? errObj.error : ("Error " + jqXHR.status);
+          const errMsg = errObj ? errObj.message : (jqXHR.responseText || errorThrown || "An unexpected error occurred.");
+          console.error(errMsg);
+          notiflix.Report.failure(errTitle, errMsg, "Ok");
+        }
 
       });
     });
@@ -2431,6 +2431,11 @@ function authenticate() {
   $(".loading").hide();
   $("body").attr("class", "login-page");
   $("#login").show();
+  let savedUsername = storage.get("remember_me_username");
+  if (savedUsername) {
+    $("input[name='username']").val(savedUsername);
+    $("#remember_me").prop("checked", true);
+  }
 }
 
 $("body").on("submit", "#account", function (e) {
@@ -2449,6 +2454,11 @@ $("body").on("submit", "#account", function (e) {
       processData: false,
       success: function (data) {
         if (data.auth === true) {
+          if (formData.remember_me) {
+            storage.set("remember_me_username", formData.username);
+          } else {
+            storage.delete("remember_me_username");
+          }
           storage.set("auth", { auth: true });
           storage.set("user", data);
           ipcRenderer.send("app-reload", "");

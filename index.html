@@ -17,7 +17,7 @@
     <!-- SPLASH -->
     <div class="splash loading">
         <img src="assets/images/logo.png" />
-        <h1><i class="fa fa-spinner fa-spin"></i>&nbsp; Please wait...</h1>
+        <h1><i class="fa fa-spinner fa-spin"></i>&nbsp; <span data-i18n="please_wait">Please wait...</span></h1>
     </div>
 
     <!-- LOGIN -->
@@ -27,12 +27,17 @@
                 <img src="assets/images/logo.png" />
                 <form id="account">
                     <div class="form-group">
-                        <input type="text" placeholder="Username" name="username" class="form-control">
+                        <input type="text" data-i18n-placeholder="username" placeholder="Username" name="username" class="form-control">
                     </div>
                     <div class="form-group">
-                        <input type="password" placeholder="Password" name="password" class="form-control">
+                        <input type="password" data-i18n-placeholder="password" placeholder="Password" name="password" class="form-control">
                     </div>
-                    <button type="submit" class="btn btn-block btn-default">Sign In</button>
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label style="font-weight:normal;cursor:pointer;">
+                            <input type="checkbox" name="remember_me" id="remember_me"> <span data-i18n="remember_me">Remember Me</span>
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-block btn-default" data-i18n="sign_in">Sign In</button>
                 </form>
             </div>
         </div>
@@ -52,7 +57,7 @@
                 <!-- Left actions -->
                 <div class="p_one btn-group" style="gap:5px;display:flex;">
                     <button id="productModal" data-toggle="modal" data-target="#Products" type="button" class="btn btn-success waves-effect">
-                        <i class="glyphicon glyphicon-barcode"></i> Products
+                        <i class="glyphicon glyphicon-barcode"></i> <span data-i18n="products">Products</span>
                     </button>
                     <button id="newProductModal" data-toggle="modal" data-target="#newProduct" type="button" class="btn btn-warning waves-effect">
                         <i class="fa fa-plus"></i>
@@ -60,44 +65,45 @@
                 </div>
                 <div class="p_two btn-group" style="gap:5px;display:flex;">
                     <button id="categoryModal" data-toggle="modal" data-target="#Categories" type="button" class="btn btn-success waves-effect">
-                        <i class="glyphicon glyphicon-th"></i> Categories
+                        <i class="glyphicon glyphicon-th"></i> <span data-i18n="categories">Categories</span>
                     </button>
                     <button id="newCategoryModal" data-toggle="modal" data-target="#newCategory" type="button" class="btn btn-warning waves-effect">
                         <i class="fa fa-plus"></i>
                     </button>
                 </div>
                 <button id="viewRefOrders" data-toggle="modal" data-target="#holdOrdersModal" type="button" class="btn btn-info waves-effect">
-                    <i class="fa fa-shopping-basket"></i> Hold Orders
+                    <i class="fa fa-shopping-basket"></i> <span data-i18n="hold_orders">Hold Orders</span>
                 </button>
                 <button id="viewCustomerOrders" data-toggle="modal" data-target="#customerModal" type="button" onclick="$(this).getCustomerOrders()" class="btn btn-info waves-effect">
-                    <i class="fa fa-shopping-cart"></i> Orders
+                    <i class="fa fa-shopping-cart"></i> <span data-i18n="orders">Orders</span>
                 </button>
 
                 <div class="nav-spacer"></div>
 
                 <!-- Right actions -->
                 <button id="transactions" type="button" class="btn btn-success waves-effect p_three">
-                    <i class="glyphicon glyphicon-credit-card"></i> Transactions
+                    <i class="glyphicon glyphicon-credit-card"></i> <span data-i18n="transactions">Transactions</span>
                 </button>
                 <button id="pointofsale" type="button" class="btn btn-success waves-effect">
-                    <i class="glyphicon glyphicon-shopping-cart"></i> Point of Sale
+                    <i class="glyphicon glyphicon-shopping-cart"></i> <span data-i18n="point_of_sale">Point of Sale</span>
                 </button>
                 <div class="nav-sep"></div>
                 <div class="p_four btn-group" style="gap:5px;display:flex;">
                     <button id="usersModal" data-toggle="modal" data-target="#Users" type="button" class="btn btn-success waves-effect">
-                        <i class="glyphicon glyphicon-user"></i> Users
+                        <i class="glyphicon glyphicon-user"></i> <span data-i18n="users">Users</span>
                     </button>
                     <button id="add-user" data-toggle="modal" type="button" class="btn btn-warning waves-effect">
                         <i class="fa fa-plus"></i>
                     </button>
                 </div>
-                <button id="settings" data-toggle="modal" data-target="#settingsModal" type="button" class="btn btn-success waves-effect p_five">
+                <button id="settings" data-toggle="modal" data-target="#settingsModal" type="button" class="btn btn-success waves-effect p_five" data-i18n-title="settings">
                     <i class="glyphicon glyphicon-cog"></i>
                 </button>
-                <button type="button" class="btn btn-default waves-effect" id="cashier" title="My Profile">
+                <button type="button" class="btn btn-default waves-effect" id="cashier" data-i18n-title="my_profile" title="My Profile">
                     <i class="glyphicon glyphicon-user"></i> <span id="loggedin-user"></span>
                 </button>
-                <button id="log-out" type="button" class="btn btn-warning waves-effect">
+                <button id="langToggle" type="button" class="btn btn-default waves-effect" title="Toggle Language / تغيير اللغة">عربي</button>
+                <button id="log-out" type="button" class="btn btn-warning waves-effect" data-i18n-title="sign_out">
                     <i class="glyphicon glyphicon-log-out"></i>
                 </button>
             </div>
@@ -107,32 +113,32 @@
                 <div class="container">
                     <div class="row text-center m-t-20" id="totals">
                         <div id="total_sales" class="col-md-3 py-2 bg-success">
-                            <h5>SALES</h5><span id="counter">0</span>
+                            <h5 data-i18n="sales">SALES</h5><span id="counter">0</span>
                         </div>
                         <div id="total_transactions" class="col-md-3 py-2 bg-warning">
-                            <h5>TRANSACTIONS</h5><span id="counter">0</span>
+                            <h5 data-i18n="total_transactions">TRANSACTIONS</h5><span id="counter">0</span>
                         </div>
                         <div id="total_items" class="col-md-3 py-2 bg-info">
-                            <h5>ITEMS SOLD</h5><span id="counter">0</span>
+                            <h5 data-i18n="items_sold">ITEMS SOLD</h5><span id="counter">0</span>
                         </div>
                         <div id="total_products" class="col-md-3 py-2 bg-success">
-                            <h5>PRODUCTS</h5><span id="counter">0</span>
+                            <h5 data-i18n="total_products">PRODUCTS</h5><span id="counter">0</span>
                         </div>
                     </div>
                     <div class="row p-t-10 p-b-10 bg-white m-t-10 m-b-20" style="border-radius:var(--radius);padding:14px 20px;box-shadow:var(--shadow);align-items:center;gap:8px;flex-wrap:wrap;">
                         <h3 class="col-md-2" style="font-size:16px;font-weight:700;margin:0;">Transactions</h3>
-                        <div class="col-md-2"><div class="input-group"><span class="input-group-addon" id="till-addon">Till</span><select id="tills" class="form-control" aria-describedby="till-addon"></select></div></div>
-                        <div class="col-md-2"><div class="input-group"><span class="input-group-addon" id="cashier-addon">Cashier</span><select id="users" class="form-control" aria-describedby="cashier-addon"></select></div></div>
-                        <div class="col-md-2"><div class="input-group"><span class="input-group-addon" id="status-addon">Status</span><select id="status" class="form-control"><option value="1">Paid</option><option value="0">Unpaid</option></select></div></div>
-                        <div class="col-md-4"><div class="input-group"><span class="input-group-addon" id="date-addon">Date</span><div id="reportrange"><i class="fa fa-calendar"></i>&nbsp;<span></span>&nbsp;<i class="fa fa-caret-down"></i></div></div></div>
+                        <div class="col-md-2"><div class="input-group"><span class="input-group-addon" id="till-addon" data-i18n="till">Till</span><select id="tills" class="form-control" aria-describedby="till-addon"></select></div></div>
+                        <div class="col-md-2"><div class="input-group"><span class="input-group-addon" id="cashier-addon" data-i18n="cashier">Cashier</span><select id="users" class="form-control" aria-describedby="cashier-addon"></select></div></div>
+                        <div class="col-md-2"><div class="input-group"><span class="input-group-addon" id="status-addon" data-i18n="status">Status</span><select id="status" class="form-control"><option value="1" data-i18n="paid">Paid</option><option value="0" data-i18n="unpaid">Unpaid</option></select></div></div>
+                        <div class="col-md-4"><div class="input-group"><span class="input-group-addon" id="date-addon" data-i18n="date">Date</span><div id="reportrange"><i class="fa fa-calendar"></i>&nbsp;<span></span>&nbsp;<i class="fa fa-caret-down"></i></div></div></div>
                     </div>
                     <div class="row">
                         <div class="col-md-4" id="productSales">
                             <div class="card-box">
-                                <div class="card-title"><h4>Products</h4></div>
+                                <div class="card-title"><h4 data-i18n="products_title">Products</h4></div>
                                 <div class="card-body">
                                     <table class="table tablesaw-enhanced table-responsive" id="productsSold">
-                                        <thead><tr><th>Name</th><th>Sold</th><th>Available</th><th>Sales</th></tr></thead>
+                                        <thead><tr><th data-i18n="name_col">Name</th><th data-i18n="sold_col">Sold</th><th data-i18n="available_col">Available</th><th data-i18n="sales_col">Sales</th></tr></thead>
                                         <tbody id="product_sales"></tbody>
                                     </table>
                                 </div>
@@ -140,10 +146,10 @@
                         </div>
                         <div class="col-md-8" id="transactionDetails">
                             <div class="card-box">
-                                <div class="card-title"><h4>Transaction Details</h4></div>
+                                <div class="card-title"><h4 data-i18n="trans_details">Transaction Details</h4></div>
                                 <div class="card-body">
                                     <table class="table table-striped table-bordered table-responsive" id="transactionList">
-                                        <thead><tr><th>Invoice</th><th>Date</th><th>Total</th><th>Paid</th><th>Change</th><th>Method</th><th>Till</th><th>Cashier</th><th>View</th></tr></thead>
+                                        <thead><tr><th data-i18n="invoice_col">Invoice</th><th data-i18n="date_col">Date</th><th data-i18n="total_col">Total</th><th data-i18n="paid_col">Paid</th><th data-i18n="change_col">Change</th><th data-i18n="method_col">Method</th><th data-i18n="till_col">Till</th><th data-i18n="cashier_col">Cashier</th><th data-i18n="view_col">View</th></tr></thead>
                                         <tbody id="transaction_list"></tbody>
                                     </table>
                                 </div>
@@ -165,7 +171,7 @@
                             <div class="cart-top">
                                 <select name="" id="customer" class="form-control" style="height:38px;border-radius:var(--radius-sm);border-color:var(--c-border);font-size:13px;"></select>
                                 <button id="newCustomerModal" data-toggle="modal" data-target="#newCustomer" class="btn">
-                                    <i class="fa fa-plus"></i> New
+                                    <i class="fa fa-plus"></i> <span data-i18n="new_btn">New</span>
                                 </button>
                             </div>
 
@@ -174,7 +180,7 @@
                                 <div class="input-group">
                                     <input type="text" required id="skuCode" name="skuCode"
                                         class="form-control number-input"
-                                        placeholder="&#128248;  Scan barcode or enter SKU..."
+                                        data-i18n-placeholder="scan_barcode" placeholder="&#128248;  Scan barcode or enter SKU..."
                                         aria-label="barcode" aria-describedby="basic-addon2">
                                     <span class="input-group-btn">
                                         <button type="submit" class="btn btn-default search-barcode-btn">
@@ -189,10 +195,10 @@
                                 <div class="card-box" style="border-color:green;">
                                     <div class="card-title">
                                         <div class="row">
-                                            <div class="col-md-1"><strong>#</strong></div>
-                                            <div class="col-md-4"><strong>Item</strong></div>
-                                            <div class="col-md-3"><strong>Qty</strong></div>
-                                            <div class="col-md-3"><strong>Price</strong></div>
+                                            <div class="col-md-1"><strong data-i18n="cart_hash">#</strong></div>
+                                            <div class="col-md-4"><strong data-i18n="cart_item">Item</strong></div>
+                                            <div class="col-md-3"><strong data-i18n="cart_qty">Qty</strong></div>
+                                            <div class="col-md-3"><strong data-i18n="cart_price">Price</strong></div>
                                             <div class="col-md-1">
                                                 <button onclick="$(this).cancelOrder()" class="btn btn-light btn-xs"><i class="fa fa-times"></i></button>
                                             </div>
@@ -206,21 +212,21 @@
                             <div class="cart-summary">
                                 <div class="cart-summary-row">
                                     <div>
-                                        <div class="cart-summary-label">Items</div>
+                                        <div class="cart-summary-label" data-i18n="items">Items</div>
                                         <div class="cart-summary-value"><span id="total">0</span></div>
                                     </div>
                                     <div>
-                                        <div class="cart-summary-label">Subtotal</div>
+                                        <div class="cart-summary-label" data-i18n="subtotal">Subtotal</div>
                                         <div class="cart-summary-value"><span id="price">0.0</span></div>
                                     </div>
                                     <div>
-                                        <div class="cart-summary-label">Discount</div>
+                                        <div class="cart-summary-label" data-i18n="discount">Discount</div>
                                         <input class="form-control" type="number" id="inputDiscount" min="0"
                                             placeholder="0.00" oninput="$(this).calculateCart();">
                                     </div>
                                 </div>
                                 <div class="cart-summary-row" style="border-top:1px solid var(--c-border);padding-top:10px;margin-top:4px;">
-                                    <div class="cart-summary-label">TOTAL (inc <span id="taxInfo"></span>% Tax)</div>
+                                    <div class="cart-summary-label"><span data-i18n="total_tax_prefix">TOTAL (inc </span><span id="taxInfo"></span><span data-i18n="total_tax_suffix">% Tax)</span></div>
                                     <h3 id="gross_price">0.00</h3>
                                 </div>
                             </div>
@@ -233,13 +239,13 @@
                                 </button>
                                 <button onclick="$(this).cancelOrder()" type="button"
                                     class="btn btn-danger waves-effect">
-                                    <i class="fa fa-ban"></i> Cancel
+                                    <i class="fa fa-ban"></i> <span data-i18n="cancel">Cancel</span>
                                 </button>
                                 <button type="button" id="hold" class="btn btn-info waves-effect">
-                                    <i class="fa fa-hand-paper-o"></i> Hold
+                                    <i class="fa fa-hand-paper-o"></i> <span data-i18n="hold_btn">Hold</span>
                                 </button>
                                 <button type="button" id="payButton" class="btn btn-success waves-effect">
-                                    <i class="fa fa-money"></i> Pay Now
+                                    <i class="fa fa-money"></i> <span data-i18n="pay_now">Pay Now</span>
                                 </button>
                             </div>
 
@@ -251,7 +257,7 @@
                         <div class="card-box">
                             <div class="products-header">
                                 <h5><i class="glyphicon glyphicon-th" style="color:var(--c-primary);margin-right:5px;"></i>Products</h5>
-                                <input type="text" id="search" class="form-control" placeholder="Search by name or SKU...">
+                                <input type="text" id="search" class="form-control" data-i18n-placeholder="search_products" placeholder="Search by name or SKU...">
                                 <select id="categories" class="form-control"></select>
                             </div>
                             <div class="row" id="parent"></div>
@@ -271,11 +277,11 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                        <h4 class="modal-title">Hold Order</h4>
+                        <h4 class="modal-title" data-i18n="hold_order">Hold Order</h4>
                     </div>
                     <div class="modal-body">
                         <form action="">
-                            <input type="text" id="refNumber" placeholder="Enter a reference" class="form-control">
+                            <input type="text" id="refNumber" data-i18n-placeholder="enter_reference" placeholder="Enter a reference" class="form-control">
                         </form>
                         <hr>
                         <div class="row"><div class="col-md-4"><button data-val="1" data-isdue="true" class="btn btn-success btn-lg btn-block keypad-btn">1</button></div><div class="col-md-4"><button data-val="2" data-isdue="true" class="btn btn-success btn-lg btn-block keypad-btn">2</button></div><div class="col-md-4"><button data-val="3" data-isdue="true" class="btn btn-success btn-lg btn-block keypad-btn">3</button></div></div><br>
@@ -284,7 +290,7 @@
                         <div class="row"><div class="col-md-4"><button data-val="del" class="btn btn-warning btn-lg btn-block keypad-btn">⌫</button></div><div class="col-md-4"><button data-val="0" data-isdue="true" class="btn btn-success btn-lg btn-block keypad-btn">0</button></div><div class="col-md-4"><button data-val="ac" data-isdue="true" class="btn btn-danger btn-lg btn-block keypad-btn">AC</button></div></div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" onclick="$(this).submitDueOrder(0);" class="btn btn-primary btn-block btn-lg waves-effect">Hold Order</button>
+                        <button type="button" onclick="$(this).submitDueOrder(0);" class="btn btn-primary btn-block btn-lg waves-effect" data-i18n="hold_order_btn">Hold Order</button>
                     </div>
                 </div>
             </div>
@@ -296,28 +302,28 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                        <h4 class="modal-title">Payment</h4>
+                        <h4 class="modal-title" data-i18n="payment">Payment</h4>
                     </div>
                     <div class="modal-body">
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="list-group">
-                                    <a href="javascript:void(0)" data-payment-method="Cash" data-payment-type="1" class="list-group-item active">
-                                        <i class="fa fa-money"></i> Cash
+                                    <a href="javascript:void(0)" id="cash" data-payment-method="Cash" data-payment-type="1" class="list-group-item active">
+                                        <i class="fa fa-money"></i> <span data-i18n="cash">Cash</span>
                                     </a>
-                                    <a href="javascript:void(0)" data-payment-method="Card" data-payment-type="3" class="list-group-item">
-                                        <i class="fa fa-credit-card"></i> Card
+                                    <a href="javascript:void(0)" id="palpal" data-payment-method="PalPay" data-payment-type="3" class="list-group-item">
+                                        <i class="fa fa-mobile fa-lg"></i> <span>PalPay</span>
                                     </a>
                                 </div>
                             </div>
                             <div class="col-md-8">
                                 <div class="input-group">
-                                    <span class="input-group-addon" id="basic-addon3">Price <span id="price_curr"></span></span>
+                                    <span class="input-group-addon" id="basic-addon3"><span data-i18n="price_label">Price</span> <span id="price_curr"></span></span>
                                     <input id="payablePrice" readonly type="text" class="form-control" aria-describedby="basic-addon3">
                                 </div>
                                 <br>
                                 <div class="input-group">
-                                    <span class="input-group-addon">Payment <span id="payment_curr"></span></span>
+                                    <span class="input-group-addon"><span data-i18n="payment_label">Payment</span> <span id="payment_curr"></span></span>
                                     <input type="text" placeholder="0.0" class="form-control" id="paymentText">
                                     <input type="hidden" class="form-control" id="payment">
                                 </div>
@@ -335,20 +341,20 @@
                                 </div>
                                 <br>
                                 <div class="input-group" id="cardInfo">
-                                    <span class="input-group-addon">Card Info</span>
-                                    <input type="text" class="form-control" id="paymentInfo">
+                                    <span class="input-group-addon" data-i18n="mobile_number">Mobile Number</span>
+                                    <input type="tel" class="form-control" id="paymentInfo" placeholder="e.g. 059 000 0000">
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <div class="row">
-                            <div class="col-md-6">
-                                <div class="btn btn-primary btn-block btn-lg">Change <span id="change_curr"></span><span id="change"></span></div>
+                            <div class="col-md-6" id="changeDisplay">
+                                <div class="btn btn-primary btn-block btn-lg"><span data-i18n="change">Change</span> <span id="change_curr"></span><span id="change"></span></div>
                             </div>
                             <div class="col-md-6">
                                 <button type="button" id="confirmPayment" class="btn btn-success btn-block btn-lg waves-effect">
-                                    <i class="fa fa-check"></i> Confirm Payment
+                                    <i class="fa fa-check"></i> <span data-i18n="confirm_payment">Confirm Payment</span>
                                 </button>
                             </div>
                         </div>
@@ -363,14 +369,14 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                        <h4 class="modal-title">New Customer</h4>
+                        <h4 class="modal-title" data-i18n="new_customer">New Customer</h4>
                     </div>
                     <div class="modal-body">
                         <form id="saveCustomer" data-parsley-validate>
-                            <div class="form-group"><label>Customer Name*</label><input type="text" required name="name" placeholder="Enter name" class="form-control" id="userName"></div>
-                            <div class="form-group"><label>Phone</label><input type="text" name="phone" placeholder="Phone number" class="form-control" id="phoneNumber"></div>
-                            <div class="form-group"><label>Email</label><input type="email" name="email" placeholder="Email address" class="form-control" id="emailAddress"></div>
-                            <div class="form-group"><label>Address</label><input type="text" name="address" placeholder="Address" class="form-control" id="userAddress"></div>
+                            <div class="form-group"><label data-i18n="customer_name_lbl">Customer Name*</label><input type="text" required name="name" data-i18n-placeholder="enter_name" placeholder="Enter name" class="form-control" id="userName"></div>
+                            <div class="form-group"><label data-i18n="phone_lbl">Phone</label><input type="text" name="phone" data-i18n-placeholder="phone_placeholder" placeholder="Phone number" class="form-control" id="phoneNumber"></div>
+                            <div class="form-group"><label data-i18n="email_lbl">Email</label><input type="email" name="email" data-i18n-placeholder="email_placeholder" placeholder="Email address" class="form-control" id="emailAddress"></div>
+                            <div class="form-group"><label data-i18n="address_lbl">Address</label><input type="text" name="address" data-i18n-placeholder="address_placeholder" placeholder="Address" class="form-control" id="userAddress"></div>
                             <input type="submit" class="btn btn-primary btn-block waves-effect">
                         </form>
                     </div>
@@ -384,7 +390,7 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                        <h4 class="modal-title">Add / Modify Product</h4>
+                        <h4 class="modal-title" data-i18n="add_modify_product">Add / Modify Product</h4>
                     </div>
                     <div class="modal-body">
                         <form id="saveProduct" encType="multipart/form-data">
@@ -393,20 +399,20 @@
                             <input type="hidden" name="remove" id="remove_img">
                             <div class="row">
                                 <div class="col-md-6">
-                                    <div class="form-group"><label>Category</label><select name="category" class="form-control" id="category"></select></div>
-                                    <div class="form-group"><label>Barcode</label><input type="text" required name="barcode" placeholder="Product barcode" class="form-control number-input" id="barcode"></div>
-                                    <div class="form-group"><label>Cost Price</label><input type="text" required name="cost_price" placeholder="Cost Price" class="form-control number-input" id="cost_price"></div>
-                                    <div class="form-group"><label>Expiry Date</label><input type="text" name="expirationDate" placeholder="dd/mm/yyyy" class="form-control" id="expirationDate" readonly></div>
-                                    <div class="form-group"><label>Minimum Stock</label><input type="number" name="minStock" placeholder="Min stock" class="form-control" id="minStock" min="1" value="1"></div>
-                                    <div class="form-group"><label><input type="checkbox" name="stock" id="stock">&nbsp; Disable stock check</label></div>
+                                    <div class="form-group"><label data-i18n="category_lbl">Category</label><select name="category" class="form-control" id="category"></select></div>
+                                    <div class="form-group"><label data-i18n="barcode_lbl">Barcode</label><input type="text" required name="barcode" placeholder="Product barcode" class="form-control number-input" id="barcode"></div>
+                                    <div class="form-group"><label data-i18n="cost_price_lbl">Cost Price</label><input type="text" required name="cost_price" placeholder="Cost Price" class="form-control number-input" id="cost_price"></div>
+                                    <div class="form-group"><label data-i18n="expiry_date_lbl">Expiry Date</label><input type="text" name="expirationDate" placeholder="dd/mm/yyyy" class="form-control" id="expirationDate" readonly></div>
+                                    <div class="form-group"><label data-i18n="min_stock_lbl">Minimum Stock</label><input type="number" name="minStock" placeholder="Min stock" class="form-control" id="minStock" min="1" value="1"></div>
+                                    <div class="form-group"><label><input type="checkbox" name="stock" id="stock">&nbsp; <span data-i18n="disable_stock_lbl">Disable stock check</span></label></div>
                                     <input type="submit" id="submitProduct" class="btn btn-primary btn-block waves-effect">
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="form-group"><label>Product Name</label><input type="text" required name="name" placeholder="Product name" class="form-control" id="productName"></div>
-                                    <div class="form-group"><label>Profit Margin</label><div class="input-group"><input type="text" required name="profit_margin" placeholder="%" class="form-control number-input" id="profit_margin"><span class="input-group-addon">%</span></div></div>
-                                    <div class="form-group"><label>Sale Price</label><input type="text" required name="price" placeholder="Sale Price" class="form-control number-input" id="product_price"></div>
-                                    <div class="form-group"><label>Quantity</label><input type="text" name="quantity" placeholder="Available quantity" class="form-control" id="quantity" min="0"></div>
-                                    <div class="form-group"><label><span id="rmv_img" class="btn btn-xs btn-warning">Remove</span> Picture</label><div id="current_img"></div><input type="file" name="imagename" id="imagename"></div>
+                                    <div class="form-group"><label data-i18n="product_name_lbl">Product Name</label><input type="text" required name="name" placeholder="Product name" class="form-control" id="productName"></div>
+                                    <div class="form-group"><label data-i18n="profit_margin_lbl">Profit Margin</label><div class="input-group"><input type="text" required name="profit_margin" placeholder="%" class="form-control number-input" id="profit_margin"><span class="input-group-addon">%</span></div></div>
+                                    <div class="form-group"><label data-i18n="sale_price_lbl">Sale Price</label><input type="text" required name="price" placeholder="Sale Price" class="form-control number-input" id="product_price"></div>
+                                    <div class="form-group"><label data-i18n="quantity_lbl">Quantity</label><input type="text" name="quantity" placeholder="Available quantity" class="form-control" id="quantity" min="0"></div>
+                                    <div class="form-group"><label><span id="rmv_img" class="btn btn-xs btn-warning" data-i18n="remove_lbl">Remove</span> <span data-i18n="picture_lbl">Picture</span></label><div id="current_img"></div><input type="file" name="imagename" id="imagename"></div>
                                 </div>
                             </div>
                         </form>
@@ -421,11 +427,11 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                        <h4 class="modal-title">Category</h4>
+                        <h4 class="modal-title" data-i18n="category_modal">Category</h4>
                     </div>
                     <div class="modal-body">
                         <form id="saveCategory">
-                            <div class="form-group"><label>Name</label><input id="category_id" type="hidden" name="id"><input id="categoryName" type="text" required name="name" placeholder="Category name" class="form-control"></div>
+                            <div class="form-group"><label data-i18n="name_lbl">Name</label><input id="category_id" type="hidden" name="id"><input id="categoryName" type="text" required name="name" data-i18n-placeholder="category_name_placeholder" placeholder="Category name" class="form-control"></div>
                             <input type="submit" id="submitCategory" class="btn btn-primary btn-block waves-effect">
                         </form>
                     </div>
@@ -439,11 +445,11 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                        <h4 class="modal-title">Products</h4>
+                        <h4 class="modal-title" data-i18n="products_modal">Products</h4>
                     </div>
                     <div class="modal-body p-20 p-r-40" id="all_products">
                         <table class="table table-bordered" id="productList">
-                            <thead><tr><th>Barcode</th><th>Name</th><th>Price</th><th>Qty</th><th>Category</th><th>Action</th></tr></thead>
+                            <thead><tr><th data-i18n="barcode_col">Barcode</th><th data-i18n="name_col">Name</th><th data-i18n="price_col">Price</th><th data-i18n="qty_col">Qty</th><th data-i18n="category_col">Category</th><th data-i18n="action_col">Action</th></tr></thead>
                             <tbody id="product_list"></tbody>
                         </table>
                     </div>
@@ -457,11 +463,11 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                        <h4 class="modal-title">Users</h4>
+                        <h4 class="modal-title" data-i18n="users_modal">Users</h4>
                     </div>
                     <div class="modal-body p-20 p-r-20" id="all_userss">
                         <table class="table table-bordered" id="userList">
-                            <thead><tr><th>Name</th><th>Username</th><th>Status</th><th>Action</th></tr></thead>
+                            <thead><tr><th data-i18n="name_col">Name</th><th data-i18n="username_col">Username</th><th data-i18n="status_col">Status</th><th data-i18n="action_col">Action</th></tr></thead>
                             <tbody id="user_list"></tbody>
                         </table>
                     </div>
@@ -475,11 +481,11 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                        <h4 class="modal-title">Categories</h4>
+                        <h4 class="modal-title" data-i18n="categories_modal">Categories</h4>
                     </div>
                     <div class="modal-body">
                         <table class="table table-bordered" id="categoryList">
-                            <thead><tr><th>Name</th><th>Action</th></tr></thead>
+                            <thead><tr><th data-i18n="name_col">Name</th><th data-i18n="action_col">Action</th></tr></thead>
                             <tbody id="category_list"></tbody>
                         </table>
                     </div>
@@ -493,22 +499,22 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                        <h4 class="modal-title">Account Information</h4>
+                        <h4 class="modal-title" data-i18n="account_info">Account Information</h4>
                     </div>
                     <div class="modal-body">
                         <form id="saveUser" data-parsley-validate>
                             <input type="hidden" name="id" id="user_id">
-                            <div class="form-group"><label>Name*</label><input type="text" required name="fullname" placeholder="Full name" class="form-control" id="fullname"></div>
-                            <div class="form-group"><label>Username*</label><input type="text" name="username" placeholder="Login username" class="form-control" id="username"></div>
-                            <div class="form-group"><label>Password</label><input type="password" name="password" placeholder="Password" class="form-control" id="password"></div>
-                            <div class="form-group"><label>Repeat Password</label><input type="password" name="pass" placeholder="Repeat" class="form-control" id="pass"></div>
+                            <div class="form-group"><label data-i18n="full_name_lbl">Name*</label><input type="text" required name="fullname" data-i18n-placeholder="full_name_placeholder" placeholder="Full name" class="form-control" id="fullname"></div>
+                            <div class="form-group"><label data-i18n="username_lbl">Username*</label><input type="text" name="username" data-i18n-placeholder="username_placeholder" placeholder="Login username" class="form-control" id="username"></div>
+                            <div class="form-group"><label data-i18n="password_lbl">Password</label><input type="password" name="password" data-i18n-placeholder="password_placeholder" placeholder="Password" class="form-control" id="password"></div>
+                            <div class="form-group"><label data-i18n="repeat_password_lbl">Repeat Password</label><input type="password" name="pass" data-i18n-placeholder="repeat_placeholder" placeholder="Repeat" class="form-control" id="pass"></div>
                             <div class="perms">
-                                <h3 class="m-t-20">Permissions</h3><hr>
-                                <div class="form-group"><label><input type="checkbox" name="perm_products" id="perm_products"> Manage Products and Stock</label></div>
-                                <div class="form-group"><label><input type="checkbox" name="perm_categories" id="perm_categories"> Manage Product Categories</label></div>
-                                <div class="form-group"><label><input type="checkbox" name="perm_transactions" id="perm_transactions"> View Transactions</label></div>
-                                <div class="form-group"><label><input type="checkbox" name="perm_users" id="perm_users"> Manage Users and Permissions</label></div>
-                                <div class="form-group"><label><input type="checkbox" name="perm_settings" id="perm_settings"> Manage Settings</label></div>
+                                <h3 class="m-t-20" data-i18n="permissions">Permissions</h3><hr>
+                                <div class="form-group"><label><input type="checkbox" name="perm_products" id="perm_products"> <span data-i18n="perm_products">Manage Products and Stock</span></label></div>
+                                <div class="form-group"><label><input type="checkbox" name="perm_categories" id="perm_categories"> <span data-i18n="perm_categories">Manage Product Categories</span></label></div>
+                                <div class="form-group"><label><input type="checkbox" name="perm_transactions" id="perm_transactions"> <span data-i18n="perm_transactions">View Transactions</span></label></div>
+                                <div class="form-group"><label><input type="checkbox" name="perm_users" id="perm_users"> <span data-i18n="perm_users">Manage Users and Permissions</span></label></div>
+                                <div class="form-group"><label><input type="checkbox" name="perm_settings" id="perm_settings"> <span data-i18n="perm_settings">Manage Settings</span></label></div>
                             </div>
                             <input type="submit" class="btn btn-primary btn-block waves-effect">
                         </form>
@@ -523,10 +529,10 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                        <h4 class="modal-title">Open Orders</h4>
+                        <h4 class="modal-title" data-i18n="open_orders">Open Orders</h4>
                     </div>
                     <div class="modal-body">
-                        <input type="text" id="holdOrderInput" placeholder="Search order by reference" class="holdOrderInput form-control">
+                        <input type="text" id="holdOrderInput" data-i18n-placeholder="search_order" placeholder="Search order by reference" class="holdOrderInput form-control">
                         <div class="holdOrderKeyboard"></div><br>
                         <div class="row" id="renderHoldOrders"><p>Please wait <span class="dot"></span></p></div>
                     </div>
@@ -540,10 +546,10 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                        <h4 class="modal-title">Customer Orders</h4>
+                        <h4 class="modal-title" data-i18n="customer_orders">Customer Orders</h4>
                     </div>
                     <div class="modal-body">
-                        <input type="text" id="holdCustomerOrderInput" placeholder="Search by customer name" class="holdCustomerOrderInput form-control">
+                        <input type="text" id="holdCustomerOrderInput" data-i18n-placeholder="search_customer" placeholder="Search by customer name" class="holdCustomerOrderInput form-control">
                         <div class="customerOrderKeyboard"></div><br>
                         <div class="row" id="renderCustomerOrders"><p>please wait <span class="dot"></span></p></div>
                     </div>
@@ -556,11 +562,11 @@
             <div class="modal-dialog modal-sm">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <button class="btn btn-sm btn-success" onclick="$(this).print()">Print</button>
+                        <button class="btn btn-sm btn-success" onclick="$(this).print()" data-i18n="print_btn">Print</button>
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
                     </div>
                     <div class="modal-body" id="viewTransaction"></div>
-                    <div class="alert alert-danger">Right-Click and Reload if you get stuck after cancelling a print.</div>
+                    <div class="alert alert-danger" data-i18n="reload_tip">Right-Click and Reload if you get stuck after cancelling a print.</div>
                 </div>
             </div>
         </div>
@@ -571,18 +577,18 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                        <h4 class="modal-title">Settings</h4>
+                        <h4 class="modal-title" data-i18n="settings_modal">Settings</h4>
                     </div>
                     <div class="modal-body">
                         <div class="container">
                             <div class="row">
                                 <div class="col-md-12">
-                                    <div class="form-group"><label>Application Mode</label><select name="app" id="app" class="form-control"><option value="Standalone Point of Sale">Standalone Point of Sale</option><option value="Network Point of Sale Terminal">Network Point of Sale Terminal</option><option value="Network Point of Sale Server">Network Point of Sale Server</option></select></div>
+                                    <div class="form-group"><label data-i18n="app_mode">Application Mode</label><select name="app" id="app" class="form-control"><option value="Standalone Point of Sale" data-i18n="standalone_pos">Standalone Point of Sale</option><option value="Network Point of Sale Terminal" data-i18n="network_terminal">Network Point of Sale Terminal</option><option value="Network Point of Sale Server" data-i18n="network_server">Network Point of Sale Server</option></select></div>
                                     <form id="net_settings_form">
-                                        <div class="form-group"><label>Server IP Address*</label><input type="text" required placeholder="IP address of admin computer" name="ip" class="form-control" id="ip"></div>
-                                        <div class="col-md-5"><div class="form-group"><label>Till Number*</label><input type="text" required placeholder="Number" name="till" class="form-control" id="till"></div></div>
-                                        <div class="col-md-7"><div class="form-group"><label>Hardware ID</label><input type="text" required name="mac" class="form-control" id="mac" readonly></div></div>
-                                        <div class="form-group"><input id="save_settings" type="submit" class="btn btn-success btn-block waves-effect" value="Save Settings"></div>
+                                        <div class="form-group"><label data-i18n="server_ip_lbl">Server IP Address*</label><input type="text" required placeholder="IP address of admin computer" name="ip" class="form-control" id="ip"></div>
+                                        <div class="col-md-5"><div class="form-group"><label data-i18n="till_number_lbl">Till Number*</label><input type="text" required placeholder="Number" name="till" class="form-control" id="till"></div></div>
+                                        <div class="col-md-7"><div class="form-group"><label data-i18n="hardware_id_lbl">Hardware ID</label><input type="text" required name="mac" class="form-control" id="mac" readonly></div></div>
+                                        <div class="form-group"><input id="save_settings" type="submit" class="btn btn-success btn-block waves-effect" data-i18n-value="save_settings_val" value="Save Settings"></div>
                                     </form>
                                 </div>
                             </div>
@@ -593,28 +599,28 @@
                                 <div class="container">
                                     <div class="row">
                                         <div class="col-md-6">
-                                            <div class="form-group"><label>Store Name</label><input type="text" required name="store" class="form-control" id="store" placeholder="Shbair Pharmacy"></div>
-                                            <div class="form-group"><label>Address Line 1</label><input type="text" required name="address_one" class="form-control" id="address_one" placeholder="123 Main Street"></div>
-                                            <div class="form-group"><label>Contact Number</label><input type="tel" name="contact" class="form-control" id="contact" placeholder="0800 111 000"></div>
-                                            <div class="form-group"><label>VAT Number</label><input type="text" name="tax" class="form-control number-input" id="tax"></div>
-                                            <div class="form-group"><label>Receipt Footer</label><textarea name="footer" class="form-control" id="footer"></textarea></div>
+                                            <div class="form-group"><label data-i18n="store_name_lbl">Store Name</label><input type="text" required name="store" class="form-control" id="store" placeholder="Shbair Pharmacy"></div>
+                                            <div class="form-group"><label data-i18n="addr_line_1_lbl">Address Line 1</label><input type="text" required name="address_one" class="form-control" id="address_one" placeholder="123 Main Street"></div>
+                                            <div class="form-group"><label data-i18n="contact_lbl">Contact Number</label><input type="tel" name="contact" class="form-control" id="contact" placeholder="0800 111 000"></div>
+                                            <div class="form-group"><label data-i18n="vat_number_lbl">VAT Number</label><input type="text" name="tax" class="form-control number-input" id="tax"></div>
+                                            <div class="form-group"><label data-i18n="footer_lbl">Receipt Footer</label><textarea name="footer" class="form-control" id="footer"></textarea></div>
                                         </div>
                                         <div class="col-md-6">
-                                            <div class="form-group"><label>Currency Symbol</label><input type="text" required name="symbol" class="form-control" id="symbol" minlength="1" maxlength="3" placeholder="USD"></div>
-                                            <div class="form-group"><label>Address Line 2</label><input type="text" required name="address_two" class="form-control" id="address_two" placeholder="City, Country"></div>
-                                            <div class="form-group"><label>VAT Percentage</label><div class="input-group"><input type="number" min="0" max="100" required name="percentage" class="form-control" id="percentage"><span class="input-group-addon">%</span></div></div>
-                                            <div class="form-group"><label><input type="checkbox" name="charge_tax" id="charge_tax"> Charge VAT</label></div>
-                                            <div class="form-group"><label><span id="rmv_logo" class="btn btn-xs btn-warning">Remove</span> Pharmacy Logo</label><div id="current_logo"></div><input type="file" name="imagename" id="logoname" accept=".jpg,.jpeg,.png,.webp"><small class="text-gray">Max 2MB · jpeg, jpg, png, webp</small></div>
-                                            <div class="form-group"><input id="save_settings" type="submit" class="btn btn-success waves-effect" value="Save Settings"></div>
+                                            <div class="form-group"><label data-i18n="currency_lbl">Currency Symbol</label><input type="text" required name="symbol" class="form-control" id="symbol" minlength="1" maxlength="3" placeholder="USD"></div>
+                                            <div class="form-group"><label data-i18n="addr_line_2_lbl">Address Line 2</label><input type="text" required name="address_two" class="form-control" id="address_two" placeholder="City, Country"></div>
+                                            <div class="form-group"><label data-i18n="vat_pct_lbl">VAT Percentage</label><div class="input-group"><input type="number" min="0" max="100" required name="percentage" class="form-control" id="percentage"><span class="input-group-addon">%</span></div></div>
+                                            <div class="form-group"><label><input type="checkbox" name="charge_tax" id="charge_tax"> <span data-i18n="charge_vat_lbl">Charge VAT</span></label></div>
+                                            <div class="form-group"><label><span id="rmv_logo" class="btn btn-xs btn-warning" data-i18n="remove_lbl">Remove</span> <span data-i18n="logo_lbl">Pharmacy Logo</span></label><div id="current_logo"></div><input type="file" name="imagename" id="logoname" accept=".jpg,.jpeg,.png,.webp"><small class="text-gray" data-i18n="logo_note">Max 2MB · jpeg, jpg, png, webp</small></div>
+                                            <div class="form-group"><input id="save_settings" type="submit" class="btn btn-success waves-effect" data-i18n-value="save_settings_val" value="Save Settings"></div>
                                         </div>
                                     </div>
                                 </div>
                             </form>
                             <div class="row">
                                 <div class="col-md-12">
-                                    <h4>Upload Products File</h4><hr>
-                                    <div class="form-group"><label><span id="rmv_img" class="btn btn-xs btn-warning">Remove</span></label><input type="file" name="productsFile" id="productsFile"></div>
-                                    <button id="upload_products" type="submit" class="btn btn-primary waves-effect">Upload Products</button>
+                                    <h4 data-i18n="upload_products_h4">Upload Products File</h4><hr>
+                                    <div class="form-group"><label><span id="rmv_img" class="btn btn-xs btn-warning" data-i18n="remove_lbl">Remove</span></label><input type="file" name="productsFile" id="productsFile"></div>
+                                    <button id="upload_products" type="submit" class="btn btn-primary waves-effect" data-i18n="upload_btn">Upload Products</button>
                                 </div>
                             </div>
                         </div>

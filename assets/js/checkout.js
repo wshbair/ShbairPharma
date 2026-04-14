@@ -92,14 +92,20 @@ $(document).ready(function () {
   var $list = $(".list-group-item").on("click", function () {
     $list.removeClass("active");
     $(this).addClass("active");
-    if (this.id == "check") {
+    if (this.id == "palpal") {
       $("#cardInfo").show();
-      $("#cardInfo .input-group-addon").text("Check Info");
-    } else if (this.id == "card") {
-      $("#cardInfo").show();
-      $("#cardInfo .input-group-addon").text("Card Info");
-    } else if (this.id == "cash") {
+      $("#cardInfo .input-group-addon").text("Mobile Number");
+      var price = $("#payablePrice").val();
+      $("#payment").val(price.replace(/,/g, ""));
+      $("#paymentText").val(price);
+      $("#changeDisplay").hide();
+      $("#confirmPayment").show();
+    } else {
       $("#cardInfo").hide();
+      $("#paymentInfo").val("");
+      $("#payment,#paymentText").val("");
+      $("#changeDisplay").show();
+      $("#confirmPayment").hide();
     }
   });
 });

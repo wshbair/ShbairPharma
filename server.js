@@ -10,7 +10,8 @@ process.env.APPNAME = pkg.name;
 const PORT = process.env.PORT || 0;
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // 100 requests per window
+    max: 1000, // 1000 requests per window
+    skip: (req) => req.ip === "127.0.0.1" || req.ip === "::1" || req.ip === "::ffff:127.0.0.1",
 });
 
 console.log("Server started");

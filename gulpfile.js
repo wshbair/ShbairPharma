@@ -53,7 +53,15 @@ function packCss() {
         .src(paths.css)
         .pipe(cleanCss({ rebaseTo: config.cssBuildPath }))
         .pipe(concat("bundle.min.css"))
-        .pipe(purgecss({ content: [].concat(paths.syncFiles, paths.js) }))
+        .pipe(purgecss({
+            content: [].concat(paths.syncFiles, paths.js),
+            safelist: {
+                // Keep all RTL selectors ([dir="rtl"] attribute rules)
+                deep: [/\[dir/],
+                // Keep lang toggle and i18n attribute selectors
+                greedy: [/data-i18n/, /langToggle/]
+            }
+        }))
         .pipe(gulp.dest(config.cssBuildPath));
 }
 
