@@ -1,3 +1,4 @@
+<img src="https://github.com/wshbair/ShbairPharma/blob/main/assets/images/logo.png" height="200"/>
 
 # ShbairPharma
 ![GitHub package.json version](https://img.shields.io/github/package-json/v/wshbair/ShbairPharma)
