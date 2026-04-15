@@ -149,6 +149,17 @@ $(function () {
       format: DATE_FORMAT,
     },
   });
+
+  $("#entryDate").daterangepicker({
+    singleDatePicker: true,
+    defaultDate: moment(),
+    locale: {
+      format: DATE_FORMAT,
+    },
+  });
+
+
+  
 });
 
 //Allow only numbers in input field
@@ -361,7 +372,7 @@ if (auth == undefined) {
         $("#provider").html(`<option value="">Select</option>`);
         allProviders.forEach((provider) => {
           $("#provider").append(
-            `<option value="${provider.name}">${provider.name}</option>`,
+            `<option value="${provider._id}">${provider.name}</option>`,
           );
         });
       });
@@ -507,7 +518,6 @@ if (auth == undefined) {
       });
     }
 
-
     $("#searchBarCode").on("submit", function (e) {
       barcodeSearch(e);
     });
@@ -523,7 +533,6 @@ if (auth == undefined) {
     });
 
     $.fn.addProductToCart = function (data) {
-      console.log(data);
       item = {
         id: data._id,
         product_name: data.name,
@@ -687,14 +696,12 @@ if (auth == undefined) {
       item = cart[i];
       // item.quantity = $(this).val();
       // $(this).renderTable(cart);
-
+      item.quantity = $(this).val();
       let product = allProducts.filter(function (selected) {
         return selected._id == parseInt(item.id);
       });
-     
       if (product[0].stock == 1) {
-        if (item.quantity < product[0].quantity) {
-          item.quantity = $(this).val();
+        if (parseFloat(item.quantity) < parseFloat(product[0].quantity)) {
           $(this).renderTable(cart);
         } else {
           notiflix.Report.info(
@@ -709,6 +716,7 @@ if (auth == undefined) {
       }
       
     };
+
 
     $.fn.cancelOrder = function () {
       if (cart.length > 0) {
@@ -1331,12 +1339,9 @@ if (auth == undefined) {
     };
 
     $.fn.getCustomerOrders = function () {
-      console.log("fetching customer orders");
-      console.log(api + "customer-orders");
       $.get(api + "customer-orders", function (data) {
         clearInterval(dotInterval);
         customerOrderList = data;
-        console.log(customerOrderList);
         customerOrderLocation.empty();
         $(this).renderHoldOrders(customerOrderList, customerOrderLocation, 2);
       });
@@ -1422,6 +1427,7 @@ if (auth == undefined) {
       $("#pos_view").show();
       $("#transactions").show();
       $("#transactions_view").hide();
+      $("#products_view").hide();
       $(this).hide();
     });
 
@@ -1622,7 +1628,8 @@ if (auth == undefined) {
     });
 
     $.fn.editProduct = function (index) {
-      $("#Products").modal("hide");
+      $("#products_view").hide();
+      $("#pos_view").show();
       $("#category option")
         .filter(function () {
           return $(this).val() == allProducts[index].category;
@@ -1808,6 +1815,24 @@ if (auth == undefined) {
     };
 
     $("#productModal").on("click", function () {
+      // Rebuild provider filter options
+      $("#productProviderFilter").html(`<option value="">All Providers</option>`);
+      allProviders.forEach((prov) => {
+        $("#productProviderFilter").append(
+          `<option value="${prov._id}">${prov.name}</option>`
+        );
+      });
+      loadProductList();
+
+      // Switch to products view
+      $("#pos_view").hide();
+      $("#transactions_view").hide();
+      $("#products_view").show();
+      $("#pointofsale").show();
+      $("#transactions").show();
+    });
+
+    $("#productProviderFilter").on("change", function () {
       loadProductList();
     });
 
@@ -1827,6 +1852,7 @@ if (auth == undefined) {
         var price = parseFloat($("#cost_price").val()) || 0;
         var margin = parseFloat($("#profit_margin").val()) || 0;
         var salePrice = price + (price * margin / 100);
+        //var salePrice = price + margin;
         $("#product_price").val(salePrice.toFixed(2));
       });
 
@@ -1834,6 +1860,7 @@ if (auth == undefined) {
         var price = parseFloat($("#cost_price").val()) || 0;
         var margin = parseFloat($("#profit_margin").val()) || 0;
         var salePrice = price + (price * margin / 100);
+        //var salePrice = price + margin;
         $("#product_price").val(salePrice.toFixed(2));
       });
 
@@ -1900,7 +1927,10 @@ if (auth == undefined) {
     }
 
     function loadProductList() {
-      let products = [...allProducts];
+      const selectedProvider = $("#productProviderFilter").val();
+      let products = selectedProvider
+        ? allProducts.filter((p) => p.provider === selectedProvider)
+        : [...allProducts];
       let product_list = "";
       let counter = 0;
       $("#product_list").empty();
@@ -1959,54 +1989,240 @@ if (auth == undefined) {
           ? product_img
           : default_item_img;
         }
-        
+        console.log(product)
         //render product list
         product_list +=
-          `<tr>
-            <td><img id="` +
-          product._id +
-          `"></td>
+          '<tr>'+
+          //   <td><img id="` +
+          // product._id +
+          // `"></td>
+            `<td>${product.barcode}
             <td>${product.name}
             ${product.expiryAlert}</td>
             <td>${validator.unescape(settings.symbol)}${product.price}</td>
-            <td>${product.stock == 1 ? product.quantity : "N/A"}
+            <td>${validator.unescape(settings.symbol)}${product.costPrice}</td>
+
+             <td>${product.stock == 1 ? product.quantity : "N/A"}
             ${product.stockAlert}
             </td>
             <td>${product.category}</td>
+            <td>${product.invoiceId || "N/A"}</td>
             <td class="nobr"><span class="btn-group"><button onClick="$(this).editProduct(${index})" class="btn btn-warning btn-sm"><i class="fa fa-edit"></i></button><button onClick="$(this).deleteProduct(${
               product._id
             })" class="btn btn-danger btn-sm"><i class="fa fa-trash"></i></button></span></td></tr>`;
 
-        if (counter == allProducts.length) {
+        if (counter == products.length) {
           $("#product_list").html(product_list);
 
-          products.forEach((product) => {
-            let bcode = product.barcode || product._id;
-            $("#" + product._id + "").JsBarcode(bcode, {
-              width: 2,
-              height: 25,
-              fontSize: 14,
-            });
-          });
+          // products.forEach((product) => {
+          //   let bcode = product.barcode || product._id;
+          //   $("#" + product._id + "").JsBarcode(bcode, {
+          //     width: 1,
+          //     height: 25,
+          //     fontSize: 13,
+          //   });
+          // });
         }
       });
 
+      // $("#productList").DataTable({
+      //   order: [[1, "desc"]],
+      //   autoWidth: true,
+      //   info: true,
+      //   JQueryUI: true,
+      //   ordering: true,
+      //   paging: true,
+      //   dom: "Bfrtip",
+      //   buttons: [
+      //     {
+      //       extend: "pdfHtml5",
+      //       className: "btn btn-light", // Custom class name
+      //       text: " Download PDF", // Custom text
+      //       filename: "product_list", // Default filename
+      //     },
+      //   ],
+      // });
       $("#productList").DataTable({
-        order: [[1, "desc"]],
-        autoWidth: true,
-        info: true,
-        JQueryUI: true,
-        ordering: true,
-        paging: true,
         dom: "Bfrtip",
         buttons: [
           {
-            extend: "pdfHtml5",
-            className: "btn btn-light", // Custom class name
-            text: " Download PDF", // Custom text
-            filename: "product_list.pdf", // Default filename
+            text: '<i class="fa fa-download"></i> Download CSV',
+            className: "btn btn-success",
+            action: function () {
+              const selectedProvider = $("#productProviderFilter").val();
+              const source = selectedProvider
+                ? allProducts.filter((p) => p.provider === selectedProvider)
+                : [...allProducts];
+
+              const headers = [
+                "Barcode",
+                "Name",
+                "Category",
+                "Provider",
+                "Price",
+                "Cost Price",
+                "Profit Margin (%)",
+                "Quantity",
+                "Min Stock",
+                "Managed Stock",
+                "Expiration Date",
+              ];
+
+              const rows = source.map((p) => [
+                p.barcode || p._id,
+                p.name,
+                p.category,
+                p.provider || "",
+                p.price,
+                p.costPrice || 0,
+                p.profitMargin || 0,
+                p.stock == 1 ? p.quantity : "N/A",
+                p.minStock || 1,
+                p.stock == 1 ? "Yes" : "No",
+                p.expirationDate || "",
+              ]);
+
+              const csvContent = [headers, ...rows]
+                .map((row) =>
+                  row
+                    .map((cell) => '"' + String(cell).replace(/"/g, '""') + '"')
+                    .join(",")
+                )
+                .join("\n");
+
+              const blob = new Blob(["\uFEFF" + csvContent], {
+                type: "text/csv;charset=utf-8;",
+              });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement("a");
+              link.setAttribute("href", url);
+              link.setAttribute(
+                "download",
+                "product_list_" +
+                  moment().format("YYYY-MM-DD") +
+                  ".csv"
+              );
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              URL.revokeObjectURL(url);
+            },
           },
-        ],
+          {
+            text: '<i class="fa fa-file-pdf-o"></i> Download PDF',
+            className: "btn btn-danger",
+            action: function () {
+              // Register Tahoma Arabic font once
+              if (!pdfMake.vfs["Tahoma.ttf"]) {
+                const appRoot = app.getAppPath();
+                pdfMake.vfs["Tahoma.ttf"] = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma.ttf")).toString("base64");
+                pdfMake.vfs["Tahoma-Bold.ttf"] = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma-Bold.ttf")).toString("base64");
+                pdfMake.fonts = {
+                  Roboto: {
+                    normal: "Roboto-Regular.ttf",
+                    bold: "Roboto-Medium.ttf",
+                    italics: "Roboto-Italic.ttf",
+                    bolditalics: "Roboto-MediumItalic.ttf",
+                  },
+                  Tahoma: {
+                    normal: "Tahoma.ttf",
+                    bold: "Tahoma-Bold.ttf",
+                    italics: "Tahoma.ttf",
+                    bolditalics: "Tahoma-Bold.ttf",
+                  },
+                };
+              }
+
+              // Returns a pdfmake cell object; Arabic text gets Tahoma font + RTL alignment
+              function cell(value, fontSize) {
+                const str = String(value);
+                const isArabic = /[\u0600-\u06FF]/.test(str);
+                return {
+                  text: str,
+                  fontSize: fontSize || 8,
+                  font: isArabic ? "Tahoma" : "Roboto",
+                  alignment: isArabic ? "right" : "left",
+                };
+              }
+
+              const selectedProvider = $("#productProviderFilter").val();
+              const source = selectedProvider
+                ? allProducts.filter((p) => p.provider === selectedProvider)
+                : [...allProducts];
+
+              const headers = [
+                "Barcode", "Name", "Category", "Provider",
+                "Price", "Cost Price", "Profit %",
+                "Quantity", "Min Stock", "Managed Stock", "Expiration Date",
+              ];
+
+              const rows = source.map((p) => [
+                p.barcode || p._id,
+                p.name,
+                p.category,
+                p.provider || "",
+                p.price,
+                p.costPrice || 0,
+                p.profitMargin || 0,
+                p.stock == 1 ? p.quantity : "N/A",
+                p.minStock || 1,
+                p.stock == 1 ? "Yes" : "No",
+                p.expirationDate || "",
+              ]);
+
+              const docDefinition = {
+                pageOrientation: "landscape",
+                content: [
+                  { text: "Shbair POS", style: "brand" },
+                  { text: "Product List Report", style: "title" },
+                  { text: moment().format("YYYY-MM-DD"), style: "date" },
+                  {
+                    table: {
+                      headerRows: 1,
+                      widths: ["auto", "*", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "auto"],
+                      body: [
+                        headers.map((h) => ({ text: h, style: "tableHeader" })),
+                        ...rows.map((row) => row.map((c) => cell(c))),
+                      ],
+                    },
+                    layout: {
+                      hLineWidth: () => 1,
+                      vLineWidth: () => 1,
+                      hLineColor: () => "#aaa",
+                      vLineColor: () => "#aaa",
+                      paddingLeft: () => 4,
+                      paddingRight: () => 4,
+                      fillColor: (rowIndex) =>
+                        rowIndex > 0 && rowIndex % 2 === 0 ? "#f3f3f3" : null,
+                    },
+                  },
+                ],
+                styles: {
+                  brand: { fontSize: 13, bold: true, alignment: "center", margin: [0, 0, 0, 4] },
+                  title: { fontSize: 11, bold: true, alignment: "center", margin: [0, 0, 0, 4] },
+                  date: { fontSize: 8, alignment: "center", color: "#666", margin: [0, 0, 0, 10] },
+                  tableHeader: {
+                    fillColor: "#2d4154",
+                    color: "white",
+                    fontSize: 8,
+                    bold: true,
+                    alignment: "center",
+                  },
+                },
+                footer: (currentPage, pageCount) => ({
+                  text: currentPage + " / " + pageCount,
+                  alignment: "center",
+                  margin: [0, 10, 0, 0],
+                  fontSize: 8,
+                }),
+              };
+
+              pdfMake
+                .createPdf(docDefinition)
+                .download("product_list_" + moment().format("YYYY-MM-DD") + ".pdf");
+            },
+          }
+        ]
       });
     }
 

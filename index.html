@@ -57,7 +57,7 @@
 
                 <!-- Left actions -->
                 <div class="p_one btn-group" style="gap:5px;display:flex;">
-                    <button id="productModal" data-toggle="modal" data-target="#Products" type="button" class="btn btn-success waves-effect">
+                    <button id="productModal" type="button" class="btn btn-success waves-effect">
                         <i class="glyphicon glyphicon-barcode"></i> <span data-i18n="products">Products</span>
                     </button>
                     <button id="newProductModal" data-toggle="modal" data-target="#newProduct" type="button" class="btn btn-warning waves-effect">
@@ -160,6 +160,44 @@
                                     <table class="table table-striped table-bordered table-responsive" id="transactionList">
                                         <thead><tr><th data-i18n="invoice_col">Invoice</th><th data-i18n="date_col">Date</th><th data-i18n="total_col">Total</th><th data-i18n="paid_col">Paid</th><th data-i18n="change_col">Change</th><th data-i18n="method_col">Method</th><th data-i18n="till_col">Till</th><th data-i18n="cashier_col">Cashier</th><th data-i18n="view_col">View</th></tr></thead>
                                         <tbody id="transaction_list"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══ PRODUCTS VIEW ══ -->
+            <div id="products_view">
+                <div class="container">
+                    <div class="row p-t-10 p-b-10 bg-white m-t-10 m-b-20" style="border-radius:var(--radius);padding:14px 20px;box-shadow:var(--shadow);align-items:center;gap:8px;flex-wrap:wrap;">
+                        <h3 class="col-md-2" style="font-size:16px;font-weight:700;margin:0;" data-i18n="products">Products</h3>
+                        <div class="col-md-10">
+                            <div class="input-group">
+                                <span class="input-group-addon" data-i18n="filter_by_provider_lbl">Filter by Provider</span>
+                                <select id="productProviderFilter" class="form-control">
+                                    <option value="" data-i18n="all_providers_opt">All Providers</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card-box">
+                                <div class="card-body">
+                                    <table class="table table-bordered" id="productList">
+                                        <thead><tr>
+                                            <th data-i18n="barcode_col">Barcode</th>
+                                            <th data-i18n="name_col">Name</th>
+                                            <th data-i18n="price_col">Price</th>
+                                            <th data-i18n="cost_price_col">Cost Price</th>
+                                            <th data-i18n="qty_col">Qty</th>
+                                            <th data-i18n="category_col">Category</th>
+                                            <th data-i18n="invoice_id">Invoice ID</th>
+                                            <th data-i18n="action_col">Action</th>
+                                        </tr></thead>
+                                        <tbody id="product_list"></tbody>
                                     </table>
                                 </div>
                             </div>
@@ -322,7 +360,7 @@
                         <h4 class="modal-title" data-i18n="payment">Payment</h4>
                     </div>
                     <div class="modal-body">
-                        <div class="row">
+                        <div class="row payment-options">
                             <div class="col-md-4">
                                 <div class="list-group">
                                     <a href="javascript:void(0)" id="cash" data-payment-method="Cash" data-payment-type="1" class="list-group-item active">
@@ -421,7 +459,7 @@
                                     <div class="form-group"><label data-i18n="barcode_lbl">Barcode</label><input type="text" required name="barcode" placeholder="Product barcode" class="form-control number-input" id="barcode"></div>
                                     <div class="form-group"><label data-i18n="cost_price_lbl">Cost Price</label><input type="text" required name="cost_price" placeholder="Cost Price" class="form-control number-input" id="cost_price"></div>
                                     <div class="form-group"><label data-i18n="expiry_date_lbl">Expiry Date</label><input type="text" name="expirationDate" placeholder="dd/mm/yyyy" class="form-control" id="expirationDate" readonly></div>
-                                    <div class="form-group"><label data-i18n="min_stock_lbl">Minimum Stock</label><input type="number" name="minStock" placeholder="Min stock" class="form-control" id="minStock" min="1" value="1"></div>
+                                    <div class="form-group"><label data-i18n="min_stock_lbl">Minimum Stock</label><input type="number" name="minStock" placeholder="Min stock" class="form-control" id="minStock" value="1"></div>
                                     <div class="form-group"><label><input type="checkbox" name="stock" id="stock">&nbsp; <span data-i18n="disable_stock_lbl">Disable stock check</span></label></div>
                                     <input type="submit" id="submitProduct" class="btn btn-primary btn-block waves-effect">
                                 </div>
@@ -430,6 +468,8 @@
                                     <div class="form-group"><label data-i18n="profit_margin_lbl">Profit Margin</label><div class="input-group"><input type="text" required name="profit_margin" placeholder="%" class="form-control number-input" id="profit_margin"><span class="input-group-addon">%</span></div></div>
                                     <div class="form-group"><label data-i18n="sale_price_lbl">Sale Price</label><input type="text" required name="price" placeholder="Sale Price" class="form-control number-input" id="product_price"></div>
                                     <div class="form-group"><label data-i18n="quantity_lbl">Quantity</label><input type="text" name="quantity" placeholder="Available quantity" class="form-control" id="quantity" min="0"></div>
+                                    <div class="form-group"><label data-i18n="invoice_id_lbl">Invoice ID</label><input type="text" name="invoice_id" placeholder="Invoice ID" class="form-control" id="invoice_id"></div>
+                                    <div class="form-group"><label data-i18n="entry_date_lbl">Entry Date</label><input type="text" name="entryDate" placeholder="dd/mm/yyyy" class="form-control" id="entryDate" readonly></div>
                                     <div class="form-group"><label><span id="rmv_img" class="btn btn-xs btn-warning" data-i18n="remove_lbl">Remove</span> <span data-i18n="picture_lbl">Picture</span></label><div id="current_img"></div><input type="file" name="imagename" id="imagename"></div>
                                 </div>
                             </div>
@@ -458,23 +498,6 @@
         </div>
 
         <!-- Products List -->
-        <div id="Products" class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                        <h4 class="modal-title" data-i18n="products_modal">Products</h4>
-                    </div>
-                    <div class="modal-body p-20 p-r-40" id="all_products">
-                        <table class="table table-bordered" id="productList">
-                            <thead><tr><th data-i18n="barcode_col">Barcode</th><th data-i18n="name_col">Name</th><th data-i18n="price_col">Price</th><th data-i18n="qty_col">Qty</th><th data-i18n="category_col">Category</th><th data-i18n="action_col">Action</th></tr></thead>
-                            <tbody id="product_list"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Users -->
         <div id="Users" class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-lg">

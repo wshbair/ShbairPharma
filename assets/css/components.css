@@ -471,6 +471,8 @@ div.dataTables_info {
 }
 .dt-buttons {
   float: left;
+  margin-top: 5px;
+  margin-bottom: 5px;
 }
 div#datatable-buttons_info {
   float: left;

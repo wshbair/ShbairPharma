@@ -4,6 +4,7 @@ const bodyParser = require("body-parser");
 const Datastore = require('@seald-io/nedb');
 const path = require("path");
 const validator = require("validator");
+const e = require("express");
 const appName = process.env.APPNAME;
 const appData = process.env.APPDATA;
 const dbPath = path.join(
@@ -40,6 +41,8 @@ app.post("/provider", function (req, res) {
         name: validator.escape(req.body.name || ""),
         phone: validator.escape(req.body.phone || ""),
         email: validator.escape(req.body.email || ""),
+        entryDate: new Date().toISOString(),
+
     };
     providerDB.insert(newProvider, function (err) {
         if (err) {

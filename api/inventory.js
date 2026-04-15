@@ -184,6 +184,8 @@ app.post("/product", function (req, res) {
         costPrice: validator.escape(req.body.cost_price),
         profitMargin: validator.escape(req.body.profit_margin),
         provider: validator.escape(req.body.provider || ""),
+        entryDate: validator.escape(req.body.entryDate),
+        invoiceId: validator.escape(req.body.invoice_id),
     };
 
     if (validator.escape(req.body.id) === "") {
