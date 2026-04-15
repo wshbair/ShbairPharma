@@ -41,6 +41,7 @@
                 </form>
             </div>
         </div>
+       
     </div>
 
     <!-- MAIN APP -->
@@ -68,6 +69,14 @@
                         <i class="glyphicon glyphicon-th"></i> <span data-i18n="categories">Categories</span>
                     </button>
                     <button id="newCategoryModal" data-toggle="modal" data-target="#newCategory" type="button" class="btn btn-warning waves-effect">
+                        <i class="fa fa-plus"></i>
+                    </button>
+                </div>
+                <div class="p_two btn-group" style="gap:5px;display:flex;">
+                    <button id="providerModal" data-toggle="modal" data-target="#Providers" type="button" class="btn btn-success waves-effect">
+                        <i class="fa fa-truck"></i> <span data-i18n="providers">Providers</span>
+                    </button>
+                    <button id="newProviderModal" data-toggle="modal" data-target="#newProvider" type="button" class="btn btn-warning waves-effect">
                         <i class="fa fa-plus"></i>
                     </button>
                 </div>
@@ -224,6 +233,14 @@
                                         <input class="form-control" type="number" id="inputDiscount" min="0"
                                             placeholder="0.00" oninput="$(this).calculateCart();">
                                     </div>
+                                    <div>
+                                        <div class="cart-summary-label" data-i18n="total_cost">Total Cost</div>
+                                        <div class="cart-summary-value"><span id="bill_cost">0.00</span></div>
+                                    </div>
+                                    <div>
+                                        <div class="cart-summary-label" data-i18n="total_profit">Profit</div>
+                                        <div class="cart-summary-value"><span id="bill_profit">0.00</span></div>
+                                    </div>
                                 </div>
                                 <div class="cart-summary-row" style="border-top:1px solid var(--c-border);padding-top:10px;margin-top:4px;">
                                     <div class="cart-summary-label"><span data-i18n="total_tax_prefix">TOTAL (inc </span><span id="taxInfo"></span><span data-i18n="total_tax_suffix">% Tax)</span></div>
@@ -256,7 +273,7 @@
                     <div class="col-md-6">
                         <div class="card-box">
                             <div class="products-header">
-                                <h5><i class="glyphicon glyphicon-th" style="color:var(--c-primary);margin-right:5px;"></i>Products</h5>
+                                <h5><i class="glyphicon glyphicon-th" style="color:var(--c-primary);margin-right:5px; margin-left: 5px;"></i>Products</h5>
                                 <input type="text" id="search" class="form-control" data-i18n-placeholder="search_products" placeholder="Search by name or SKU...">
                                 <select id="categories" class="form-control"></select>
                             </div>
@@ -400,6 +417,7 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group"><label data-i18n="category_lbl">Category</label><select name="category" class="form-control" id="category"></select></div>
+                                    <div class="form-group"><label data-i18n="provider_lbl">Provider</label><select name="provider" class="form-control" id="provider"></select></div>
                                     <div class="form-group"><label data-i18n="barcode_lbl">Barcode</label><input type="text" required name="barcode" placeholder="Product barcode" class="form-control number-input" id="barcode"></div>
                                     <div class="form-group"><label data-i18n="cost_price_lbl">Cost Price</label><input type="text" required name="cost_price" placeholder="Cost Price" class="form-control number-input" id="cost_price"></div>
                                     <div class="form-group"><label data-i18n="expiry_date_lbl">Expiry Date</label><input type="text" name="expirationDate" placeholder="dd/mm/yyyy" class="form-control" id="expirationDate" readonly></div>
@@ -487,6 +505,45 @@
                         <table class="table table-bordered" id="categoryList">
                             <thead><tr><th data-i18n="name_col">Name</th><th data-i18n="action_col">Action</th></tr></thead>
                             <tbody id="category_list"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- New / Edit Provider -->
+        <div id="newProvider" class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-md">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                        <h4 class="modal-title" data-i18n="provider_modal">Provider</h4>
+                    </div>
+                    <div class="modal-body">
+                        <form id="saveProvider">
+                            <input id="provider_id" type="hidden" name="id">
+                            <div class="form-group"><label data-i18n="name_lbl">Name</label><input id="providerName" type="text" required name="name" data-i18n-placeholder="provider_name_placeholder" placeholder="Provider name" class="form-control"></div>
+                            <div class="form-group"><label data-i18n="phone_lbl">Phone</label><input id="providerPhone" type="text" name="phone" placeholder="Phone number" class="form-control"></div>
+                            <div class="form-group"><label data-i18n="email_lbl">Email</label><input id="providerEmail" type="email" name="email" placeholder="Email address" class="form-control"></div>
+                            <input type="submit" id="submitProvider" class="btn btn-primary btn-block waves-effect">
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Providers List -->
+        <div id="Providers" class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-md">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                        <h4 class="modal-title" data-i18n="providers_modal">Providers</h4>
+                    </div>
+                    <div class="modal-body">
+                        <table class="table table-bordered" id="providerList">
+                            <thead><tr><th data-i18n="name_col">Name</th><th data-i18n="phone_lbl">Phone</th><th data-i18n="email_lbl">Email</th><th data-i18n="action_col">Action</th></tr></thead>
+                            <tbody id="provider_list"></tbody>
                         </table>
                     </div>
                 </div>

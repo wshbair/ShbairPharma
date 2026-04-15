@@ -182,8 +182,8 @@ app.post("/product", function (req, res) {
         minStock: validator.escape(req.body.minStock),
         img: image,
         costPrice: validator.escape(req.body.cost_price),
-        profitMargin: validator.escape(req.body.profit_margin)
-        
+        profitMargin: validator.escape(req.body.profit_margin),
+        provider: validator.escape(req.body.provider || ""),
     };
 
     if (validator.escape(req.body.id) === "") {

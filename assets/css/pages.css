@@ -35,6 +35,7 @@
     --c-success:    #27ae60;
     --c-danger:     #e74c3c;
     --c-warning:    #f39c12;
+    --c-caution:    #fbd599;
     --c-info:       #2980b9;
     --c-bg:         #f0f4f8;
     --c-surface:    #ffffff;
@@ -229,7 +230,7 @@ body {
     border-radius: var(--radius) !important;
     border: none !important;
     box-shadow: var(--shadow);
-    margin-bottom: 0 !important;
+    margin-bottom: 10px !important;
 }
 
 /* ── POS VIEW LAYOUT ── */
@@ -410,7 +411,7 @@ body {
 #skuCode {
     height: 46px !important; font-size: 14px !important; font-weight: 500 !important;
     border-color: var(--c-border) !important;
-    border-radius: var(--radius-sm) 0 0 var(--radius-sm) !important;
+    /* border-radius: var(--radius-sm) 0 0 var(--radius-sm) !important; */
 }
 #skuCode:focus {
     border-color: var(--c-primary) !important;
@@ -424,7 +425,7 @@ body {
     border-color: var(--c-primary) !important;
     color: #fff !important;
     height: 46px !important; width: 46px !important;
-    border-radius: 0 var(--radius-sm) var(--radius-sm) 0 !important;
+    /* border-radius: 0 var(--radius-sm) var(--radius-sm) 0 !important; */
     transition: var(--t) !important;
 }
 .search-barcode-btn:hover {
@@ -494,6 +495,9 @@ body {
     transform: translateY(-2px);
 }
 .widget-panel.widget-style-2:active { transform: scale(.97); }
+.widget-panel.widget-style-danger { background: var(--c-caution); }
+
+
 #image { height: auto !important; }
 #product_img { max-height: 46px; max-width: 46px; border-radius: 6px; }
 .widget-panel.widget-style-2 .name {
@@ -510,7 +514,7 @@ body {
     margin-bottom: 3px; font-family: monospace;
 }
 .widget-panel.widget-style-2 .count {
-    display: inline-block; font-size: 9px; font-weight: 700;
+    display: inline-block; font-size: 12px; font-weight: 700;
     color: var(--c-primary); background: var(--c-primary-lt);
     border-radius: 20px; padding: 1px 7px; margin-bottom: 5px;
 }
@@ -704,7 +708,7 @@ body {
 
 /* ── HOLD / CUSTOMER ORDER MODALS ── */
 #renderHoldOrders,
-#renderCustomerOrders { height: 460px; overflow-x: hidden; overflow-y: scroll; }
+#renderCustomerOrders { height: 460px; overflow-x: hidden; overflow-y: scroll; margin-left: 0; margin-right: 0; }
 .holdOrderInput,
 .holdCustomerOrderInput {
     border-color: var(--c-border) !important;
@@ -798,7 +802,7 @@ html[dir="rtl"] .input-group {
 }
 html[dir="rtl"] .input-group .form-control {
     border-radius: 4px 0 0 4px !important;
-    border-left-width: 0 !important;
+    border-left-width: 1px !important;
     border-right-width: 1px !important;
 }
 html[dir="rtl"] .input-group-addon,
@@ -807,12 +811,12 @@ html[dir="rtl"] .input-group-btn:last-child {
 }
 html[dir="rtl"] .input-group-addon:first-child,
 html[dir="rtl"] .input-group-btn:first-child {
-    border-radius: 0 4px 4px 0 !important;
+    border-radius: 4px 0 0 4px !important;
 }
 html[dir="rtl"] .input-group .form-control:first-child {
     border-radius: 0 4px 4px 0 !important;
-    border-right-width: 0 !important;
-    border-left-width: 1px !important;
+    border-right-width: 1px !important;
+    border-left-width:  0 !important;
 }
 
 /* ── Modals ──────────────────────────────────── */

@@ -41,6 +41,7 @@ express.get("/", function (req, res) {
 express.use("/api/inventory", require("./api/inventory"));
 express.use("/api/customers", require("./api/customers"));
 express.use("/api/categories", require("./api/categories"));
+express.use("/api/providers", require("./api/providers"));
 express.use("/api/settings", require("./api/settings"));
 express.use("/api/users", require("./api/users"));
 express.use("/api", require("./api/transactions"));

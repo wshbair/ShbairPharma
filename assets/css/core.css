@@ -362,6 +362,11 @@ padding-bottom: 40px !important;
     margin-right: -15px;
 }
 
+.custom-row {
+  margin-right: 0;
+  margin-left: 0;
+}
+
 .pull-in-card {
     margin-left: -20px !important;
     margin-right: -20px !important;

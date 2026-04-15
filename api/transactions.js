@@ -74,7 +74,7 @@ app.get("/on-hold", function (req, res) {
  */
 app.get("/customer-orders", function (req, res) {
   transactionsDB.find(
-    { $and: [{ customer: { $ne: "0" } }, { status: 0 }, { ref_number: "" }] },
+    { $and: [{ customer: { $ne: 0 } }, { ref_number: "" }] },
     function (err, docs) {
       if (docs) res.send(docs);
     },

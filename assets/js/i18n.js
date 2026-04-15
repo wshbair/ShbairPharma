@@ -14,6 +14,7 @@ var translations = {
     // Navbar
     products: 'Products',
     categories: 'Categories',
+    providers: 'Providers',
     hold_orders: 'Hold Orders',
     orders: 'Orders',
     transactions: 'Transactions',
@@ -22,7 +23,8 @@ var translations = {
     settings: 'Settings',
     my_profile: 'My Profile',
     sign_out: 'Sign Out',
-
+    walk_in_customer: 'Walk in customer',
+    select_category: 'Select',
     // POS – Cart
     new_btn: 'New',
     scan_barcode: 'Scan barcode or enter SKU...',
@@ -100,6 +102,12 @@ var translations = {
     category_lbl: 'Category',
     barcode_lbl: 'Barcode',
     cost_price_lbl: 'Cost Price',
+    provider_lbl: 'Provider',
+    provider_modal: 'Provider',
+    providers_modal: 'Providers',
+    provider_name_placeholder: 'Provider name',
+    total_cost: 'Total Cost',
+    total_profit: 'Profit',
     expiry_date_lbl: 'Expiry Date',
     min_stock_lbl: 'Minimum Stock',
     disable_stock_lbl: 'Disable stock check',
@@ -122,6 +130,7 @@ var translations = {
     qty_col: 'Qty',
     category_col: 'Category',
     action_col: 'Action',
+    STOCK: 'Stock',
 
     // Users Modal
     users_modal: 'Users',
@@ -197,6 +206,7 @@ var translations = {
     // Navbar
     products: 'المنتجات',
     categories: 'الفئات',
+    providers: 'الموردون',
     hold_orders: 'الطلبات المعلقة',
     orders: 'الطلبات',
     transactions: 'المعاملات',
@@ -205,6 +215,7 @@ var translations = {
     settings: 'الإعدادات',
     my_profile: 'ملفي الشخصي',
     sign_out: 'تسجيل الخروج',
+    walk_in_customer: 'زبون عابر',
 
     // POS – Cart
     new_btn: 'جديد',
@@ -251,6 +262,7 @@ var translations = {
     till_col: 'الصراف',
     cashier_col: 'الكاشير',
     view_col: 'عرض',
+    products: 'المنتجات',
 
     // Hold Order Modal
     hold_order: 'تعليق الطلب',
@@ -283,6 +295,12 @@ var translations = {
     category_lbl: 'الفئة',
     barcode_lbl: 'الباركود',
     cost_price_lbl: 'سعر التكلفة',
+    provider_lbl: 'المورد',
+    provider_modal: 'مورد',
+    providers_modal: 'الموردون',
+    provider_name_placeholder: 'اسم المورد',
+    total_cost: 'إجمالي التكلفة',
+    total_profit: 'الربح',
     expiry_date_lbl: 'تاريخ الانتهاء',
     min_stock_lbl: 'الحد الأدنى للمخزون',
     disable_stock_lbl: 'تعطيل فحص المخزون',
@@ -297,6 +315,7 @@ var translations = {
     category_modal: 'الفئة',
     name_lbl: 'الاسم',
     category_name_placeholder: 'اسم الفئة',
+    select_category: 'اختر',
 
     // Products List Modal
     products_modal: 'المنتجات',
@@ -305,6 +324,7 @@ var translations = {
     qty_col: 'الكمية',
     category_col: 'الفئة',
     action_col: 'إجراء',
+    STOCK: 'متوفر',
 
     // Users Modal
     users_modal: 'المستخدمون',

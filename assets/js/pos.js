@@ -23,6 +23,7 @@ let index = 0;
 let allUsers = [];
 let allProducts = [];
 let allCategories = [];
+let allProviders = [];
 let allTransactions = [];
 let sold = [];
 let state = [];
@@ -225,6 +226,7 @@ if (auth == undefined) {
     $(".loading").hide();
 
     loadCategories();
+    loadProviders();
     loadProducts();
     loadCustomers();
 
@@ -327,7 +329,7 @@ if (auth == undefined) {
                                 onclick="$(this).addToCart(${item._id}, ${
                                   item.quantity
                                 }, ${item.stock})">
-                            <div class="widget-panel widget-style-2 " title="${item.name}">                    
+                            <div class="widget-panel widget-style-2 ${item_isExpired || item_stockStatus < 1 ? "widget-style-danger" : ""}" title="${item.name}">                    
                             <div id="image"><img src="${item_img}" id="product_img" alt=""></div>                    
                                         <div class="text-muted m-t-5 text-center">
                                         <div class="name" id="product_name"><span class="${
@@ -336,7 +338,7 @@ if (auth == undefined) {
                                         <span class="sku">${
                                           item.barcode || item._id
                                         }</span>
-                                        <span class="${item_stockStatus<1?'text-danger':''}"><span class="stock">STOCK </span><span class="count">${
+                                        <span class="${item_stockStatus<1?'text-danger':''}"><span class="stock" data-i18n="STOCK">STOCK </span><span class="count">${
                                           item.stock == 1
                                             ? item.quantity
                                             : "N/A"
@@ -352,11 +354,24 @@ if (auth == undefined) {
       });
     }
 
+    function loadProviders() {
+      $.get(api + "providers/all", function (data) {
+        allProviders = data;
+        loadProviderList();
+        $("#provider").html(`<option value="">Select</option>`);
+        allProviders.forEach((provider) => {
+          $("#provider").append(
+            `<option value="${provider.name}">${provider.name}</option>`,
+          );
+        });
+      });
+    }
+
     function loadCategories() {
       $.get(api + "categories/all", function (data) {
         allCategories = data;
         loadCategoryList();
-        $("#category,#categories").html(`<option value="0">Select</option>`);
+        $("#category,#categories").html(`<option value="0" data-i18n="select_category">Select</option>`);
         allCategories.forEach((category) => {
           $("#category,#categories").append(
             `<option value="${category.name}">${category.name}</option>`,
@@ -368,7 +383,7 @@ if (auth == undefined) {
     function loadCustomers() {
       $.get(api + "customers/all", function (customers) {
         $("#customer").html(
-          `<option value="0" selected="selected">Walk in customer</option>`,
+          `<option value="0" selected="selected" data-i18n="walk_in_customer">Walk in customer</option>`, 
         );
 
         customers.forEach((cust) => {
@@ -432,6 +447,7 @@ if (auth == undefined) {
             $("#basic-addon2").append(
               $("<i>", { class: "glyphicon glyphicon-ok" }),
             );
+            $("#skuCode").trigger("focus");
           }
           else if(product == "")
           {
@@ -485,6 +501,8 @@ if (auth == undefined) {
               $("<i>", { class: "glyphicon glyphicon-warning-sign" }),
             );
           }
+          $("#searchBarCode").get(0).reset();
+          $("#skuCode").trigger("focus");
         },
       });
     }
@@ -493,7 +511,9 @@ if (auth == undefined) {
     $("#searchBarCode").on("submit", function (e) {
       barcodeSearch(e);
     });
-    
+
+    // Auto-focus barcode input on load so scanner can type immediately
+    $("#skuCode").trigger("focus");
 
     $("body").on("click", "#jq-keyboard button", function (e) {
       let pressed = $(this)[0].className.split(" ");
@@ -503,11 +523,13 @@ if (auth == undefined) {
     });
 
     $.fn.addProductToCart = function (data) {
+      console.log(data);
       item = {
         id: data._id,
         product_name: data.name,
         sku: data.sku,
         price: data.price,
+        profit_margin: parseFloat(data.profitMargin) || 0,
         quantity: 1,
       };
 
@@ -536,10 +558,13 @@ if (auth == undefined) {
 
     $.fn.calculateCart = function () {
       let total = 0;
+      let totalCost = 0;
       let grossTotal;
       let total_items = 0;
       $.each(cart, function (index, data) {
+        let margin = data.profit_margin || 0;
         total += data.quantity * data.price;
+        totalCost += data.quantity * data.price * 100 / (100 + margin);
         total_items += parseFloat(data.quantity);
       });
       $("#total").text(total_items);
@@ -563,6 +588,13 @@ if (auth == undefined) {
 
       $("#gross_price").text(validator.unescape(settings.symbol) + moneyFormat(orderTotal));
       $("#payablePrice").val(moneyFormat(grossTotal));
+
+      let profit = total - totalCost;
+      $("#bill_cost").text(validator.unescape(settings.symbol) + moneyFormat(totalCost.toFixed(2)));
+      $("#bill_profit")
+        .text(validator.unescape(settings.symbol) + moneyFormat(profit.toFixed(2)))
+        .toggleClass("text-success", profit >= 0)
+        .toggleClass("text-danger", profit < 0);
     };
 
     $.fn.renderTable = function (cartList) {
@@ -586,7 +618,7 @@ if (auth == undefined) {
                   type: "text",
                   value: data.quantity,
                   min: "1",
-                  onInput: "$(this).qtInput(" + index + ")",
+                  onchange: "$(this).qtInput(" + index + ")",
                 }),
                 $("<span>", { class: "input-group-btn" }).append(
                   $("<button>", {
@@ -626,7 +658,7 @@ if (auth == undefined) {
      
       if (product[0].stock == 1) {
         if (item.quantity < product[0].quantity) {
-          item.quantity = item.quantity + 0.5;
+          item.quantity = parseFloat(item.quantity) + 0.5;
           $(this).renderTable(cart);
         } else {
           notiflix.Report.info(
@@ -636,23 +668,46 @@ if (auth == undefined) {
           );
         }
       } else {
-        item.quantity = item.quantity + 0.5;
+        item.quantity = parseFloat(item.quantity) + 0.5;
         $(this).renderTable(cart);
       }
     };
 
     $.fn.qtDecrement = function (i) {
-      if (item.quantity > 0.5) {
+      if (item.quantity > 0.1) {
         item = cart[i];
-        item.quantity = (item.quantity) - 0.5;
+        
+        item.quantity = Number((parseFloat(item.quantity) - 0.1).toFixed(2)) ;
+         
         $(this).renderTable(cart);
       }
     };
 
     $.fn.qtInput = function (i) {
       item = cart[i];
-      item.quantity = $(this).val();
-      $(this).renderTable(cart);
+      // item.quantity = $(this).val();
+      // $(this).renderTable(cart);
+
+      let product = allProducts.filter(function (selected) {
+        return selected._id == parseInt(item.id);
+      });
+     
+      if (product[0].stock == 1) {
+        if (item.quantity < product[0].quantity) {
+          item.quantity = $(this).val();
+          $(this).renderTable(cart);
+        } else {
+          notiflix.Report.info(
+            "No more stock!",
+            "You have already added all the available stock.",
+            "Ok",
+          );
+        }
+      } else {
+        item.quantity = $(this).val();
+        $(this).renderTable(cart);
+      }
+      
     };
 
     $.fn.cancelOrder = function () {
@@ -725,10 +780,12 @@ if (auth == undefined) {
 
       let currentTime = new Date(moment());
       let discount = $("#inputDiscount").val();
+      console.log($("#customer").val()) 
       let customer = JSON.parse($("#customer").val());
       let date = moment(currentTime).format("YYYY-MM-DD HH:mm:ss");
       let paymentAmount = $("#payment").val().replace(",", "");
       let changeAmount = $("#change").text().replace(",", "");
+      let mobileNumber = $("#paymentInfo").val();
       let paid =
         $("#payment").val() == "" ? "" : parseFloat(paymentAmount).toFixed(2);
       let change =
@@ -869,6 +926,7 @@ if (auth == undefined) {
                 </td>
             </tr>
             ${payment == 0 ? "" : payment}
+            ${mobileNumber ? `<tr><td>Mobile Number</td><td>:</td><td class="text-right">${mobileNumber}</td></tr>` : ""}
             </tbody>
             </table>
             <br>
@@ -970,29 +1028,33 @@ if (auth == undefined) {
       });
     };
 
-    $.fn.renderHoldOrders = function (data, renderLocation, orderType) {
+/*     $.fn.renderHoldOrders = function (data, renderLocation, orderType) {
       $.each(data, function (index, order) {
         $(this).calculatePrice(order);
         renderLocation.append(
           $("<div>", {
             class:
-              orderType == 1 ? "col-md-3 order" : "col-md-3 customer-order",
+              orderType == 1 ? "col-md-3 order" : "col-md-4 customer-order",
           }).append(
             $("<a>").append(
               $("<div>", { class: "card-box order-box" }).append(
                 $("<p>").append(
+                  
                   $("<b>", { text: "Ref :" }),
-                  $("<span>", { text: order.ref_number, class: "ref_number" }),
+                  $("<span>", { text: order.ref_number || order.order, class: "ref_number" }),
                   $("<br>"),
-                  $("<b>", { text: "Price :" }),
-                  $("<span>", {
-                    text: order.total,
-                    class: "label label-info",
-                    style: "font-size:14px;",
-                  }),
+                  $("<b>", { text: "Date: " }),
+                  $("<span>", { text: new Date(order.date).toLocaleDateString(), class: "ref_number" }),
                   $("<br>"),
                   $("<b>", { text: "Items :" }),
                   $("<span>", { text: order.items.length }),
+                  $("<br>"),
+                  $("<b>", { text: "Total price :" }),
+                  $("<span>", {
+                    text: validator.unescape(settings.symbol) +  order.total,
+                    class: "label label-info",
+                    style: "font-size:14px;",
+                  }),
                   $("<br>"),
                   $("<b>", { text: "Customer :" }),
                   $("<span>", {
@@ -1002,6 +1064,17 @@ if (auth == undefined) {
                         : "Walk in customer",
                     class: "customer_name",
                   }),
+                  $("<br>"),
+                  $("<b>", { text: "Status :" }),
+                  $("<span>", {
+                    text:
+                    order.status == 0
+                      ? "On hold"
+                      : "Paid",
+                    class: order.status == 0 ? "label label-warning" : "label label-success",
+                    style: "font-size:14px;",
+                  }),
+                  
                 ),
                 $("<button>", {
                   class: "btn btn-danger del",
@@ -1019,7 +1092,123 @@ if (auth == undefined) {
           ),
         );
       });
-    };
+    }; */
+
+    $.fn.renderHoldOrders = function (data, renderLocation, orderType) {
+  renderLocation.empty();
+
+  // Handle empty data
+  if (!data || data.length === 0) {
+    renderLocation.append(
+      $("<div>", {
+        class: "alert alert-info text-center",
+        text: "No data to show"
+      })
+    );
+    return;
+  }
+
+  const tableId = "holdOrdersTable_" + Math.floor(Math.random() * 10000);
+
+  const table = $("<table>", {
+    id: tableId,
+    class: "table table-bordered table-striped table-hover nowrap",
+    style: "width:100%"
+  });
+
+  const thead = $("<thead>").append(
+    $("<tr>").append(
+      $("<th>", { text: "Ref" }),
+      $("<th>", { text: "Date" }),
+      $("<th>", { text: "Items" }),
+      $("<th>", { text: "Total" }),
+      $("<th>", { text: "Customer" }),
+      $("<th>", { text: "Status" }),
+      $("<th>", { text: "Actions", orderable: false })
+    )
+  );
+
+  const tbody = $("<tbody>");
+
+  $.each(data, function (index, order) {
+    $(this).calculatePrice(order);
+
+    const row = $("<tr>", {
+      class: "custom-row",
+      style: "cursor:pointer"
+    }).append(
+      $("<td>", { text: order.ref_number || order.order }),
+      $("<td>", { text: new Date(order.date).toLocaleDateString() }),
+      $("<td>", { text: order.items.length }),
+      $("<td>").append(
+        $("<span>", {
+          text: validator.unescape(settings.symbol) + order.total,
+          class: "label label-info"
+        })
+      ),
+      $("<td>", {
+        text: order.customer != 0
+          ? order.customer.name
+          : "Walk in customer"
+      }),
+      $("<td>").append(
+        $("<span>", {
+          text: order.status == 0 ? "On hold" : "Paid",
+          class: order.status == 0
+            ? "label label-warning"
+            : "label label-success"
+        })
+      ),
+      $("<td>").append(
+        $("<button>", {
+          class: "btn btn-danger btn-sm del",
+          click: function (e) {
+            e.stopPropagation(); // prevent row click
+            $(this).deleteOrder(index, orderType);
+          }
+        }).append($("<i>", { class: "fa fa-trash" })),
+
+        " ",
+
+        $("<button>", {
+          class: "btn btn-default btn-sm",
+          click: function (e) {
+            e.stopPropagation(); // prevent row click
+            $(this).orderDetails(index, orderType);
+          }
+        }).append($("<span>", { class: "fa fa-shopping-basket" }))
+      )
+    );
+
+    // Row click (like card click)
+    row.on("click", function () {
+      $(this).orderDetails(index, orderType);
+    });
+
+    tbody.append(row);
+  });
+
+  table.append(thead).append(tbody);
+  renderLocation.append(table);
+
+  // Initialize DataTable
+  $("#" + tableId).DataTable({
+    responsive: true,
+    pageLength: 10,
+    lengthMenu: [5, 10, 25, 50],
+    language: {
+      emptyTable: "No data to show",
+      search: "Search:",
+      paginate: {
+        next: "Next",
+        previous: "Prev"
+      }
+    },
+    columnDefs: [
+      { orderable: false, targets: 6 } // disable sorting on Actions column
+    ]
+  });
+};
 
     $.fn.calculatePrice = function (data) {
       totalPrice = 0;
@@ -1142,9 +1331,12 @@ if (auth == undefined) {
     };
 
     $.fn.getCustomerOrders = function () {
+      console.log("fetching customer orders");
+      console.log(api + "customer-orders");
       $.get(api + "customer-orders", function (data) {
-        //clearInterval(dotInterval);
+        clearInterval(dotInterval);
         customerOrderList = data;
+        console.log(customerOrderList);
         customerOrderLocation.empty();
         $(this).renderHoldOrders(customerOrderList, customerOrderLocation, 2);
       });
@@ -1332,6 +1524,38 @@ if (auth == undefined) {
       });
     });
 
+    $("#saveProvider").submit(function (e) {
+      e.preventDefault();
+      let method = $("#provider_id").val() ? "PUT" : "POST";
+
+      $.ajax({
+        type: method,
+        url: api + "providers/provider",
+        data: $(this).serialize(),
+        success: function () {
+          $("#saveProvider").get(0).reset();
+          loadProviders();
+          diagOptions = {
+            title: "Provider Saved",
+            text: "Select an option below to continue.",
+            okButtonText: "Add another",
+            cancelButtonText: "Close",
+          };
+
+          notiflix.Confirm.show(
+            diagOptions.title,
+            diagOptions.text,
+            diagOptions.okButtonText,
+            diagOptions.cancelButtonText,
+            () => {},
+            () => {
+              $("#newProvider").modal("hide");
+            },
+          );
+        },
+      });
+    });
+
     // Upload products in batch using csv file
     $("#upload_products").on("click", function (e) {
       e.preventDefault();
@@ -1414,6 +1638,11 @@ if (auth == undefined) {
       $("#img").val(allProducts[index].img);
       $("#profit_margin").val(allProducts[index].profitMargin || 0);
       $("#cost_price").val(allProducts[index].costPrice || 0);
+      $("#provider option")
+        .filter(function () {
+          return $(this).val() == allProducts[index].provider;
+        })
+        .prop("selected", true);
 
 
       if (allProducts[index].img != "") {
@@ -1544,6 +1773,40 @@ if (auth == undefined) {
       );
     };
 
+    $.fn.editProvider = function (index) {
+      $("#Providers").modal("hide");
+      $("#providerName").val(allProviders[index].name);
+      $("#providerPhone").val(allProviders[index].phone || "");
+      $("#providerEmail").val(allProviders[index].email || "");
+      $("#provider_id").val(allProviders[index]._id);
+      $("#newProvider").modal("show");
+    };
+
+    $.fn.deleteProvider = function (id) {
+      diagOptions = {
+        title: "Are you sure?",
+        text: "You are about to delete this provider.",
+        okButtonText: "Yes, delete it!",
+      };
+
+      notiflix.Confirm.show(
+        diagOptions.title,
+        diagOptions.text,
+        diagOptions.okButtonText,
+        diagOptions.cancelButtonText,
+        () => {
+          $.ajax({
+            url: api + "providers/provider/" + id,
+            type: "DELETE",
+            success: function () {
+              loadProviders();
+              notiflix.Report.success("Done!", "Provider deleted", "Ok");
+            },
+          });
+        },
+      );
+    };
+
     $("#productModal").on("click", function () {
       loadProductList();
     });
@@ -1554,6 +1817,10 @@ if (auth == undefined) {
 
     $("#categoryModal").on("click", function () {
       loadCategoryList();
+    });
+
+    $("#providerModal").on("click", function () {
+      loadProviderList();
     });
 
     $("#cost_price").off("input change").on("input change", function () {
@@ -1759,6 +2026,35 @@ if (auth == undefined) {
       if (counter == allCategories.length) {
         $("#category_list").html(category_list);
         $("#categoryList").DataTable({
+          autoWidth: false,
+          info: true,
+          JQueryUI: true,
+          ordering: true,
+          paging: true,
+        });
+      }
+    }
+
+    function loadProviderList() {
+      let provider_list = "";
+      let counter = 0;
+      $("#provider_list").empty();
+      if ($.fn.DataTable.isDataTable("#providerList")) {
+        $("#providerList").DataTable().destroy();
+      }
+
+      allProviders.forEach((provider, index) => {
+        counter++;
+        provider_list += `<tr>
+            <td>${provider.name}</td>
+            <td>${provider.phone || ""}</td>
+            <td>${provider.email || ""}</td>
+            <td><span class="btn-group"><button onClick="$(this).editProvider(${index})" class="btn btn-warning"><i class="fa fa-edit"></i></button><button onClick="$(this).deleteProvider(${provider._id})" class="btn btn-danger"><i class="fa fa-trash"></i></button></span></td></tr>`;
+      });
+
+      if (counter == allProviders.length) {
+        $("#provider_list").html(provider_list);
+        $("#providerList").DataTable({
           autoWidth: false,
           info: true,
           JQueryUI: true,
@@ -2196,14 +2492,14 @@ function loadSoldProducts() {
     let product = allProducts.filter(function (selected) {
       return selected._id == item.id;
     });
-
+    
     counter++;
-
+    
     sold_list += `<tr>
             <td>${item.product}</td>
             <td>${item.qty}</td>
             <td>${
-              product[0].stock == 1
+              product[0]?.stock == 1
                 ? product.length > 0
                   ? product[0].quantity
                   : ""
