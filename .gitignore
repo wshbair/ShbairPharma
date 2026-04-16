@@ -10,4 +10,3 @@ coverage
 /release-builds
 .github/.env
 /AppIcons
-*.png
