@@ -1,4 +1,4 @@
-<img src="https://github.com/wshbair/ShbairPharma/blob/main/icon.png" height="100"/>
+<img src="shbairpharma.png" height="100"/>
 
 # ShbairPharma
 ![GitHub package.json version](https://img.shields.io/github/package-json/v/wshbair/ShbairPharma)
@@ -6,8 +6,6 @@
 ShbairPharma is a cross-platform Point of Sale system designed for pharmacies and built to streamline operations and enhance customer service.
 
 ## Features
-
-✔️ **Multi-PC Support:** Allows multiple computers on a network to access a central database, ensuring data consistency across all locations.
 
 ✔️ **Receipt Printing:** Generate professional receipts for your customers, making transactions more convenient.
 
@@ -48,7 +46,7 @@ ShbairPharma is a cross-platform Point of Sale system designed for pharmacies an
 ## Getting Started
 - Download [ShbairPharma](https://github.com/wshbair/ShbairPharma/releases/tag/v1.6.8)
 - Unzip the package to a location of your choice.
-- Click the ``PharmaSpot`` executable in the folder
+- Click the ``ShbairPharma`` executable in the folder
 - Login for default user:
 
 	- ``username:`` admin

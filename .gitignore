@@ -9,3 +9,5 @@ coverage
 *.old*
 /release-builds
 .github/.env
+/AppIcons
+*.png

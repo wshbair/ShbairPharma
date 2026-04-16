@@ -123,7 +123,13 @@ app.get("/invoice/:invoiceId/products", function (req, res) {
     if (!req.params.invoiceId) {
         return res.status(400).send("Invoice ID is required.");
     }
-    inventoryDB.find({ invoiceId: req.params.invoiceId }, function (err, products) {
+    const iid = req.params.invoiceId;
+    inventoryDB.find({
+        $or: [
+            { invoiceId: iid },
+            { invoiceHistory: { $elemMatch: { invoiceId: iid } } },
+        ]
+    }, function (err, products) {
         if (err) {
             console.error(err);
             return res.status(500).json({ error: "Internal Server Error" });
@@ -226,8 +232,14 @@ app.delete("/invoice/:invoiceId", function (req, res) {
         return res.status(400).send("Invoice ID is required.");
     }
 
-    // Block deletion if products still reference this invoice
-    inventoryDB.find({ invoiceId: req.params.invoiceId }, function (err, products) {
+    // Block deletion if products still reference this invoice (top-level or in history)
+    const delIid = req.params.invoiceId;
+    inventoryDB.find({
+        $or: [
+            { invoiceId: delIid },
+            { invoiceHistory: { $elemMatch: { invoiceId: delIid } } },
+        ]
+    }, function (err, products) {
         if (err) {
             console.error(err);
             return res.status(500).json({ error: "Internal Server Error" });

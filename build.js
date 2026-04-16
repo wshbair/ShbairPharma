@@ -11,7 +11,7 @@ resultPromise = electronInstaller.createWindowsInstaller({
     noMsi: true,
     exe: `${pkg.name}.exe`,
     setupExe: "${pkg.name.toLowerCase()}-setup-win32-x64.exe",
-    setupIcon: path.join(rootPath, "assets", "images", "icon.ico"),
+    setupIcon: path.join(rootPath, "assets", "images", "shbairpharma.ico"),
 });
 
 resultPromise.then(

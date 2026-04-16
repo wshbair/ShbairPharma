@@ -173,6 +173,13 @@ app.post("/product", function (req, res) {
 
     if (validator.escape(req.body.id) === "") {
         Product._id = Math.floor(Date.now() / 1000);
+        Product.invoiceHistory = [{
+            invoiceId:  Product.invoiceId  || "",
+            providerId: Product.provider   || "",
+            quantity:   parseInt(Product.quantity) || 0,
+            costPrice:  Product.costPrice  || "",
+            entryDate:  Product.entryDate  || new Date().toISOString().split("T")[0],
+        }];
         inventoryDB.insert(Product, function (err, product) {
             if (err) {
                 console.error(err);
@@ -446,6 +453,56 @@ app.post("/product/name", function (req, res) {
         },
     );
 });
+/**
+ * POST /restock/:productId
+ * Add stock to an existing product, updating invoiceId, provider, costPrice,
+ * and appending an entry to invoiceHistory.
+ */
+app.post("/restock/:productId", function (req, res) {
+    const productId  = parseInt(validator.escape(String(req.params.productId)));
+    const addQty     = parseInt(validator.escape(String(req.body.quantity    || 0)));
+    const invoiceId  = validator.escape(req.body.invoiceId   || "");
+    const providerId = validator.escape(req.body.providerId  || "");
+    const costPrice  = validator.escape(String(req.body.costPrice || ""));
+    const entryDate  = validator.escape(req.body.entryDate   || new Date().toISOString().split("T")[0]);
+
+    if (!productId || addQty <= 0) {
+        return res.status(400).json({ error: "Bad Request", message: "Valid product ID and quantity required." });
+    }
+
+    inventoryDB.findOne({ _id: productId }, function (err, product) {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ error: "Internal Server Error" });
+        }
+        if (!product) return res.status(404).json({ error: "Product not found" });
+
+        const newQty = (parseInt(product.quantity) || 0) + addQty;
+        const historyEntry = { invoiceId, providerId, quantity: addQty, costPrice, entryDate };
+
+        inventoryDB.update(
+            { _id: productId },
+            {
+                $set: {
+                    quantity:  newQty,
+                    invoiceId: invoiceId  || product.invoiceId,
+                    provider:  providerId || product.provider,
+                    costPrice: costPrice  || product.costPrice,
+                },
+                $push: { invoiceHistory: historyEntry },
+            },
+            {},
+            function (err2) {
+                if (err2) {
+                    console.error(err2);
+                    return res.status(500).json({ error: "Internal Server Error" });
+                }
+                res.sendStatus(200);
+            }
+        );
+    });
+});
+
 /**
  * Decrement inventory quantities based on a list of products in a transaction.
  *

@@ -226,12 +226,12 @@ body {
 .pos-navbar #pointofsale:hover,
 .pos-navbar #pointofsale:focus,
 .pos-navbar #pointofsale:active {
-    background-color: var(--c-primary) !important;
-    border-color: var(--c-primary) !important;
+    background-color: var(--c-danger) !important;
+    border-color: var(--c-danger) !important;
     color: #fff !important; font-weight: 600 !important;
 }
 .pos-navbar #pointofsale:hover {
-    background-color: var(--c-primary-dk) !important;
+    background-color: var(--c-danger-dk) !important;
 }
 .pos-navbar .btn .btn-label { display: none !important; }
 

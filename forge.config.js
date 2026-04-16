@@ -5,7 +5,7 @@ const pkg = require("./package.json");
 
 module.exports = {
   packagerConfig: {
-    icon: 'assets/images/icon.ico', // Windows icon
+    icon: 'assets/images/shbairpharma', // platform: .icns (mac), .ico (win), .png (linux)
     asar: true,
     ignore: [
       'gulpfile\\.js',

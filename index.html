@@ -24,7 +24,8 @@
     <div id="login">
         <div class="login-box">
             <div id="load" class="login-box-body">
-                <img src="assets/images/logo.png" />
+                <img src="assets/images/shbairpharma.png" />
+                <h4 style="text-align: center; margin-bottom: 20px;" >ShbairPharma POS</h4>
                 <form id="account">
                     <div class="form-group">
                         <input type="text" data-i18n-placeholder="username" placeholder="Username" name="username" class="form-control">
@@ -55,33 +56,24 @@
             <!-- ══ TOP NAVBAR ══ -->
             <div class="pos-navbar row">
                 <div class="nav-logo">
-                    <img src="assets/images/logo.png" alt="ShbairPharma">
-                </div>
+                    <img src="assets/images/shbairpharma.png" alt="ShbairPharma">
+                </div> 
                 <div class="nav-sep"></div>
-
+               
                 <!-- Left actions -->
                 <div class="p_one btn-group" style="gap:5px;display:flex;">
                     <button id="productModal" type="button" class="btn btn-success waves-effect">
                         <i class="glyphicon glyphicon-barcode"></i> <span data-i18n="products">Products</span>
                     </button>
-                    <button id="newProductModal" data-toggle="modal" data-target="#newProduct" type="button" class="btn btn-warning waves-effect">
-                        <i class="fa fa-plus"></i>
-                    </button>
                 </div>
-                <div class="p_two btn-group" style="gap:5px;display:flex;">
+                <!-- <div class="p_two btn-group" style="gap:5px;display:flex;">
                     <button id="categoryModal" data-toggle="modal" data-target="#Categories" type="button" class="btn btn-success waves-effect">
                         <i class="glyphicon glyphicon-th"></i> <span data-i18n="categories">Categories</span>
                     </button>
-                    <button id="newCategoryModal" data-toggle="modal" data-target="#newCategory" type="button" class="btn btn-warning waves-effect">
-                        <i class="fa fa-plus"></i>
-                    </button>
-                </div>
+                </div> -->
                 <div class="p_two btn-group" style="gap:5px;display:flex;">
                     <button id="providerModal" type="button" class="btn btn-success waves-effect">
                         <i class="fa fa-truck"></i> <span data-i18n="providers">Providers</span>
-                    </button>
-                    <button id="newProviderModal" data-toggle="modal" data-target="#newProvider" type="button" class="btn btn-warning waves-effect">
-                        <i class="fa fa-plus"></i>
                     </button>
                 </div>
                 <button id="invoicesModal" type="button" class="btn btn-success waves-effect">
@@ -97,11 +89,11 @@
                 <div class="nav-spacer"></div>
 
                 <!-- Right actions -->
+                <button id="pointofsale" type="button" class="btn btn-danger waves-effect">
+                    <i class="glyphicon glyphicon-shopping-cart"></i> <span data-i18n="point_of_sale">Point of Sale</span>
+                </button>
                 <button id="transactions" type="button" class="btn btn-success waves-effect p_three">
                     <i class="glyphicon glyphicon-credit-card"></i> <span data-i18n="transactions">Transactions</span>
-                </button>
-                <button id="pointofsale" type="button" class="btn btn-success waves-effect">
-                    <i class="glyphicon glyphicon-shopping-cart"></i> <span data-i18n="point_of_sale">Point of Sale</span>
                 </button>
                 <div class="nav-sep"></div>
                 <div class="p_four btn-group" style="gap:5px;display:flex;">
@@ -118,10 +110,11 @@
                 <button type="button" class="btn btn-default waves-effect" id="cashier" data-i18n-title="my_profile" title="My Profile">
                     <i class="glyphicon glyphicon-user"></i> <span id="loggedin-user"></span>
                 </button>
-                <button id="langToggle" type="button" class="btn btn-default waves-effect" title="Toggle Language / تغيير اللغة">عربي</button>
+                <!-- <button id="langToggle" type="button" class="btn btn-default waves-effect" title="Toggle Language / تغيير اللغة">عربي</button>
+                 -->
                 <button id="log-out" type="button" class="btn btn-warning waves-effect" data-i18n-title="sign_out">
                     <i class="glyphicon glyphicon-log-out"></i>
-                </button>
+                </button> 
             </div>
 
             <!-- ══ TRANSACTIONS VIEW ══ -->
@@ -189,17 +182,28 @@
             <!-- ══ PRODUCTS VIEW ══ -->
             <div id="products_view">
                 <div class="container">
-                    <div class="row p-t-10 p-b-10 bg-white m-t-10 m-b-20" style="border-radius:var(--radius);padding:14px 20px;box-shadow:var(--shadow);align-items:center;gap:8px;flex-wrap:wrap;">
-                        <h3 class="col-md-2" style="font-size:16px;font-weight:700;margin:0;" data-i18n="products">Products</h3>
-                        <div class="col-md-10">
-                            <div class="input-group">
-                                <span class="input-group-addon" data-i18n="filter_by_provider_lbl">Filter by Provider</span>
-                                <select id="productProviderFilter" class="form-control">
-                                    <option value="" data-i18n="all_providers_opt">All Providers</option>
-                                </select>
-                            </div>
+
+                    <!-- Top-bar: title + provider selector -->
+                    <div class="pv-topbar">
+                        <div class="pv-topbar-title">
+                            <i class="fa fa-truck"></i>
+                            <span data-i18n="products">Products</span>
+                        </div>
+                        <div class="pv-topbar-select">
+                            <select id="productProviderFilter" class="form-control">
+                                <option value="" data-i18n="all_providers_opt">— Select a Provider —</option>
+                            </select>
+                        </div>
+                        <div>
+                            <button id="newProductModal" data-toggle="modal" data-target="#newProduct" type="button" class="btn btn-primary waves-effect">
+                                <i class="fa fa-plus"></i> <span data-i18n="add_product_btn">New Product</span>
+                            </button>
+                            <button id="categoryModal" data-toggle="modal" data-target="#Categories" type="button" class="btn btn-warning waves-effect">
+                                <span data-i18n="categories">Categories</span>
+                            </button>
                         </div>
                     </div>
+
                     <div class="row">
                         <div class="col-md-12">
                             <div class="card-box">
@@ -238,6 +242,11 @@
                             <select id="providerListFilter" class="form-control">
                                 <option value="" data-i18n="all_providers_opt">— Select a Provider —</option>
                             </select>
+                        </div>
+                        <div>
+                            <button id="newProviderModal" data-toggle="modal" data-target="#newProvider" type="button" class="btn btn-warning waves-effect">
+                                <i class="fa fa-plus"></i> <span data-i18n="add_provider_btn">New Provider</span>
+                            </button>
                         </div>
                     </div>
 
@@ -392,12 +401,18 @@
             <!-- ══ INVOICES VIEW ══ -->
             <div id="invoices_view" style="display:none;">
                 <div class="container">
-                    <!-- Header bar -->
-                    <div class="row p-t-3 p-b-10 bg-white m-t-10 m-b-20" style="border-radius:var(--radius);padding:14px 20px;box-shadow:var(--shadow);display:flex;align-items:center;flex-wrap:wrap;gap:8px;">
-                        <h3 style="font-size:16px;font-weight:700;margin:0;" data-i18n="invoices_nav_btn">Invoices</h3>
-                        <button id="addInvoiceBtn" class="btn btn-success btn-sm waves-effect">
-                            <i class="fa fa-plus"></i> <span data-i18n="add_invoice_btn">Add Invoice</span>
-                        </button>
+
+                    <!-- Top-bar: title + provider selector -->
+                    <div class="pv-topbar">
+                        <div class="pv-topbar-title">
+                            <i class="fa fa-file"></i>
+                            <span data-i18n="invoices_nav_btn">Invoices</span>
+                        </div>                       
+                        <div>
+                            <button id="addInvoiceBtn" class="btn btn-warning waves-effect">
+                               <i class="fa fa-plus"></i> <span data-i18n="add_invoice_btn">Add Invoice</span>
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Search / Filter bar -->
@@ -588,7 +603,7 @@
                                 <div class="input-group">
                                     <input type="text" required id="skuCode" name="skuCode"
                                         class="form-control number-input"
-                                        data-i18n-placeholder="scan_barcode" placeholder="&#128248;  Scan barcode or enter SKU..."
+                                        data-i18n-placeholder="scan_barcode" placeholder="Scan product barcode or enter SKU..."
                                         aria-label="barcode" aria-describedby="basic-addon2">
                                     <span class="input-group-btn">
                                         <button type="submit" class="btn btn-default search-barcode-btn">
@@ -822,7 +837,7 @@
                                     <div class="form-group"><label data-i18n="expiry_date_lbl">Expiry Date</label><input type="text" name="expirationDate" placeholder="dd/mm/yyyy" class="form-control" id="expirationDate" readonly></div>
                                     <div class="form-group"><label data-i18n="min_stock_lbl">Minimum Stock</label><input type="number" name="minStock" placeholder="Min stock" class="form-control" id="minStock" value="1"></div>
                                     <div class="form-group"><label><input type="checkbox" name="stock" id="stock">&nbsp; <span data-i18n="disable_stock_lbl">Disable stock check</span></label></div>
-                                    <input type="submit" id="submitProduct" class="btn btn-primary btn-block waves-effect">
+                                    <input type="submit" id="submitProduct" class="btn btn-primary waves-effect">
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group"><label data-i18n="product_name_lbl">Product Name</label><input type="text" required name="name" placeholder="Product name" class="form-control" id="productName"></div>
@@ -834,6 +849,63 @@
                                     <div class="form-group"><label><span id="rmv_img" class="btn btn-xs btn-warning" data-i18n="remove_lbl">Remove</span> <span data-i18n="picture_lbl">Picture</span></label><div id="current_img"></div><input type="file" name="imagename" id="imagename"></div>
                                 </div>
                             </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Restock Product -->
+        <div id="restockModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-md">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                        <h4 class="modal-title"><i class="fa fa-refresh"></i> Restock Product</h4>
+                    </div>
+                    <div class="modal-body">
+                        <form id="saveRestock">
+                            <input type="hidden" id="restock_product_id">
+                            <div class="form-group">
+                                <label style="color:var(--c-muted);font-size:12px;">Product</label>
+                                <div id="restock_product_name" style="font-weight:600;font-size:14px;padding:6px 0;"></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Provider</label>
+                                        <select id="restock_provider" class="form-control">
+                                            <option value="">Select provider...</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Invoice ID</label>
+                                        <input type="text" id="restock_invoice_id" class="form-control" placeholder="Invoice ID" list="restockInvoiceList" autocomplete="off">
+                                        <datalist id="restockInvoiceList"></datalist>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Entry Date</label>
+                                        <input type="date" id="restock_entry_date" class="form-control">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Quantity to Add</label>
+                                        <input type="number" id="restock_quantity" class="form-control" placeholder="0" min="1" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Cost Price</label>
+                                        <input type="number" id="restock_cost_price" class="form-control" placeholder="0.00" step="0.01" min="0">
+                                    </div>
+                                    <div class="form-group" style="margin-top:8px;padding:10px;background:var(--c-surface);border-radius:var(--radius-sm);border:1px solid var(--c-border);">
+                                        <div style="font-size:11px;color:var(--c-muted);">Current Stock</div>
+                                        <div id="restock_current_qty" style="font-size:20px;font-weight:700;">—</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-success btn-block">
+                                <i class="fa fa-plus-circle"></i> Confirm Restock
+                            </button>
                         </form>
                     </div>
                 </div>
@@ -890,6 +962,21 @@
                             <thead><tr><th data-i18n="name_col">Name</th><th data-i18n="action_col">Action</th></tr></thead>
                             <tbody id="category_list"></tbody>
                         </table>
+                        <hr>
+                        <h4 id="categoryFormTitle" data-i18n="add_category_lbl">Add New Category</h4>
+                        <form id="saveCategoryModal">
+                            <input id="category_id_modal" type="hidden" name="id">
+                            <div class="form-group">
+                                <label data-i18n="name_lbl">Name</label>
+                                <input id="categoryNameModal" type="text" required name="name" data-i18n-placeholder="category_name_placeholder" placeholder="Category name" class="form-control">
+                            </div>
+                            <div class="btn-group" style="width:100%">
+                                <input type="submit" id="submitCategoryModal" data-i18n-value="add_category_btn" value="New Category" class="btn btn-primary waves-effect"><br>
+                             </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal" data-i18n="close_btn">Close</button>
                     </div>
                 </div>
             </div>
@@ -909,7 +996,7 @@
                             <div class="form-group"><label data-i18n="name_lbl">Name</label><input id="providerName" type="text" required name="name" data-i18n-placeholder="provider_name_placeholder" placeholder="Provider name" class="form-control"></div>
                             <div class="form-group"><label data-i18n="phone_lbl">Phone</label><input id="providerPhone" type="text" name="phone" placeholder="Phone number" class="form-control"></div>
                             <div class="form-group"><label data-i18n="email_lbl">Email</label><input id="providerEmail" type="email" name="email" placeholder="Email address" class="form-control"></div>
-                            <input type="submit" id="submitProvider" class="btn btn-primary btn-block waves-effect">
+                            <input type="submit" id="submitProvider" class="btn btn-primary waves-effect">
                         </form>
                     </div>
                 </div>
@@ -1182,7 +1269,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <button type="submit" class="btn btn-primary btn-block waves-effect" id="invoiceFormSubmitBtn" data-i18n="save_invoice_btn">Save Invoice</button>
+                            <button type="submit" class="btn btn-primary waves-effect" id="invoiceFormSubmitBtn" data-i18n="save_invoice_btn">Save Invoice</button>
                         </form>
                     </div>
                 </div>

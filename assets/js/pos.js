@@ -2715,43 +2715,51 @@ if (auth == undefined) {
       $("#invoicePreviewBody").empty();
     });
 
+    // Handler for the standalone #newCategory modal form (edit-only, kept for backward compatibility)
     $("#saveCategory").submit(function (e) {
       e.preventDefault();
-
-      if ($("#category_id").val() == "") {
-        method = "POST";
-      } else {
-        method = "PUT";
-      }
-
+      let method = $("#category_id").val() == "" ? "POST" : "PUT";
       $.ajax({
         type: method,
         url: api + "categories/category",
         data: $(this).serialize(),
-        success: function (data, textStatus, jqXHR) {
+        success: function () {
           $("#saveCategory").get(0).reset();
           loadCategories();
           loadProducts();
-          diagOptions = {
-            title: "Category Saved",
-            text: "Select an option below to continue.",
-            okButtonText: "Add another",
-            cancelButtonText: "Close",
-          };
-
-          notiflix.Confirm.show(
-            diagOptions.title,
-            diagOptions.text,
-            diagOptions.okButtonText,
-            diagOptions.cancelButtonText,
-            ()=>{},
-
-            () => {
-                $("#newCategory").modal("hide");
-            },
-          );
+          $("#newCategory").modal("hide");
+          notiflix.Report.success("Done!", "Category saved", "Ok");
         },
       });
+    });
+
+    // Handler for the inline form inside the #Categories modal
+    $("#saveCategoryModal").submit(function (e) {
+      e.preventDefault();
+      let method = $("#category_id_modal").val() == "" ? "POST" : "PUT";
+      $.ajax({
+        type: method,
+        url: api + "categories/category",
+        data: $(this).serialize(),
+        success: function () {
+          $("#saveCategoryModal")[0].reset();
+          $("#category_id_modal").val("");
+          $("#categoryFormTitle").text(t("add_category_lbl"));
+          $("#submitCategoryModal").val(t("add_category_btn"));
+          $("#cancelCategoryEdit").hide();
+          loadCategories();
+          loadProducts();
+          notiflix.Report.success("Done!", "Category saved", "Ok");
+        },
+      });
+    });
+
+    $("#cancelCategoryEdit").on("click", function () {
+      $("#saveCategoryModal")[0].reset();
+      $("#category_id_modal").val("");
+      $("#categoryFormTitle").text(t("add_category_lbl"));
+      $("#submitCategoryModal").val(t("add_category_btn"));
+      $(this).hide();
     });
 
     $("#saveProvider").submit(function (e) {
@@ -2925,10 +2933,12 @@ if (auth == undefined) {
     };
 
     $.fn.editCategory = function (index) {
-      $("#Categories").modal("hide");
-      $("#categoryName").val(allCategories[index].name);
-      $("#category_id").val(allCategories[index]._id);
-      $("#newCategory").modal("show");
+      $("#categoryNameModal").val(allCategories[index].name);
+      $("#category_id_modal").val(allCategories[index]._id);
+      $("#categoryFormTitle").text(t("edit_category_lbl"));
+      $("#submitCategoryModal").val(t("save_category_btn"));
+      $("#cancelCategoryEdit").show();
+      $("#categoryNameModal").focus();
     };
 
     $.fn.deleteProduct = function (id) {
@@ -2956,6 +2966,82 @@ if (auth == undefined) {
         },
       );
     };
+
+    // ── RESTOCK PRODUCT ──────────────────────────────────────────────────────
+    $.fn.restockProduct = function (productId) {
+      const product = allProducts.find(function (p) { return p._id === productId; });
+      if (!product) return;
+
+      $("#restock_product_id").val(product._id);
+      $("#restock_product_name").text(product.name);
+      $("#restock_current_qty").text(product.stock == 1 ? (product.quantity || 0) : "N/A");
+      $("#restock_quantity").val("");
+      $("#restock_cost_price").val(product.costPrice || "");
+      $("#restock_entry_date").val(new Date().toISOString().split("T")[0]);
+
+      // Populate provider select
+      let provOpts = '<option value="">Select provider...</option>';
+      allProviders.forEach(function (p) {
+        const sel = p._id === product.provider ? " selected" : "";
+        provOpts += `<option value="${p._id}"${sel}>${p.name}</option>`;
+      });
+      $("#restock_provider").html(provOpts);
+
+      // Populate invoice datalist filtered to selected provider
+      function fillRestockInvoices(providerId) {
+        const url = providerId
+          ? api + "invoice/invoice/provider/" + providerId
+          : api + "invoice/invoices";
+        $.get(url, function (data) {
+          const invoices = Array.isArray(data) ? data : (data.invoices || []);
+          let opts = "";
+          invoices.forEach(function (inv) {
+            opts += `<option value="${inv.invoiceId}">`;
+          });
+          $("#restockInvoiceList").html(opts);
+        });
+      }
+      fillRestockInvoices(product.provider || "");
+      $("#restock_provider").off("change.restock").on("change.restock", function () {
+        fillRestockInvoices($(this).val());
+        $("#restock_invoice_id").val("");
+      });
+
+      $("#restock_invoice_id").val(product.invoiceId || "");
+      $("#restockModal").modal("show");
+    };
+
+    $("#saveRestock").submit(function (e) {
+      e.preventDefault();
+      const productId = $("#restock_product_id").val();
+      const qty = parseInt($("#restock_quantity").val());
+      if (!qty || qty <= 0) {
+        notiflix.Report.warning("Validation", "Please enter a quantity greater than 0.", "Ok");
+        return;
+      }
+      const payload = {
+        quantity:   qty,
+        invoiceId:  $("#restock_invoice_id").val().trim(),
+        providerId: $("#restock_provider").val(),
+        costPrice:  $("#restock_cost_price").val(),
+        entryDate:  $("#restock_entry_date").val(),
+      };
+      $.ajax({
+        url: api + "inventory/restock/" + productId,
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify(payload),
+        success: function () {
+          $("#restockModal").modal("hide");
+          notiflix.Report.success("Restocked", "Stock updated successfully.", "Ok");
+          loadProducts();
+        },
+        error: function (err) {
+          const msg = (err.responseJSON && err.responseJSON.message) || "Unknown error.";
+          notiflix.Report.failure("Error", "Restock failed: " + msg, "Ok");
+        }
+      });
+    });
 
     $.fn.deleteUser = function (id) {
       diagOptions = {
@@ -3320,8 +3406,8 @@ if (auth == undefined) {
             ${product.stockAlert}
             </td>
             <td>${product.category}</td>
-            <td>${product.invoiceId || "N/A"}</td>
-            <td class="nobr"><span class="btn-group"><button onClick="$(this).editProduct(${index})" class="btn btn-warning btn-sm"><i class="fa fa-edit"></i></button><button onClick="$(this).deleteProduct(${
+            <td>${product.invoiceId || "N/A"}${product.invoiceHistory && product.invoiceHistory.length > 1 ? ` <span class="badge" title="${product.invoiceHistory.length} restocks" style="cursor:default;">${product.invoiceHistory.length}</span>` : ""}</td>
+            <td class="nobr"><span class="btn-group"><button onClick="$(this).editProduct(${index})" class="btn btn-warning btn-sm"><i class="fa fa-edit"></i></button><button onClick="$(this).restockProduct(${product._id})" class="btn btn-success btn-sm" title="Restock"><i class="fa fa-refresh"></i></button><button onClick="$(this).deleteProduct(${
               product._id
             })" class="btn btn-danger btn-sm"><i class="fa fa-trash"></i></button></span></td></tr>`;
 
@@ -3638,6 +3724,7 @@ if (auth == undefined) {
           JQueryUI: true,
           ordering: true,
           paging: true,
+          
         });
       }
     }

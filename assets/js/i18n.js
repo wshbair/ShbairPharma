@@ -27,7 +27,7 @@ var translations = {
     select_category: 'Select',
     // POS – Cart
     new_btn: 'New',
-    scan_barcode: 'Scan barcode or enter SKU...',
+    scan_barcode: 'Scan product barcode or enter SKU...',
     search_products: 'Search by name or SKU...',
     items: 'Items',
     subtotal: 'Subtotal',
@@ -247,6 +247,9 @@ var translations = {
     inv_no_results: 'No invoices match your search',
     inv_no_linked_products: 'No linked products for this invoice',
     payment_history_lbl: 'Payment History',
+    add_product_btn: 'New Product',
+    add_provider_btn: 'New Provider',
+    add_category_btn: 'New Category',
     add_payment_btn: 'Add Payment',
     add_payment_title: 'Add Payment',
     edit_payment_title: 'Edit Payment',
@@ -269,6 +272,10 @@ var translations = {
     view_invoice_lbl: 'Invoice Preview',
     open_externally_btn: 'Open in Viewer',
     close_btn: 'Close',
+    cancel_btn: 'Cancel',
+    save_category_btn: 'Save Category',
+    edit_category_lbl: 'Edit Category',
+    add_category_lbl: 'Add New Category',
     pdf_open_hint: 'Click "Open in Viewer" to view this PDF.',
 
     // Invoice stats cards
@@ -529,6 +536,9 @@ var translations = {
     inv_no_results: 'لا توجد فواتير تطابق البحث',
     inv_no_linked_products: 'لا توجد منتجات مرتبطة بهذه الفاتورة',
     payment_history_lbl: 'سجل المدفوعات',
+    add_product_btn: 'منتج جديد',
+    add_provider_btn: 'مورد جديد',
+    add_category_btn: 'فئة جديدة',
     add_payment_btn: 'إضافة دفعة',
     add_payment_title: 'إضافة دفعة',
     edit_payment_title: 'تعديل الدفعة',
@@ -551,6 +561,10 @@ var translations = {
     view_invoice_lbl: 'معاينة الفاتورة',
     open_externally_btn: 'فتح في المشغّل',
     close_btn: 'إغلاق',
+    cancel_btn: 'إلغاء',
+    save_category_btn: 'حفظ الفئة',
+    edit_category_lbl: 'تعديل الفئة',
+    add_category_lbl: 'إضافة فئة جديدة',
     pdf_open_hint: 'انقر على "فتح في المشغّل" لعرض ملف PDF.',
 
     // Invoice stats cards
