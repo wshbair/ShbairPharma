@@ -17,6 +17,11 @@ let Store = require("electron-store");
 const remote = require("@electron/remote");
 const app = remote.app;
 const utils = require("./utils");
+const { t } = require("./i18n");
+
+// Populate login footer with live version and current year
+$("#app_version").text(app.getVersion());
+$("#footer_year").text(new Date().getFullYear());
 
 let cart = [];
 let index = 0;
@@ -25,6 +30,9 @@ let allProducts = [];
 let allCategories = [];
 let allProviders = [];
 let allTransactions = [];
+let allInvoices = [];
+let currentProvider = null;
+let currentProviderInvoiceData = null;
 let sold = [];
 let state = [];
 let sold_items = [];
@@ -240,6 +248,7 @@ if (auth == undefined) {
     loadProviders();
     loadProducts();
     loadCustomers();
+    loadInvoicesForForm();
 
     if (settings && validator.unescape(settings.symbol)) {
       $("#price_curr, #payment_curr, #change_curr").text(validator.unescape(settings.symbol));
@@ -278,6 +287,7 @@ if (auth == undefined) {
       $(".p_five").hide();
     }
 
+    //load products in pos
     function loadProducts(data) {
       $.get(api + "inventory/products", function (data) {
         data.forEach((item) => {
@@ -365,19 +375,27 @@ if (auth == undefined) {
       });
     }
 
+    //load providers in dropdown
     function loadProviders() {
       $.get(api + "providers/all", function (data) {
         allProviders = data;
-        loadProviderList();
+        // Update product form provider select
         $("#provider").html(`<option value="">Select</option>`);
         allProviders.forEach((provider) => {
           $("#provider").append(
             `<option value="${provider._id}">${provider.name}</option>`,
           );
         });
+        // Rebuild provider filter dropdowns (providers view + products view)
+        let filterOpts = `<option value="">All Providers</option>`;
+        allProviders.forEach((p) => {
+          filterOpts += `<option value="${p._id}">${p.name}</option>`;
+        });
+        $("#providerListFilter, #productProviderFilter").html(filterOpts);
       });
     }
 
+    //load categories in dropdown and sidebar
     function loadCategories() {
       $.get(api + "categories/all", function (data) {
         allCategories = data;
@@ -391,6 +409,7 @@ if (auth == undefined) {
       });
     }
 
+    //
     function loadCustomers() {
       $.get(api + "customers/all", function (customers) {
         $("#customer").html(
@@ -403,6 +422,715 @@ if (auth == undefined) {
         });
       });
     }
+
+    // Populate invoice datalist in the product form (for autocomplete)
+    function loadInvoicesForForm(providerId) {
+      const url = providerId
+        ? api + "invoice/invoice/provider/" + providerId
+        : api + "invoice/invoices";
+
+      $.get(url, function (data) {
+        const invoices = providerId ? (data.invoices || []) : (data || []);
+        const sym = (settings && validator.unescape(settings.symbol)) || '';
+        const opts = invoices.map(function (inv) {
+          const date = inv.invoiceDate
+            ? new Date(inv.invoiceDate).toLocaleDateString()
+            : '';
+          const net = inv.netAmount
+            ? sym + parseFloat(inv.netAmount).toFixed(2)
+            : '';
+          const status = inv.paymentStatus || '';
+          const label = [date, net, status].filter(Boolean).join(' · ');
+          return `<option value="${inv.invoiceId}">${label}</option>`;
+        }).join('');
+        $("#invoiceIdList").html(opts);
+      });
+    }
+
+    // ── INVOICES VIEW ────────────────────────────────────────────
+    function loadInvoicesView() {
+      $.get(api + "invoice/invoices", function (data) {
+        allInvoices = data || [];
+
+        // Populate provider filter from loaded invoices + allProviders
+        const providerMap = {};
+        allProviders.forEach(function (p) { providerMap[p._id] = p.name; });
+        const seenIds = [];
+        let opts = '<option value="" data-i18n="inv_all_providers">All Providers</option>';
+        allInvoices.forEach(function (inv) {
+          if (inv.providerId && !seenIds.includes(inv.providerId)) {
+            seenIds.push(inv.providerId);
+            opts += '<option value="' + inv.providerId + '">' + (providerMap[inv.providerId] || inv.providerId) + '</option>';
+          }
+        });
+        $("#inv_filter_provider").html(opts);
+
+        renderInvoicesList(allInvoices);
+      }).fail(function () {
+        notiflix.Report.failure("Error", "Failed to load invoices.", "Ok");
+      });
+    }
+
+    function applyInvoiceFilter() {
+      const id      = $("#inv_search_id").val().trim().toLowerCase();
+      const provider = $("#inv_filter_provider").val();
+      const dateFrom = $("#inv_filter_date_from").val();
+      const dateTo   = $("#inv_filter_date_to").val();
+      const status   = $("#inv_filter_status").val();
+      const amtMin   = parseFloat($("#inv_filter_amt_min").val()) || 0;
+      const amtMaxRaw = $("#inv_filter_amt_max").val();
+      const amtMax   = amtMaxRaw !== "" ? parseFloat(amtMaxRaw) : Infinity;
+      const now      = new Date();
+
+      const filtered = allInvoices.filter(function (inv) {
+        if (id && !(inv.invoiceId || "").toLowerCase().includes(id)) return false;
+        if (provider && inv.providerId !== provider) return false;
+        if (dateFrom && inv.invoiceDate && new Date(inv.invoiceDate) < new Date(dateFrom)) return false;
+        if (dateTo  && inv.invoiceDate && new Date(inv.invoiceDate) > new Date(dateTo + "T23:59:59")) return false;
+        const net = parseFloat(inv.netAmount || 0);
+        if (net < amtMin) return false;
+        if (amtMax !== Infinity && net > amtMax) return false;
+        if (status) {
+          const isOverdue = inv.paymentStatus !== "paid" && inv.dueDate && new Date(inv.dueDate) < now;
+          const eff = inv.paymentStatus === "paid" ? "paid" : (isOverdue ? "overdue" : "pending");
+          if (eff !== status) return false;
+        }
+        return true;
+      });
+
+      renderInvoicesList(filtered);
+    }
+
+    function renderInvoicesList(invoices) {
+      const sym = (settings && validator.unescape(settings.symbol)) || "";
+      const now = new Date();
+      const providerMap = {};
+      allProviders.forEach(function (p) { providerMap[p._id] = p.name; });
+
+      let totalAmt = 0, paidAmt = 0, pendingAmt = 0;
+      let html = "";
+
+      invoices.forEach(function (inv) {
+        const net  = parseFloat(inv.netAmount  || 0);
+        const paid = parseFloat(inv.paidAmount || (inv.paymentStatus === "paid" ? net : 0));
+        totalAmt   += net;
+        paidAmt    += paid;
+        pendingAmt += (net - paid);
+        const isOverdue = inv.paymentStatus !== "paid" && inv.dueDate && new Date(inv.dueDate) < now;
+
+        let badge;
+        if (inv.paymentStatus === "paid") {
+          badge = '<span class="invoice-status-badge badge-paid" data-i18n="status_paid">Paid</span>';
+        } else if (isOverdue) {
+          badge = '<span class="invoice-status-badge badge-overdue" data-i18n="status_overdue">Overdue</span>';
+        } else {
+          badge = '<span class="invoice-status-badge badge-pending" data-i18n="status_pending">Pending</span>';
+        }
+
+        const provName = inv.providerId ? (providerMap[inv.providerId] || inv.providerId) : "—";
+        const invDate  = inv.invoiceDate ? moment(inv.invoiceDate).format("DD MMM YYYY") : "—";
+        const dueDate  = inv.dueDate     ? moment(inv.dueDate).format("DD MMM YYYY")     : "—";
+
+        const fileBtn = inv.invoiceFile
+          ? "<button onclick=\"$.fn.viewInvoiceFile('" + inv.invoiceFile + "')\" class=\"btn btn-default btn-xs\" title=\"View File\"><i class=\"fa fa-file-pdf-o\"></i></button> "
+          : "";
+        html += "<tr>" +
+          "<td><strong>" + inv.invoiceId + "</strong></td>" +
+          "<td>" + provName + "</td>" +
+          "<td>" + invDate + "</td>" +
+          "<td>" + dueDate + "</td>" +
+          "<td>" + sym + net.toFixed(2) + "</td>" +
+          "<td>" + badge + "</td>" +
+          "<td style=\"white-space:nowrap;\">" +
+            "<button onclick=\"$.fn.showInvoiceDetail('" + inv.invoiceId + "')\" class=\"btn btn-info btn-xs\" title=\"View Details\"><i class=\"fa fa-search-plus\"></i></button> " +
+            "<button onclick=\"$.fn.editInvoice('" + inv.invoiceId + "')\" class=\"btn btn-warning btn-xs\" title=\"Edit\"><i class=\"fa fa-pencil\"></i></button> " +
+            fileBtn +
+            "<button onclick=\"$.fn.deleteInvoice('" + inv.invoiceId + "')\" class=\"btn btn-danger btn-xs\" title=\"Delete\"><i class=\"fa fa-trash\"></i></button>" +
+          "</td>" +
+          "</tr>";
+      });
+
+      if (!html) {
+        html = '<tr><td colspan="7" class="text-center" style="color:var(--c-muted);padding:20px;" data-i18n="inv_no_results">No invoices match your search.</td></tr>';
+      }
+
+      $("#inv_list_body").html(html);
+      $("#inv_list_count").text(invoices.length);
+      $("#inv_stat_total").text(invoices.length);
+      $("#inv_stat_amount").text(sym + totalAmt.toFixed(2));
+      $("#inv_stat_paid").text(sym + paidAmt.toFixed(2));
+      $("#inv_stat_pending").text(sym + pendingAmt.toFixed(2));
+      $("#inv_view_stats_row").show();
+      $("#inv_detail_panel").hide();
+      $("#inv_detail_placeholder").show();
+
+      if (typeof applyLanguage === "function") applyLanguage(currentLang);
+    }
+
+    $.fn.showInvoiceDetail = function (invoiceId) {
+      const sym = (settings && validator.unescape(settings.symbol)) || "";
+      const now = new Date();
+      const providerMap = {};
+      allProviders.forEach(function (p) { providerMap[p._id] = p.name; });
+
+      const inv = allInvoices.find(function (i) { return i.invoiceId === invoiceId; });
+      if (!inv) return;
+
+      const isOverdue = inv.paymentStatus !== "paid" && inv.dueDate && new Date(inv.dueDate) < now;
+      let statusBadge;
+      if (inv.paymentStatus === "paid") {
+        statusBadge = '<span class="invoice-status-badge badge-paid">Paid</span>';
+      } else if (isOverdue) {
+        statusBadge = '<span class="invoice-status-badge badge-overdue">Overdue</span>';
+      } else {
+        statusBadge = '<span class="invoice-status-badge badge-pending">Pending</span>';
+      }
+
+      const provName = inv.providerId ? (providerMap[inv.providerId] || inv.providerId) : "—";
+
+      const infoHtml =
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;">' +
+          '<div><span style="color:var(--c-muted);">Invoice ID</span><br><strong>' + inv.invoiceId + '</strong></div>' +
+          '<div><span style="color:var(--c-muted);">Status</span><br>' + statusBadge + '</div>' +
+          '<div><span style="color:var(--c-muted);">Provider</span><br>' + provName + '</div>' +
+          '<div><span style="color:var(--c-muted);">Method</span><br>' + (inv.paymentMethod || '—') + '</div>' +
+          '<div><span style="color:var(--c-muted);">Invoice Date</span><br>' + (inv.invoiceDate ? moment(inv.invoiceDate).format("DD MMM YYYY") : "—") + '</div>' +
+          '<div><span style="color:var(--c-muted);">Due Date</span><br>' + (inv.dueDate ? moment(inv.dueDate).format("DD MMM YYYY") : "—") + '</div>' +
+          '<div><span style="color:var(--c-muted);">Total</span><br>' + sym + parseFloat(inv.totalAmount || 0).toFixed(2) + '</div>' +
+          '<div><span style="color:var(--c-muted);">Net Amount</span><br><strong>' + sym + parseFloat(inv.netAmount || 0).toFixed(2) + '</strong></div>' +
+          '<div><span style="color:var(--c-muted);">Tax</span><br>' + sym + parseFloat(inv.taxAmount || 0).toFixed(2) + '</div>' +
+          '<div><span style="color:var(--c-muted);">Discount</span><br>' + sym + parseFloat(inv.discountAmount || 0).toFixed(2) + '</div>' +
+          (inv.notes ? '<div style="grid-column:1/-1;"><span style="color:var(--c-muted);">Notes</span><br>' + inv.notes + '</div>' : '') +
+        '</div>';
+
+      $("#inv_detail_info").html(infoHtml);
+
+      // Action buttons
+      let actionsHtml =
+        "<button onclick=\"$.fn.editInvoice('" + inv.invoiceId + "')\" class=\"btn btn-warning btn-sm\">" +
+          "<i class=\"fa fa-pencil\"></i> Edit Invoice" +
+        "</button>";
+      if (inv.invoiceFile) {
+        actionsHtml +=
+          " <button onclick=\"$.fn.viewInvoiceFile('" + inv.invoiceFile + "')\" class=\"btn btn-info btn-sm\">" +
+            "<i class=\"fa fa-file-pdf-o\"></i> View File" +
+          "</button>";
+      }
+      actionsHtml +=
+        " <button onclick=\"$.fn.deleteInvoice('" + inv.invoiceId + "')\" class=\"btn btn-danger btn-sm\">" +
+          "<i class=\"fa fa-trash\"></i> Delete" +
+        "</button>";
+      $("#inv_detail_actions").html(actionsHtml);
+
+      $("#inv_detail_placeholder").hide();
+      $("#inv_detail_panel").show();
+      $("#inv_pay_summary").hide();
+      $("#inv_pay_stats").empty();
+      $("#inv_pay_rows").empty();
+
+      // Load provider payments (if invoice has a provider)
+      if (inv.providerId) {
+        $.get(api + "payment/provider/" + inv.providerId, function (payData) {
+          const payments = payData.payments || [];
+          const totalInvoiced = parseFloat(payData.totalInvoiced || 0);
+          const totalPaid     = parseFloat(payData.totalPaid || 0);
+          const balance       = parseFloat(payData.balance || 0);
+          const balColor      = balance > 0 ? "var(--c-danger)" : "var(--c-success)";
+
+          // 3 mini stat chips
+          const statsHtml =
+            '<div style="flex:1;min-width:90px;padding:8px 12px;background:var(--c-bg);border-radius:var(--radius-sm);border:1px solid var(--c-border);text-align:center;">' +
+              '<div style="font-size:10px;color:var(--c-muted);text-transform:uppercase;letter-spacing:.4px;">Total Invoiced</div>' +
+              '<div style="font-size:14px;font-weight:700;color:var(--c-text);">' + sym + totalInvoiced.toFixed(2) + '</div>' +
+            '</div>' +
+            '<div style="flex:1;min-width:90px;padding:8px 12px;background:var(--c-bg);border-radius:var(--radius-sm);border:1px solid var(--c-border);text-align:center;">' +
+              '<div style="font-size:10px;color:var(--c-muted);text-transform:uppercase;letter-spacing:.4px;">Payments Made</div>' +
+              '<div style="font-size:14px;font-weight:700;color:var(--c-success);">' + sym + totalPaid.toFixed(2) + '</div>' +
+            '</div>' +
+            '<div style="flex:1;min-width:90px;padding:8px 12px;background:var(--c-bg);border-radius:var(--radius-sm);border:1px solid var(--c-border);text-align:center;">' +
+              '<div style="font-size:10px;color:var(--c-muted);text-transform:uppercase;letter-spacing:.4px;">Balance Due</div>' +
+              '<div style="font-size:14px;font-weight:700;color:' + balColor + ';">' + sym + balance.toFixed(2) + '</div>' +
+            '</div>';
+          $("#inv_pay_stats").html(statsHtml);
+
+          // Payment rows
+          const methodLabels = { cash: "Cash", bank_transfer: "Bank Transfer", check: "Check", other: "Other" };
+          let running = totalInvoiced;
+          let rowsHtml = "";
+          if (payments.length > 0) {
+            payments.forEach(function (p) {
+              running -= parseFloat(p.amount || 0);
+              const rc = running > 0 ? "var(--c-danger)" : "var(--c-success)";
+              rowsHtml +=
+                "<tr>" +
+                "<td>" + (p.paymentDate ? moment(p.paymentDate).format("DD MMM YYYY") : "—") + "</td>" +
+                "<td><strong>" + sym + parseFloat(p.amount || 0).toFixed(2) + "</strong></td>" +
+                "<td>" + (methodLabels[p.paymentMethod] || p.paymentMethod || "—") + "</td>" +
+                "<td style='color:" + rc + ";font-weight:600;'>" + sym + running.toFixed(2) + "</td>" +
+                "</tr>";
+            });
+          } else {
+            rowsHtml = '<tr><td colspan="4" class="text-center" style="color:var(--c-muted);">No payments recorded yet.</td></tr>';
+          }
+          $("#inv_pay_rows").html(rowsHtml);
+          $("#inv_pay_summary").show();
+        });
+      }
+
+      // Load linked products
+      $.get(api + "invoice/invoice/" + invoiceId + "/products", function (products) {
+        let prodHtml = "";
+        if (products && products.length > 0) {
+          products.forEach(function (p) {
+            prodHtml += "<tr>" +
+              "<td>" + (p.name || "—") + "</td>" +
+              "<td>" + (p.barcode || "—") + "</td>" +
+              "<td>" + (p.quantity || 0) + "</td>" +
+              "<td>" + sym + parseFloat(p.costPrice || 0).toFixed(2) + "</td>" +
+              "<td>" + sym + parseFloat(p.price || 0).toFixed(2) + "</td>" +
+              "<td>" + (p.expirationDate || "—") + "</td>" +
+              "</tr>";
+          });
+        } else {
+          prodHtml = '<tr><td colspan="6" class="text-center" style="color:var(--c-muted);" data-i18n="inv_no_linked_products">No linked products for this invoice.</td></tr>';
+        }
+        $("#inv_detail_products_body").html(prodHtml);
+        if (typeof applyLanguage === "function") applyLanguage(currentLang);
+      }).fail(function () {
+        $("#inv_detail_products_body").html('<tr><td colspan="6" class="text-center text-danger">Failed to load products.</td></tr>');
+      });
+    };
+
+    // Live filter events for invoices view
+    $("#inv_search_id").on("input", applyInvoiceFilter);
+    $("#inv_filter_provider, #inv_filter_status").on("change", applyInvoiceFilter);
+    $("#inv_filter_date_from, #inv_filter_date_to").on("change", applyInvoiceFilter);
+    $("#inv_filter_amt_min, #inv_filter_amt_max").on("input", applyInvoiceFilter);
+    $("#inv_clear_filter").on("click", function () {
+      $("#inv_search_id").val("");
+      $("#inv_filter_provider").val("");
+      $("#inv_filter_date_from").val("");
+      $("#inv_filter_date_to").val("");
+      $("#inv_filter_status").val("");
+      $("#inv_filter_amt_min").val("");
+      $("#inv_filter_amt_max").val("");
+      renderInvoicesList(allInvoices);
+    });
+
+    // Load and render invoice list for a selected provider
+    function loadInvoiceList(providerId) {
+      if (!providerId) {
+        $("#invoice_list").empty();
+        $("#providerInvoiceTable").hide();
+        $("#invoice_list_placeholder").show();
+        $("#invoice_stats_row").hide();
+        return;
+      }
+
+      $.get(api + "invoice/invoice/provider/" + providerId, function (data) {
+        currentProviderInvoiceData = data;
+        updateProviderStats(data);
+
+        const sym = (settings && validator.unescape(settings.symbol)) || '';
+        const now = new Date();
+        let html = '';
+
+        if (data.invoices && data.invoices.length > 0) {
+          data.invoices.forEach(function (inv) {
+            const date = inv.invoiceDate
+              ? new Date(inv.invoiceDate).toLocaleDateString()
+              : '-';
+            const dueDate = inv.dueDate
+              ? new Date(inv.dueDate).toLocaleDateString()
+              : '-';
+            const amount = parseFloat(inv.totalAmount || 0).toFixed(2);
+            const net    = parseFloat(inv.netAmount   || 0).toFixed(2);
+
+            const isOverdue =
+              inv.paymentStatus === 'pending' &&
+              inv.dueDate &&
+              new Date(inv.dueDate) < now;
+
+            let statusBadge;
+            if (inv.paymentStatus === 'paid') {
+              statusBadge = `<span class="invoice-status-badge badge-paid" data-i18n="status_paid">Paid</span>`;
+            } else if (isOverdue) {
+              statusBadge = `<span class="invoice-status-badge badge-overdue" data-i18n="status_overdue">Overdue</span>`;
+            } else {
+              statusBadge = `<span class="invoice-status-badge badge-pending" data-i18n="status_pending">Pending</span>`;
+            }
+
+            const fileBtn = inv.invoiceFile
+              ? `<button onclick="$(this).viewInvoiceFile('${inv.invoiceFile}')" class="btn btn-info btn-xs" title="View Bill"><i class="fa fa-file-image-o"></i> View</button> `
+              : `<button class="btn btn-default btn-xs" disabled title="No file attached"><i class="fa fa-file-o"></i></button> `;
+
+            const markPaidBtn = inv.paymentStatus !== 'paid'
+              ? `<button onclick="$(this).markInvoicePaid('${inv.invoiceId}')" class="btn btn-success btn-xs" title="Mark as Paid"><i class="fa fa-check"></i></button> `
+              : '';
+
+            const editBtn = `<button onclick="$(this).editInvoice('${inv.invoiceId}')" class="btn btn-warning btn-xs" title="Edit"><i class="fa fa-edit"></i></button> `;
+
+            html += `<tr>
+              <td><strong>${inv.invoiceId}</strong></td>
+              <td>${date}</td>
+              <td>${dueDate}</td>
+              <td>${sym}${amount}</td>
+              <td>${sym}${net}</td>
+              <td>${statusBadge}</td>
+              <td class="nobr">
+                <span class="btn-group">
+                  ${fileBtn}${editBtn}${markPaidBtn}<button onclick="$(this).deleteInvoice('${inv.invoiceId}')" class="btn btn-danger btn-xs" title="Delete"><i class="fa fa-trash"></i></button>
+                </span>
+              </td>
+            </tr>`;
+          });
+        } else {
+          html = `<tr><td colspan="7" class="text-center" style="color:var(--c-muted);padding:20px;" data-i18n="no_invoices_msg">No invoices found for this provider.</td></tr>`;
+        }
+
+        $("#invoice_list").html(html);
+        $("#invoice_list_placeholder").hide();
+        $("#providerInvoiceTable").show();
+        // Re-apply translations to dynamically created elements
+        if (typeof applyLanguage === 'function') applyLanguage(currentLang);
+      }).fail(function () {
+        currentProviderInvoiceData = null;
+        $("#invoice_list").html(
+          `<tr><td colspan="7" class="text-center text-danger">Failed to load invoices.</td></tr>`
+        );
+        $("#invoice_list_placeholder").hide();
+        $("#providerInvoiceTable").show();
+      });
+    }
+
+    // ── PAYMENT INSTALLMENTS ─────────────────────────────────────────────────
+    let currentProviderPayments = [];
+    let currentProviderBalance  = 0;
+
+    function loadPaymentList(providerId) {
+      if (!providerId) {
+        currentProviderPayments = [];
+        $("#payment_list").empty();
+        $("#pay_list_count").text(0);
+        return;
+      }
+
+      $.get(api + "payment/provider/" + providerId, function (data) {
+        currentProviderPayments = data.payments || [];
+        const sym = (settings && validator.unescape(settings.symbol)) || '';
+
+        // Update stat cards
+        const totalInvoiced = parseFloat(data.totalInvoiced || 0);
+        const totalPaid     = parseFloat(data.totalPaid || 0);
+        const balance       = parseFloat(data.balance || 0);
+        currentProviderBalance = balance;
+        $("#pay_stat_invoiced").text(totalInvoiced.toFixed(2));  // hidden, used by export
+        $("#pay_stat_count").text(currentProviderPayments.length); // hidden, used by export
+        $("#pay_stat_paid").text(sym + totalPaid.toFixed(2));
+        $("#pay_stat_balance").text(sym + balance.toFixed(2));
+
+        // Update the balance chip with color coding
+        $("#provider_info_balance").text(sym + balance.toFixed(2))
+          .css("color", balance > 0 ? "var(--c-danger)" : "var(--c-success)");
+
+        // Render 5-column rows (Date / Amount / Method / Running Balance / Actions)
+        let html = '';
+        let running = totalInvoiced;
+        const methodLabels = { cash: 'Cash', bank_transfer: 'Bank', check: 'Check', other: 'Other' };
+        if (currentProviderPayments.length > 0) {
+          currentProviderPayments.forEach(function (p) {
+            running -= parseFloat(p.amount || 0);
+            const method = methodLabels[p.paymentMethod] || p.paymentMethod || '—';
+            const balColor = running > 0 ? "var(--c-danger)" : "var(--c-success)";
+            html += "<tr>" +
+              "<td>" + (p.paymentDate ? moment(p.paymentDate).format("DD MMM YYYY") : "—") + "</td>" +
+              "<td><strong>" + sym + parseFloat(p.amount || 0).toFixed(2) + "</strong></td>" +
+              "<td>" + method + "</td>" +
+              "<td style='color:" + balColor + ";font-weight:600;'>" + sym + running.toFixed(2) + "</td>" +
+              "<td style='white-space:nowrap;'>" +
+                "<button onclick=\"$.fn.editPayment('" + p.paymentId + "')\" class='btn btn-warning btn-xs' title='Edit'><i class='fa fa-pencil'></i></button> " +
+                "<button onclick=\"$.fn.deletePayment('" + p.paymentId + "')\" class='btn btn-danger btn-xs' title='Delete'><i class='fa fa-trash'></i></button>" +
+              "</td>" +
+              "</tr>";
+          });
+        } else {
+          html = '<tr><td colspan="5" class="text-center" style="color:var(--c-muted);padding:20px;">No payments recorded yet.</td></tr>';
+        }
+        $("#payment_list").html(html);
+        $("#pay_list_count").text(currentProviderPayments.length);
+        if (typeof applyLanguage === 'function') applyLanguage(currentLang);
+      }).fail(function () {
+        notiflix.Report.failure("Error", "Failed to load payments.", "Ok");
+      });
+    }
+
+    // ── ADD PAYMENT BUTTON ───────────────────────────────────────────────────
+    $("#addPaymentBtn").on("click", function () {
+      const today = new Date().toISOString().split('T')[0];
+      $("#savePayment")[0].reset();
+      $("#pay_original_id").val("");
+      $("#pay_provider_id").val(currentProvider ? currentProvider._id : "");
+      $("#pay_date").val(today);
+      $("#pay_method").val("cash");
+      if (currentProviderBalance > 0) {
+        $("#pay_amount").val(currentProviderBalance.toFixed(2));
+      }
+      $("#paymentFormIcon").attr("class", "fa fa-plus-circle");
+      $("#paymentFormTitle").text(t('add_payment_title'));
+      $("#newPayment").modal("show");
+    });
+
+    // ── SAVE PAYMENT FORM ────────────────────────────────────────────────────
+    $("#savePayment").submit(function (e) {
+      e.preventDefault();
+      const amount = parseFloat($("#pay_amount").val());
+      if (!amount || amount <= 0) {
+        notiflix.Report.warning("Validation", "Please enter a valid amount.", "Ok");
+        return;
+      }
+      if (!$("#pay_date").val()) {
+        notiflix.Report.warning("Validation", "Please enter a payment date.", "Ok");
+        return;
+      }
+
+      const originalId = $("#pay_original_id").val();
+      const isEdit = originalId !== "";
+      const payload = {
+        amount:        amount,
+        paymentDate:   $("#pay_date").val(),
+        paymentMethod: $("#pay_method").val(),
+        reference:     $("#pay_reference").val(),
+        notes:         $("#pay_notes").val(),
+      };
+
+      if (isEdit) {
+        $.ajax({
+          url: api + "payment/" + originalId,
+          type: "PUT",
+          contentType: "application/json",
+          data: JSON.stringify(payload),
+          success: function () {
+            $("#newPayment").modal("hide");
+            notiflix.Report.success("Updated", "Payment updated.", "Ok");
+            if (currentProvider) { loadPaymentList(currentProvider._id); loadInvoiceList(currentProvider._id); }
+          },
+          error: function (err) {
+            const msg = (err.responseJSON && err.responseJSON.message) || "Unknown error.";
+            notiflix.Report.failure("Error", "Failed to update: " + msg, "Ok");
+          }
+        });
+      } else {
+        payload.providerId = $("#pay_provider_id").val();
+        $.ajax({
+          url: api + "payment/",
+          type: "POST",
+          contentType: "application/json",
+          data: JSON.stringify(payload),
+          success: function () {
+            $("#newPayment").modal("hide");
+            notiflix.Report.success("Saved", "Payment recorded.", "Ok");
+            if (currentProvider) { loadPaymentList(currentProvider._id); loadInvoiceList(currentProvider._id); }
+          },
+          error: function (err) {
+            const msg = (err.responseJSON && err.responseJSON.message) || "Unknown error.";
+            notiflix.Report.failure("Error", "Failed to save: " + msg, "Ok");
+          }
+        });
+      }
+    });
+
+    // ── EDIT PAYMENT ─────────────────────────────────────────────────────────
+    $.fn.editPayment = function (paymentId) {
+      const p = currentProviderPayments.find(function (x) { return x.paymentId === paymentId; });
+      if (!p) return;
+      $("#pay_original_id").val(p.paymentId);
+      $("#pay_provider_id").val(p.providerId);
+      $("#pay_amount").val(parseFloat(p.amount || 0).toFixed(2));
+      $("#pay_date").val(p.paymentDate ? p.paymentDate.split('T')[0] : '');
+      $("#pay_method").val(p.paymentMethod || 'cash');
+      $("#pay_reference").val(p.reference || '');
+      $("#pay_notes").val(p.notes || '');
+      $("#paymentFormIcon").attr("class", "fa fa-edit");
+      $("#paymentFormTitle").text(t('edit_payment_title'));
+      $("#newPayment").modal("show");
+    };
+
+    // ── DELETE PAYMENT ───────────────────────────────────────────────────────
+    $.fn.deletePayment = function (paymentId) {
+      notiflix.Confirm.show(
+        "Delete Payment?",
+        "This will permanently remove the payment record.",
+        "Yes, delete",
+        "Cancel",
+        function () {
+          $.ajax({
+            url: api + "payment/" + paymentId,
+            type: "DELETE",
+            success: function () {
+              notiflix.Report.success("Deleted", "Payment removed.", "Ok");
+              if (currentProvider) { loadPaymentList(currentProvider._id); loadInvoiceList(currentProvider._id); }
+            },
+            error: function (err) {
+              const msg = (err.responseJSON && err.responseJSON.message) || "Cannot delete.";
+              notiflix.Report.failure("Error", msg, "Ok");
+            }
+          });
+        }
+      );
+    };
+
+    // ── PAYMENT CSV EXPORT ───────────────────────────────────────────────────
+    $("#exportPaymentCsvBtn").on("click", function () {
+      const sym  = (settings && validator.unescape(settings.symbol)) || '';
+      const prov = currentProvider || {};
+      const payments = currentProviderPayments;
+
+      function q(v) { return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"'; }
+      function csvRow(arr) { return arr.map(q).join(","); }
+
+      const rows = [];
+      rows.push(["Provider Payment Report"]);
+      rows.push(["Provider", prov.name || ""]);
+      rows.push(["Phone",    prov.phone || ""]);
+      rows.push(["Generated", moment().format("YYYY-MM-DD HH:mm:ss")]);
+      rows.push([]);
+
+      const totalPaid = payments.reduce(function (s, p) { return s + parseFloat(p.amount || 0); }, 0);
+      rows.push(["SUMMARY"]);
+      rows.push(["Total Payments Made", payments.length]);
+      rows.push(["Total Amount Paid",   sym + totalPaid.toFixed(2)]);
+      rows.push([]);
+
+      rows.push(["PAYMENTS"]);
+      rows.push(["Date", "Amount", "Method", "Reference", "Running Balance", "Notes"]);
+      let running = parseFloat($("#pay_stat_invoiced").text().replace(/[^0-9.-]/g, '')) || 0;
+      payments.forEach(function (p) {
+        running -= parseFloat(p.amount || 0);
+        const methodLabels = { cash: 'Cash', bank_transfer: 'Bank Transfer', check: 'Check', other: 'Other' };
+        rows.push([
+          p.paymentDate ? moment(p.paymentDate).format("YYYY-MM-DD") : "",
+          parseFloat(p.amount || 0).toFixed(2),
+          methodLabels[p.paymentMethod] || p.paymentMethod || "",
+          p.reference || "",
+          running.toFixed(2),
+          p.notes || "",
+        ]);
+      });
+
+      const csv = "\uFEFF" + rows.map(csvRow).join("\r\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href = url;
+      a.download = "payments_" + (prov.name || "provider").replace(/\s+/g, "_") + "_" + moment().format("YYYYMMDD") + ".csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // ── PAYMENT PDF EXPORT ───────────────────────────────────────────────────
+    $("#exportPaymentPdfBtn").on("click", function () {
+      const sym  = (settings && validator.unescape(settings.symbol)) || '';
+      const prov = currentProvider || {};
+      const payments = currentProviderPayments;
+      const now  = moment().format("DD MMM YYYY HH:mm");
+
+      const totalInvoiced = parseFloat($("#pay_stat_invoiced").text().replace(/[^0-9.-]/g, '')) || 0;
+      const totalPaid     = payments.reduce(function (s, p) { return s + parseFloat(p.amount || 0); }, 0);
+      const balance       = totalInvoiced - totalPaid;
+
+      function isArabic(str) { return /[\u0600-\u06FF]/.test(str); }
+      function cell(text, opts) {
+        const t = String(text == null ? "" : text);
+        const base = { text: t, style: isArabic(t) ? "arabic" : undefined };
+        return Object.assign(base, opts || {});
+      }
+
+      const methodLabels = { cash: 'Cash', bank_transfer: 'Bank Transfer', check: 'Check', other: 'Other' };
+      let running = totalInvoiced;
+      const tableRows = payments.map(function (p) {
+        running -= parseFloat(p.amount || 0);
+        return [
+          cell(p.paymentDate ? moment(p.paymentDate).format("DD MMM YYYY") : "—"),
+          cell(sym + parseFloat(p.amount || 0).toFixed(2), { bold: true }),
+          cell(methodLabels[p.paymentMethod] || p.paymentMethod || "—"),
+          cell(p.reference || "—"),
+          cell(sym + running.toFixed(2), { color: running > 0 ? "#c0392b" : "#27ae60" }),
+          cell(p.notes || "—"),
+        ];
+      });
+
+      if (tableRows.length === 0) {
+        tableRows.push([{ text: "No payments recorded.", colSpan: 6, alignment: "center", color: "#999" }, {}, {}, {}, {}, {}]);
+      }
+
+      const docDef = {
+        pageSize: "A4",
+        pageMargins: [30, 40, 30, 40],
+        defaultStyle: { font: "Tahoma", fontSize: 10 },
+        styles: {
+          arabic: { font: "Tahoma" },
+          title:  { fontSize: 16, bold: true, color: "#1a3c5e" },
+          meta:   { fontSize: 9, color: "#666" },
+          section: { fontSize: 10, bold: true, color: "#ffffff", fillColor: "#2c7be5" },
+          summaryLabel: { fontSize: 9, color: "#555" },
+          summaryValue: { fontSize: 11, bold: true, color: "#1a3c5e" },
+        },
+        content: [
+          { text: "Provider Payment Report", style: "title", margin: [0, 0, 0, 4] },
+          { text: "Generated: " + now, style: "meta", margin: [0, 0, 0, 12] },
+
+          // Provider info
+          {
+            table: { widths: ["*", "*"], body: [
+              [cell("Provider: " + (prov.name || "—"), { bold: true }), cell("Phone: " + (prov.phone || "—"))],
+              [cell("Email: " + (prov.email || "—")), cell("")]
+            ]},
+            layout: "lightHorizontalLines", margin: [0, 0, 0, 14]
+          },
+
+          // Summary stats
+          {
+            table: { widths: ["*", "*", "*"], body: [[
+              { stack: [{ text: "Total Invoiced", style: "summaryLabel" }, { text: sym + totalInvoiced.toFixed(2), style: "summaryValue" }], alignment: "center" },
+              { stack: [{ text: "Total Paid", style: "summaryLabel" }, { text: sym + totalPaid.toFixed(2), style: "summaryValue", color: "#27ae60" }], alignment: "center" },
+              { stack: [{ text: "Remaining Balance", style: "summaryLabel" }, { text: sym + balance.toFixed(2), style: "summaryValue", color: balance > 0 ? "#c0392b" : "#27ae60" }], alignment: "center" },
+            ]]},
+            layout: "lightHorizontalLines", margin: [0, 0, 0, 14]
+          },
+
+          // Payments table
+          { text: "Payment History", style: "section", margin: [0, 0, 0, 4] },
+          {
+            table: {
+              headerRows: 1,
+              widths: ["auto", "auto", "auto", "auto", "auto", "*"],
+              body: [
+                [
+                  { text: "Date",            bold: true, fillColor: "#eaf1fb" },
+                  { text: "Amount",          bold: true, fillColor: "#eaf1fb" },
+                  { text: "Method",          bold: true, fillColor: "#eaf1fb" },
+                  { text: "Reference",       bold: true, fillColor: "#eaf1fb" },
+                  { text: "Running Balance", bold: true, fillColor: "#eaf1fb" },
+                  { text: "Notes",           bold: true, fillColor: "#eaf1fb" },
+                ],
+                ...tableRows
+              ]
+            },
+            layout: "lightHorizontalLines"
+          }
+        ]
+      };
+
+      pdfMake.fonts = {
+        Tahoma: {
+          normal:     "Tahoma.ttf",
+          bold:       "Tahoma.ttf",
+          italics:    "Tahoma.ttf",
+          bolditalics:"Tahoma.ttf",
+        }
+      };
+      pdfMake.createPdf(docDef).download("payments_" + (prov.name || "provider").replace(/\s+/g, "_") + "_" + moment().format("YYYYMMDD") + ".pdf");
+    });
 
     $.fn.addToCart = function (id, count, stock) {
       $.get(api + "inventory/product/" + id, function (product) {
@@ -1418,16 +2146,21 @@ if (auth == undefined) {
       loadUserList();
 
       $("#pos_view").hide();
-      $("#pointofsale").show();
+      $("#pointofsale").hide();
       $("#transactions_view").show();
+      $("#products_view").hide();
+      $("#providers_view").hide();
+      $("#invoices_view").hide();
       $(this).hide();
     });
 
     $("#pointofsale").on("click", function () {
       $("#pos_view").show();
-      $("#transactions").show();
+      $("#transactions").hide();
       $("#transactions_view").hide();
       $("#products_view").hide();
+      $("#providers_view").hide();
+      $("#invoices_view").hide();
       $(this).hide();
     });
 
@@ -1446,6 +2179,15 @@ if (auth == undefined) {
     $("#newProductModal").on("click", function () {
       $("#saveProduct").get(0).reset();
       $("#current_img").text("");
+      $("#invoice_id").val("");
+      loadInvoicesForForm(); // load all invoices (no provider filter yet)
+    });
+
+    // When provider changes in the product form, filter invoice datalist to that provider
+    $("#provider").on("change", function () {
+      const providerId = $(this).val();
+      $("#invoice_id").val(""); // clear stale invoice selection
+      loadInvoicesForForm(providerId || null);
     });
 
     $("#saveProduct").submit(function (e) {
@@ -1489,6 +2231,488 @@ if (auth == undefined) {
         }
 
       });
+    });
+
+    // ── ADD INVOICE BUTTON ──────────────────────────────────
+    $("#addInvoiceBtn").on("click", function () {
+      const today = new Date().toISOString().split('T')[0];
+      $("#saveInvoice")[0].reset();
+      $("#inv_original_invoice_id").val("");
+      $("#inv_invoice_id").prop("readonly", false);
+      $("#inv_invoice_date").val(today);
+      $("#inv_payment_status").val("pending");
+      $("#inv_net_amount").val("0.00");
+      // Populate provider select from allProviders
+      let provOpts = '<option value="">' + t('select_provider_hint') + '</option>';
+      allProviders.forEach(function (p) {
+        provOpts += '<option value="' + p._id + '">' + (p.name || p._id) + '</option>';
+      });
+      $("#inv_provider_id").html(provOpts).prop("disabled", false);
+      // Switch to create mode UI
+      $("#inv_file_section").show();
+      $("#inv_current_file_section").hide();
+      $("#invoiceFormIcon").attr("class", "fa fa-plus-circle");
+      $("#invoiceFormTitle").text(t('add_invoice_title'));
+      $("#newInvoice").modal("show");
+    });
+
+    // ── PROVIDER INVOICE EXPORT ─────────────────────────────────
+    function providerExportBase() {
+      const sym      = (settings && validator.unescape(settings.symbol)) || '';
+      const data     = currentProviderInvoiceData || { invoices: [], totalInvoices: 0, totalAmount: 0, paidAmount: 0, pendingAmount: 0, overdueAmount: 0 };
+      const invoices = data.invoices || [];
+      const prov     = currentProvider || {};
+      const now      = new Date();
+      return { sym, data, invoices, prov, now };
+    }
+
+    $("#exportInvoiceCsvBtn").on("click", function () {
+      const { sym, data, invoices, prov } = providerExportBase();
+
+      function q(v) { return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"'; }
+      function csvRow(arr) { return arr.map(q).join(","); }
+
+      const rows = [];
+
+      // Section 1 — report info
+      rows.push(["Provider Invoice Report"]);
+      rows.push(["Provider",  prov.name  || ""]);
+      rows.push(["Phone",     prov.phone || ""]);
+      rows.push(["Email",     prov.email || ""]);
+      rows.push(["Generated", moment().format("YYYY-MM-DD HH:mm:ss")]);
+      rows.push([]);
+
+      // Section 2 — summary
+      rows.push(["SUMMARY"]);
+      rows.push(["Total Invoices",  data.totalInvoices  || 0]);
+      rows.push(["Total Amount",    sym + parseFloat(data.totalAmount   || 0).toFixed(2)]);
+      rows.push(["Paid Amount",     sym + parseFloat(data.paidAmount    || 0).toFixed(2)]);
+      rows.push(["Pending Amount",  sym + parseFloat(data.pendingAmount || 0).toFixed(2)]);
+      rows.push(["Overdue Amount",  sym + parseFloat(data.overdueAmount || 0).toFixed(2)]);
+      rows.push([]);
+
+      // Section 3 — invoices
+      rows.push(["INVOICES"]);
+      rows.push(["Invoice ID", "Invoice Date", "Due Date", "Total Amount", "Tax", "Discount", "Net Amount", "Status", "Payment Method", "Notes"]);
+      invoices.forEach(function (inv) {
+        const isOverdue = inv.paymentStatus !== 'paid' && inv.dueDate && new Date(inv.dueDate) < new Date();
+        rows.push([
+          inv.invoiceId    || "",
+          inv.invoiceDate  ? moment(inv.invoiceDate).format("YYYY-MM-DD")  : "",
+          inv.dueDate      ? moment(inv.dueDate).format("YYYY-MM-DD")      : "",
+          parseFloat(inv.totalAmount    || 0).toFixed(2),
+          parseFloat(inv.taxAmount      || 0).toFixed(2),
+          parseFloat(inv.discountAmount || 0).toFixed(2),
+          parseFloat(inv.netAmount      || 0).toFixed(2),
+          inv.paymentStatus === 'paid' ? "Paid" : (isOverdue ? "Overdue" : "Pending"),
+          inv.paymentMethod || "",
+          inv.notes         || "",
+        ]);
+      });
+
+      const csvContent = "\uFEFF" + rows.map(csvRow).join("\r\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url  = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download",
+        "invoices_" + (prov.name || "provider").replace(/\s+/g, "_") +
+        "_" + moment().format("YYYY-MM-DD") + ".csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    });
+
+    $("#exportInvoicePdfBtn").on("click", function () {
+      const { sym, data, invoices, prov } = providerExportBase();
+
+      if (!pdfMake.vfs["Tahoma.ttf"]) {
+        const appRoot = app.getAppPath();
+        pdfMake.vfs["Tahoma.ttf"]      = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma.ttf")).toString("base64");
+        pdfMake.vfs["Tahoma-Bold.ttf"] = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma-Bold.ttf")).toString("base64");
+        pdfMake.fonts = {
+          Roboto: { normal: "Roboto-Regular.ttf", bold: "Roboto-Medium.ttf", italics: "Roboto-Italic.ttf", bolditalics: "Roboto-MediumItalic.ttf" },
+          Tahoma: { normal: "Tahoma.ttf", bold: "Tahoma-Bold.ttf", italics: "Tahoma.ttf", bolditalics: "Tahoma-Bold.ttf" },
+        };
+      }
+
+      function cell(value, extra) {
+        const str = String(value == null ? "" : value);
+        const isArabic = /[\u0600-\u06FF]/.test(str);
+        return Object.assign({
+          text: str, fontSize: 7,
+          font:      isArabic ? "Tahoma" : "Roboto",
+          alignment: isArabic ? "right"  : "left",
+        }, extra || {});
+      }
+
+      const summaryBody = [
+        [
+          { text: "Total Invoices",  style: "summaryLabel" },
+          { text: String(data.totalInvoices || 0),                         style: "summaryValue" },
+          { text: "Total Amount",    style: "summaryLabel" },
+          { text: sym + parseFloat(data.totalAmount   || 0).toFixed(2),    style: "summaryValue" },
+          { text: "Paid Amount",     style: "summaryLabel" },
+          { text: sym + parseFloat(data.paidAmount    || 0).toFixed(2),    style: "summaryValue" },
+        ],
+        [
+          { text: "Overdue Amount",  style: "summaryLabel" },
+          { text: sym + parseFloat(data.overdueAmount || 0).toFixed(2),    style: "summaryValue" },
+          { text: "Pending Amount",  style: "summaryLabel" },
+          { text: sym + parseFloat(data.pendingAmount || 0).toFixed(2),    style: "summaryValue" },
+          { text: "Outstanding",     style: "summaryLabel" },
+          { text: sym + parseFloat(data.pendingAmount || 0).toFixed(2),    style: "summaryValue" },
+        ],
+      ];
+
+      const txHeaders = ["Invoice ID", "Invoice Date", "Due Date", "Total", "Tax", "Discount", "Net Amount", "Status", "Method", "Notes"];
+      const txRows = invoices.map(function (inv) {
+        const isOverdue = inv.paymentStatus !== 'paid' && inv.dueDate && new Date(inv.dueDate) < new Date();
+        const status = inv.paymentStatus === 'paid' ? "Paid" : (isOverdue ? "Overdue" : "Pending");
+        return [
+          inv.invoiceId || "—",
+          inv.invoiceDate ? moment(inv.invoiceDate).format("DD/MM/YY") : "—",
+          inv.dueDate     ? moment(inv.dueDate).format("DD/MM/YY")     : "—",
+          sym + parseFloat(inv.totalAmount    || 0).toFixed(2),
+          sym + parseFloat(inv.taxAmount      || 0).toFixed(2),
+          sym + parseFloat(inv.discountAmount || 0).toFixed(2),
+          sym + parseFloat(inv.netAmount      || 0).toFixed(2),
+          status,
+          inv.paymentMethod || "—",
+          inv.notes         || "—",
+        ].map(function (v) { return cell(v); });
+      });
+
+      const docDefinition = {
+        pageOrientation: "landscape",
+        pageMargins: [28, 50, 28, 36],
+
+        header: function (currentPage) {
+          if (currentPage === 1) return null;
+          return { text: "ShbairPharma — Provider Invoice Report", alignment: "center", fontSize: 7, color: "#888", margin: [0, 14, 0, 0] };
+        },
+        footer: function (currentPage, pageCount) {
+          return {
+            columns: [
+              { text: "Generated: " + moment().format("YYYY-MM-DD HH:mm:ss"), fontSize: 7, color: "#888", alignment: "left",  margin: [28, 0, 0, 0] },
+              { text: "Page " + currentPage + " of " + pageCount,             fontSize: 7, color: "#888", alignment: "right", margin: [0,  0, 28, 0] },
+            ],
+          };
+        },
+
+        content: [
+          { text: "ShbairPharma",              style: "brand" },
+          { text: "Provider Invoice Report",   style: "reportTitle" },
+          { text: moment().format("YYYY-MM-DD HH:mm:ss"), style: "generatedDate" },
+          { text: " ", margin: [0, 4] },
+
+          // Provider info bar
+          {
+            table: {
+              widths: ["*", "*", "*"],
+              body: [[
+                { text: "Provider: " + (prov.name  || "—"), style: "filterCell" },
+                { text: "Phone: "   + (prov.phone || "—"), style: "filterCell" },
+                { text: "Email: "   + (prov.email || "—"), style: "filterCell" },
+              ]],
+            },
+            layout: { hLineWidth: () => 0, vLineWidth: () => 0, fillColor: () => "#eef3f9" },
+            margin: [0, 0, 0, 14],
+          },
+
+          // Summary stats
+          { text: "Summary", style: "sectionTitle" },
+          {
+            table: {
+              widths: ["auto", "*", "auto", "*", "auto", "*"],
+              body: summaryBody,
+            },
+            layout: {
+              hLineWidth: () => 1, vLineWidth: () => 1,
+              hLineColor: () => "#c9d8e8", vLineColor: () => "#c9d8e8",
+              fillColor:  function (i) { return i % 2 === 0 ? "#eef3f9" : "#f8fafc"; },
+              paddingLeft: () => 8, paddingRight: () => 8,
+              paddingTop:  () => 6, paddingBottom: () => 6,
+            },
+            margin: [0, 4, 0, 18],
+          },
+
+          // Invoices table
+          { text: "Invoices  (" + invoices.length + " records)", style: "sectionTitle" },
+          {
+            table: {
+              headerRows: 1,
+              widths: ["auto", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "*"],
+              body: [
+                txHeaders.map(function (h) { return { text: h, style: "tableHeader" }; }),
+                ...txRows,
+              ],
+            },
+            layout: {
+              hLineWidth: function (i, node) { return (i === 0 || i === node.table.body.length) ? 1 : 0.5; },
+              vLineWidth: () => 0,
+              hLineColor: () => "#c9d8e8",
+              fillColor:  function (i) { return i === 0 ? null : (i % 2 === 0 ? "#f4f7fb" : null); },
+              paddingLeft: () => 5, paddingRight: () => 5,
+              paddingTop:  () => 3, paddingBottom: () => 3,
+            },
+            margin: [0, 4, 0, 0],
+          },
+        ],
+
+        styles: {
+          brand:        { fontSize: 17, bold: true, alignment: "center", color: "#1a2436", margin: [0, 0, 0, 4] },
+          reportTitle:  { fontSize: 12, bold: true, alignment: "center", color: "#0d7377", margin: [0, 0, 0, 4] },
+          generatedDate:{ fontSize: 7,              alignment: "center", color: "#888",    margin: [0, 0, 0, 8] },
+          sectionTitle: { fontSize: 9, bold: true,  color: "#2d4154",                      margin: [0, 0, 0, 4] },
+          filterCell:   { fontSize: 8,              alignment: "center", color: "#444",    margin: [4, 6, 4, 6] },
+          summaryLabel: { fontSize: 8,              color: "#555",       margin: [0, 0, 0, 0] },
+          summaryValue: { fontSize: 9, bold: true,  color: "#1a2436", alignment: "right",  margin: [0, 0, 0, 0] },
+          tableHeader:  { fillColor: "#2d4154", color: "white", fontSize: 7, bold: true, alignment: "center", margin: [0, 3, 0, 3] },
+        },
+      };
+
+      pdfMake
+        .createPdf(docDefinition)
+        .download(
+          "invoices_" + (prov.name || "provider").replace(/\s+/g, "_") +
+          "_" + moment().format("YYYY-MM-DD") + ".pdf"
+        );
+    });
+
+    // Auto-calculate net amount in invoice form
+    $("#inv_total_amount, #inv_tax_amount, #inv_discount_amount").on("input", function () {
+      const total    = parseFloat($("#inv_total_amount").val())    || 0;
+      const tax      = parseFloat($("#inv_tax_amount").val())      || 0;
+      const discount = parseFloat($("#inv_discount_amount").val()) || 0;
+      $("#inv_net_amount").val((total + tax - discount).toFixed(2));
+    });
+
+    // ── SAVE INVOICE FORM ────────────────────────────────────
+    $("#saveInvoice").submit(function (e) {
+      e.preventDefault();
+      if (!$("#inv_invoice_date").val()) {
+        notiflix.Report.warning("Validation", "Please enter an invoice date.", "Ok");
+        return;
+      }
+
+      const originalId = $("#inv_original_invoice_id").val();
+      const isEdit = originalId !== "";
+
+      if (isEdit) {
+        // PUT: send as FormData so a replacement file can be included
+        const fd = new FormData();
+        fd.append("invoiceDate",    $("#inv_invoice_date").val());
+        fd.append("dueDate",        $("#inv_due_date").val());
+        fd.append("totalAmount",    parseFloat($("#inv_total_amount").val()) || 0);
+        fd.append("taxAmount",      parseFloat($("#inv_tax_amount").val()) || 0);
+        fd.append("discountAmount", parseFloat($("#inv_discount_amount").val()) || 0);
+        fd.append("netAmount",      parseFloat($("#inv_net_amount").val()) || 0);
+        fd.append("paymentStatus",  $("#inv_payment_status").val());
+        fd.append("paymentMethod",  $("#inv_payment_method").val() || "");
+        fd.append("notes",          $("#inv_notes").val() || "");
+        fd.append("status",         "active");
+        const editFileEl = $("#inv_edit_file")[0];
+        if (editFileEl && editFileEl.files && editFileEl.files.length > 0) {
+          fd.append("invoiceFile", editFileEl.files[0]);
+        }
+        $.ajax({
+          url: api + "invoice/invoice/" + originalId,
+          type: "PUT",
+          data: fd,
+          processData: false,
+          contentType: false,
+          success: function () {
+            $("#newInvoice").modal("hide");
+            notiflix.Report.success("Invoice Updated", "Invoice updated successfully.", "Ok");
+            const providerId = $("#providerListFilter").val();
+            if (providerId) loadInvoiceList(providerId);
+            loadInvoicesForForm();
+            loadInvoicesView();
+          },
+          error: function (err) {
+            const msg = (err.responseJSON && err.responseJSON.message) || "Unknown error.";
+            notiflix.Report.failure("Error", "Failed to update invoice: " + msg, "Ok");
+          }
+        });
+      } else {
+        // POST: send FormData (supports file upload)
+        const fd = new FormData(this);
+        $.ajax({
+          url: api + "invoice/invoice",
+          type: "POST",
+          data: fd,
+          processData: false,
+          contentType: false,
+          success: function () {
+            $("#newInvoice").modal("hide");
+            notiflix.Report.success("Invoice Saved", "Invoice added successfully.", "Ok");
+            const providerId = $("#providerListFilter").val();
+            if (providerId) loadInvoiceList(providerId);
+            loadInvoicesForForm();
+            loadInvoicesView();
+          },
+          error: function (err) {
+            const msg = (err.responseJSON && err.responseJSON.message) || "Unknown error.";
+            notiflix.Report.failure("Error", "Failed to save invoice: " + msg, "Ok");
+          }
+        });
+      }
+    });
+
+    // ── INVOICE ACTIONS ──────────────────────────────────────
+    $.fn.deleteInvoice = function (invoiceId) {
+      notiflix.Confirm.show(
+        "Are you sure?",
+        "This will permanently delete the invoice.",
+        "Yes, delete it!",
+        "Cancel",
+        function () {
+          $.ajax({
+            url: api + "invoice/invoice/" + invoiceId,
+            type: "DELETE",
+            success: function () {
+              notiflix.Report.success("Deleted!", "Invoice removed.", "Ok");
+              const providerId = $("#providerListFilter").val();
+              if (providerId) loadInvoiceList(providerId);
+              loadInvoicesForForm();
+              loadInvoicesView();
+            },
+            error: function (err) {
+              const msg = (err.responseJSON && err.responseJSON.message) || "Cannot delete this invoice.";
+              notiflix.Report.failure("Error", msg, "Ok");
+            }
+          });
+        }
+      );
+    };
+
+    $.fn.markInvoicePaid = function (invoiceId) {
+      $.ajax({
+        url: api + "invoice/invoice/" + invoiceId,
+        type: "PUT",
+        contentType: "application/json",
+        data: JSON.stringify({ paymentStatus: "paid" }),
+        success: function () {
+          notiflix.Report.success("Updated!", "Invoice marked as paid.", "Ok");
+          const providerId = $("#providerListFilter").val();
+          if (providerId) loadInvoiceList(providerId);
+        },
+        error: function () {
+          notiflix.Report.failure("Error", "Failed to update invoice status.", "Ok");
+        }
+      });
+    };
+
+    $.fn.editInvoice = function (invoiceId) {
+      $.get(api + "invoice/invoice/" + invoiceId, function (inv) {
+        if (!inv) {
+          notiflix.Report.failure("Error", "Invoice not found.", "Ok");
+          return;
+        }
+        // Populate provider select
+        let provOpts = '<option value="">' + t('select_provider_hint') + '</option>';
+        allProviders.forEach(function (p) {
+          provOpts += '<option value="' + p._id + '">' + (p.name || p._id) + '</option>';
+        });
+        $("#inv_provider_id").html(provOpts).val(inv.providerId).prop("disabled", true);
+
+        // Populate form fields
+        $("#inv_original_invoice_id").val(inv.invoiceId);
+        $("#inv_invoice_id").val(inv.invoiceId).prop("readonly", true);
+        $("#inv_invoice_date").val(inv.invoiceDate ? inv.invoiceDate.split('T')[0] : '');
+        $("#inv_due_date").val(inv.dueDate ? inv.dueDate.split('T')[0] : '');
+        $("#inv_total_amount").val(parseFloat(inv.totalAmount || 0).toFixed(2));
+        $("#inv_tax_amount").val(parseFloat(inv.taxAmount || 0).toFixed(2));
+        $("#inv_discount_amount").val(parseFloat(inv.discountAmount || 0).toFixed(2));
+        $("#inv_net_amount").val(parseFloat(inv.netAmount || 0).toFixed(2));
+        $("#inv_payment_status").val(inv.paymentStatus || 'pending');
+        $("#inv_payment_method").val(inv.paymentMethod || '');
+        $("#inv_notes").val(inv.notes || '');
+
+        // Switch to edit mode UI
+        $("#inv_file_section").hide();
+        $("#inv_current_file_section").show();
+        if (inv.invoiceFile) {
+          $("#inv_current_file_display").html(
+            `<i class="fa fa-paperclip"></i> ${inv.invoiceFile} ` +
+            `<button type="button" onclick="$(this).viewInvoiceFile('${inv.invoiceFile}')" ` +
+            `class="btn btn-info btn-xs"><i class="fa fa-eye"></i> View</button>`
+          );
+        } else {
+          $("#inv_current_file_display").html('<span style="color:var(--c-muted);">No file attached</span>');
+        }
+
+        // Update modal title and icon
+        $("#invoiceFormIcon").attr("class", "fa fa-edit");
+        $("#invoiceFormTitle").text(t('edit_invoice_title'));
+        $("#newInvoice").modal("show");
+      }).fail(function () {
+        notiflix.Report.failure("Error", "Failed to load invoice details.", "Ok");
+      });
+    };
+
+    $.fn.viewInvoiceFile = function (filename) {
+      if (!filename) return;
+      const filePath = path.join(appData, appName, "uploads", filename);
+      const ext = path.extname(filename).toLowerCase();
+      const isImage = ['.jpg', '.jpeg', '.png'].includes(ext);
+      const isPdf   = ext === '.pdf';
+
+      const fileUrl = (process.platform === 'win32')
+        ? 'file:///' + filePath.replace(/\\/g, '/')
+        : 'file://' + filePath;
+
+      // "Open in Viewer" always available as a fallback
+      $("#invoicePreviewOpenBtn").off("click").on("click", function () {
+        const { shell } = remote;
+        shell.openPath(filePath).then(function (errStr) {
+          if (errStr) notiflix.Report.failure("Error", "Could not open file: " + errStr, "Ok");
+        });
+      });
+
+      if (isImage) {
+        $("#invoicePreviewModal .modal-dialog").css({ width: "", maxWidth: "" });
+        $("#invoicePreviewIcon").attr("class", "fa fa-file-image-o");
+        $("#invoicePreviewTitle").text(filename);
+        $("#invoicePreviewBody").html(
+          `<img src="${fileUrl}" alt="Invoice"
+               style="max-width:100%;max-height:65vh;border-radius:var(--radius);box-shadow:var(--shadow-lg);"
+               onerror="this.outerHTML='<p class=\\'text-danger\\'>Could not load image. Use \"Open in Viewer\" below.</p>'">`
+        );
+      } else if (isPdf) {
+        // Widen the modal so the PDF has room to breathe
+        $("#invoicePreviewModal .modal-dialog").css({ width: "90%", maxWidth: "90%" });
+        $("#invoicePreviewIcon").attr("class", "fa fa-file-pdf-o");
+        $("#invoicePreviewTitle").text(filename);
+        $("#invoicePreviewBody").html(
+          `<iframe src="${fileUrl}"
+                   style="width:100%;height:75vh;border:none;border-radius:var(--radius-sm);"
+                   onerror="this.outerHTML='<p class=\\'text-danger\\'>Could not render PDF inline. Use \\'Open in Viewer\\' below.</p>'">
+           </iframe>`
+        );
+      } else {
+        // Unknown file type — system viewer only
+        $("#invoicePreviewModal .modal-dialog").css({ width: "", maxWidth: "" });
+        $("#invoicePreviewIcon").attr("class", "fa fa-file-o");
+        $("#invoicePreviewTitle").text(filename);
+        $("#invoicePreviewBody").html(
+          `<div style="padding:40px 0;color:var(--c-muted);">
+             <i class="fa fa-file-o fa-4x"></i>
+             <p style="margin-top:16px;font-size:15px;">${filename}</p>
+             <p style="font-size:13px;">Click "Open in Viewer" to open this file.</p>
+           </div>`
+        );
+      }
+
+      $("#invoicePreviewModal").modal("show");
+    };
+
+    // Reset modal size and clear iframe/img on close to stop background PDF rendering
+    $("#invoicePreviewModal").on("hidden.bs.modal", function () {
+      $("#invoicePreviewModal .modal-dialog").css({ width: "", maxWidth: "" });
+      $("#invoicePreviewBody").empty();
     });
 
     $("#saveCategory").submit(function (e) {
@@ -1628,8 +2852,8 @@ if (auth == undefined) {
     });
 
     $.fn.editProduct = function (index) {
-      $("#products_view").hide();
-      $("#pos_view").show();
+      $("#products_view").show();
+      $("#pos_view").hide();
       $("#category option")
         .filter(function () {
           return $(this).val() == allProducts[index].category;
@@ -1651,6 +2875,10 @@ if (auth == undefined) {
         })
         .prop("selected", true);
 
+      const editProviderId = allProducts[index].provider || null;
+      loadInvoicesForForm(editProviderId);
+      $("#invoice_id").val(allProducts[index].invoiceId || "");
+      $("#entryDate").val(allProducts[index].entryDate || "");
 
       if (allProducts[index].img != "") {
         $("#imagename").hide();
@@ -1828,12 +3056,103 @@ if (auth == undefined) {
       $("#pos_view").hide();
       $("#transactions_view").hide();
       $("#products_view").show();
-      $("#pointofsale").show();
-      $("#transactions").show();
+      $("#pointofsale").hide();
+      $("#transactions").hide();
+      $("#providers_view").hide();
+      $("#invoices_view").hide();
+
+    });
+
+    $("#providerModal").on("click", function () {
+      // loadProviders() now rebuilds all filter dropdowns internally
+      loadProviders();
+
+      $("#pos_view").hide();
+      $("#transactions_view").hide();
+      $("#products_view").hide();
+      $("#providers_view").show();
+      $("#pointofsale").hide();
+      $("#transactions").hide();
+      $("#invoices_view").hide();
+
+      // Reset view to blank state
+      updateProviderInfo(null);
+      updateProviderStats(null);
+      loadInvoiceList(null);
+      loadPaymentList(null);
+      $("#exportInvoiceCsvBtn, #exportInvoicePdfBtn").prop("disabled", true);
+      $("#providerListFilter").val('');
+    });
+
+    $("#invoicesModal").on("click", function () {
+      loadInvoicesView();
+      $("#pos_view").hide();
+      $("#transactions_view").hide();
+      $("#products_view").hide();
+      $("#providers_view").hide();
+      $("#invoices_view").show();
+      $("#pointofsale").hide();
+      $("#transactions").hide();
     });
 
     $("#productProviderFilter").on("change", function () {
       loadProductList();
+    });
+
+    function updateProviderInfo(provider) {
+      if (!provider) {
+        $("#provider_info_name").text('-');
+        $("#provider_info_phone").text('-');
+        $("#provider_info_email").text('-');
+        $("#provider_info_balance").text('-');
+        return;
+      }
+      $("#provider_info_name").text(provider.name || '-');
+      $("#provider_info_phone").text(provider.phone || '-');
+      $("#provider_info_email").text(provider.email || '-');
+      $("#provider_info_balance").text('-'); // filled by updateProviderStats
+    }
+
+    function updateProviderStats(stats) {
+      if (!stats) {
+        $("#stat_total_invoices").text('0');
+        $("#stat_total_amount").text('0.00');
+        $("#stat_paid_amount").text('0.00');
+        $("#stat_pending_amount").text('0.00');
+        return;
+      }
+      const sym = (settings && validator.unescape(settings.symbol)) || '';
+      $("#stat_total_invoices").text(stats.totalInvoices || 0);
+      $("#stat_total_amount").text(sym + parseFloat(stats.totalAmount || 0).toFixed(2));
+      $("#stat_paid_amount").text(sym + parseFloat(stats.paidAmount || 0).toFixed(2));
+      $("#stat_pending_amount").text(sym + parseFloat(stats.pendingAmount || 0).toFixed(2));
+    }
+
+    function selectProvider(providerId) {
+      if (!providerId) {
+        currentProvider = null;
+        currentProviderInvoiceData = null;
+        updateProviderInfo(null);
+        updateProviderStats(null);
+        loadInvoiceList(null);
+        loadPaymentList(null);
+        $("#exportInvoiceCsvBtn, #exportInvoicePdfBtn").prop("disabled", true);
+        $("#pv_detail").hide();
+        $("#pv_empty_state").show();
+        return;
+      }
+      const selected = allProviders.find(p => p._id == providerId);
+      currentProvider = selected || null;
+      $("#pv_empty_state").hide();
+      $("#pv_detail").show();
+      updateProviderInfo(selected);
+      loadInvoiceList(providerId);
+      loadPaymentList(providerId);
+      $("#exportInvoiceCsvBtn, #exportInvoicePdfBtn").prop("disabled", false);
+    }
+
+    $("#providerListFilter").on("change", function () {
+      selectProvider(this.value);
     });
 
     $("#usersModal").on("click", function () {
@@ -1842,10 +3161,6 @@ if (auth == undefined) {
 
     $("#categoryModal").on("click", function () {
       loadCategoryList();
-    });
-
-    $("#providerModal").on("click", function () {
-      loadProviderList();
     });
 
     $("#cost_price").off("input change").on("input change", function () {
@@ -1989,7 +3304,6 @@ if (auth == undefined) {
           ? product_img
           : default_item_img;
         }
-        console.log(product)
         //render product list
         product_list +=
           '<tr>'+
@@ -2045,183 +3359,260 @@ if (auth == undefined) {
       $("#productList").DataTable({
         dom: "Bfrtip",
         buttons: [
+          // ── CSV Product Report ──────────────────────────────────────────
           {
-            text: '<i class="fa fa-download"></i> Download CSV',
+            text: '<i class="fa fa-download"></i> CSV',
             className: "btn btn-success",
             action: function () {
+              const sym           = (settings && validator.unescape(settings.symbol)) || '';
+              const providerLabel = $("#productProviderFilter option:selected").text() || "All Providers";
               const selectedProvider = $("#productProviderFilter").val();
               const source = selectedProvider
                 ? allProducts.filter((p) => p.provider === selectedProvider)
                 : [...allProducts];
 
-              const headers = [
-                "Barcode",
-                "Name",
-                "Category",
-                "Provider",
-                "Price",
-                "Cost Price",
-                "Profit Margin (%)",
-                "Quantity",
-                "Min Stock",
-                "Managed Stock",
-                "Expiration Date",
-              ];
+              function q(v) { return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"'; }
+              function csvRow(arr) { return arr.map(q).join(","); }
 
-              const rows = source.map((p) => [
-                p.barcode || p._id,
-                p.name,
-                p.category,
-                p.provider || "",
-                p.price,
-                p.costPrice || 0,
-                p.profitMargin || 0,
-                p.stock == 1 ? p.quantity : "N/A",
-                p.minStock || 1,
-                p.stock == 1 ? "Yes" : "No",
-                p.expirationDate || "",
-              ]);
-
-              const csvContent = [headers, ...rows]
-                .map((row) =>
-                  row
-                    .map((cell) => '"' + String(cell).replace(/"/g, '""') + '"')
-                    .join(",")
-                )
-                .join("\n");
-
-              const blob = new Blob(["\uFEFF" + csvContent], {
-                type: "text/csv;charset=utf-8;",
+              // Compute summary
+              let totalCostValue = 0, totalSaleValue = 0, lowStockCount = 0;
+              source.forEach(function (p) {
+                const qty = p.stock == 1 ? parseFloat(p.quantity || 0) : 0;
+                totalCostValue += parseFloat(p.costPrice || 0) * qty;
+                totalSaleValue += parseFloat(p.price     || 0) * qty;
+                if (p.stock == 1 && qty <= parseFloat(p.minStock || 1)) lowStockCount++;
               });
-              const url = URL.createObjectURL(blob);
+              const categories = [...new Set(source.map(function (p) { return p.category; }).filter(Boolean))].length;
+
+              const rows = [];
+
+              // Section 1 — report info
+              rows.push(["Product List Report"]);
+              rows.push(["Generated", moment().format("YYYY-MM-DD HH:mm:ss")]);
+              rows.push(["Provider Filter", providerLabel]);
+              rows.push([]);
+
+              // Section 2 — summary
+              rows.push(["SUMMARY"]);
+              rows.push(["Total Products",        source.length]);
+              rows.push(["Categories",            categories]);
+              rows.push(["Total Cost Value",      sym + totalCostValue.toFixed(2)]);
+              rows.push(["Total Sale Value",      sym + totalSaleValue.toFixed(2)]);
+              rows.push(["Low / Out of Stock",    lowStockCount]);
+              rows.push([]);
+
+              // Section 3 — product data
+              rows.push(["PRODUCTS"]);
+              rows.push([
+                "Barcode", "Name", "Category", "Provider",
+                "Sale Price", "Cost Price", "Profit %",
+                "Quantity", "Min Stock", "Managed Stock",
+                "Expiration Date", "Invoice ID",
+              ]);
+              source.forEach(function (p) {
+                rows.push([
+                  p.barcode || p._id,
+                  p.name,
+                  p.category,
+                  p.provider || "",
+                  p.price,
+                  p.costPrice || 0,
+                  p.profitMargin || 0,
+                  p.stock == 1 ? p.quantity : "N/A",
+                  p.minStock || 1,
+                  p.stock == 1 ? "Yes" : "No",
+                  p.expirationDate || "",
+                  p.invoiceId || "",
+                ]);
+              });
+
+              const csvContent = "\uFEFF" + rows.map(csvRow).join("\r\n");
+              const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+              const url  = URL.createObjectURL(blob);
               const link = document.createElement("a");
               link.setAttribute("href", url);
-              link.setAttribute(
-                "download",
-                "product_list_" +
-                  moment().format("YYYY-MM-DD") +
-                  ".csv"
-              );
+              link.setAttribute("download", "product_list_" + moment().format("YYYY-MM-DD") + ".csv");
               document.body.appendChild(link);
               link.click();
               document.body.removeChild(link);
               URL.revokeObjectURL(url);
             },
           },
+
+          // ── PDF Product Report ──────────────────────────────────────────
           {
-            text: '<i class="fa fa-file-pdf-o"></i> Download PDF',
+            text: '<i class="fa fa-file-pdf-o"></i> PDF',
             className: "btn btn-danger",
             action: function () {
-              // Register Tahoma Arabic font once
               if (!pdfMake.vfs["Tahoma.ttf"]) {
                 const appRoot = app.getAppPath();
-                pdfMake.vfs["Tahoma.ttf"] = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma.ttf")).toString("base64");
+                pdfMake.vfs["Tahoma.ttf"]      = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma.ttf")).toString("base64");
                 pdfMake.vfs["Tahoma-Bold.ttf"] = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma-Bold.ttf")).toString("base64");
                 pdfMake.fonts = {
-                  Roboto: {
-                    normal: "Roboto-Regular.ttf",
-                    bold: "Roboto-Medium.ttf",
-                    italics: "Roboto-Italic.ttf",
-                    bolditalics: "Roboto-MediumItalic.ttf",
-                  },
-                  Tahoma: {
-                    normal: "Tahoma.ttf",
-                    bold: "Tahoma-Bold.ttf",
-                    italics: "Tahoma.ttf",
-                    bolditalics: "Tahoma-Bold.ttf",
-                  },
+                  Roboto: { normal: "Roboto-Regular.ttf", bold: "Roboto-Medium.ttf", italics: "Roboto-Italic.ttf", bolditalics: "Roboto-MediumItalic.ttf" },
+                  Tahoma: { normal: "Tahoma.ttf", bold: "Tahoma-Bold.ttf", italics: "Tahoma.ttf", bolditalics: "Tahoma-Bold.ttf" },
                 };
               }
 
-              // Returns a pdfmake cell object; Arabic text gets Tahoma font + RTL alignment
-              function cell(value, fontSize) {
-                const str = String(value);
+              function cell(value, extra) {
+                const str = String(value == null ? "" : value);
                 const isArabic = /[\u0600-\u06FF]/.test(str);
-                return {
-                  text: str,
-                  fontSize: fontSize || 8,
-                  font: isArabic ? "Tahoma" : "Roboto",
-                  alignment: isArabic ? "right" : "left",
-                };
+                return Object.assign({
+                  text: str, fontSize: 7,
+                  font:      isArabic ? "Tahoma" : "Roboto",
+                  alignment: isArabic ? "right"  : "left",
+                }, extra || {});
               }
 
+              const sym           = (settings && validator.unescape(settings.symbol)) || '';
+              const providerLabel = $("#productProviderFilter option:selected").text() || "All Providers";
               const selectedProvider = $("#productProviderFilter").val();
               const source = selectedProvider
                 ? allProducts.filter((p) => p.provider === selectedProvider)
                 : [...allProducts];
 
-              const headers = [
-                "Barcode", "Name", "Category", "Provider",
-                "Price", "Cost Price", "Profit %",
-                "Quantity", "Min Stock", "Managed Stock", "Expiration Date",
+              // Compute summary
+              let totalCostValue = 0, totalSaleValue = 0, lowStockCount = 0;
+              source.forEach(function (p) {
+                const qty = p.stock == 1 ? parseFloat(p.quantity || 0) : 0;
+                totalCostValue += parseFloat(p.costPrice || 0) * qty;
+                totalSaleValue += parseFloat(p.price     || 0) * qty;
+                if (p.stock == 1 && qty <= parseFloat(p.minStock || 1)) lowStockCount++;
+              });
+              const categories = [...new Set(source.map(function (p) { return p.category; }).filter(Boolean))].length;
+
+              const summaryBody = [
+                [
+                  { text: "Total Products",   style: "summaryLabel" },
+                  { text: String(source.length),                    style: "summaryValue" },
+                  { text: "Total Cost Value",  style: "summaryLabel" },
+                  { text: sym + totalCostValue.toFixed(2),          style: "summaryValue" },
+                  { text: "Low / Out of Stock", style: "summaryLabel" },
+                  { text: String(lowStockCount),                    style: "summaryValue" },
+                ],
+                [
+                  { text: "Categories",        style: "summaryLabel" },
+                  { text: String(categories),                       style: "summaryValue" },
+                  { text: "Total Sale Value",  style: "summaryLabel" },
+                  { text: sym + totalSaleValue.toFixed(2),          style: "summaryValue" },
+                  { text: "Provider",          style: "summaryLabel" },
+                  { text: providerLabel,                            style: "summaryValue" },
+                ],
               ];
 
-              const rows = source.map((p) => [
-                p.barcode || p._id,
-                p.name,
-                p.category,
-                p.provider || "",
-                p.price,
-                p.costPrice || 0,
-                p.profitMargin || 0,
-                p.stock == 1 ? p.quantity : "N/A",
-                p.minStock || 1,
-                p.stock == 1 ? "Yes" : "No",
-                p.expirationDate || "",
-              ]);
+              const tableHeaders = [
+                "Barcode", "Name", "Category", "Provider",
+                "Sale Price", "Cost Price", "Profit %",
+                "Qty", "Min Stock", "Managed", "Expiry", "Invoice ID",
+              ];
+              const tableRows = source.map(function (p) {
+                return [
+                  p.barcode || p._id,
+                  p.name,
+                  p.category,
+                  p.provider || "—",
+                  sym + parseFloat(p.price      || 0).toFixed(2),
+                  sym + parseFloat(p.costPrice  || 0).toFixed(2),
+                  (p.profitMargin || 0) + "%",
+                  p.stock == 1 ? p.quantity : "N/A",
+                  p.minStock || 1,
+                  p.stock == 1 ? "Yes" : "No",
+                  p.expirationDate || "—",
+                  p.invoiceId || "—",
+                ].map(function (v) { return cell(v); });
+              });
 
               const docDefinition = {
                 pageOrientation: "landscape",
+                pageMargins: [28, 50, 28, 36],
+
+                header: function (currentPage) {
+                  if (currentPage === 1) return null;
+                  return { text: "ShbairPharma — Product List Report", alignment: "center", fontSize: 7, color: "#888", margin: [0, 14, 0, 0] };
+                },
+                footer: function (currentPage, pageCount) {
+                  return {
+                    columns: [
+                      { text: "Generated: " + moment().format("YYYY-MM-DD HH:mm:ss"), fontSize: 7, color: "#888", alignment: "left",  margin: [28, 0, 0, 0] },
+                      { text: "Page " + currentPage + " of " + pageCount,             fontSize: 7, color: "#888", alignment: "right", margin: [0,  0, 28, 0] },
+                    ],
+                  };
+                },
+
                 content: [
-                  { text: "Shbair POS", style: "brand" },
-                  { text: "Product List Report", style: "title" },
-                  { text: moment().format("YYYY-MM-DD"), style: "date" },
+                  // Title block
+                  { text: "ShbairPharma",        style: "brand" },
+                  { text: "Product List Report", style: "reportTitle" },
+                  { text: moment().format("YYYY-MM-DD HH:mm:ss"), style: "generatedDate" },
+                  { text: " ", margin: [0, 4] },
+
+                  // Filter bar
+                  {
+                    table: {
+                      widths: ["*"],
+                      body: [[{ text: "Provider: " + providerLabel, style: "filterCell" }]],
+                    },
+                    layout: { hLineWidth: () => 0, vLineWidth: () => 0, fillColor: () => "#eef3f9" },
+                    margin: [0, 0, 0, 14],
+                  },
+
+                  // Summary stats
+                  { text: "Summary", style: "sectionTitle" },
+                  {
+                    table: {
+                      widths: ["auto", "*", "auto", "*", "auto", "*"],
+                      body: summaryBody,
+                    },
+                    layout: {
+                      hLineWidth: () => 1, vLineWidth: () => 1,
+                      hLineColor: () => "#c9d8e8", vLineColor: () => "#c9d8e8",
+                      fillColor:  function (i) { return i % 2 === 0 ? "#eef3f9" : "#f8fafc"; },
+                      paddingLeft: () => 8, paddingRight: () => 8,
+                      paddingTop:  () => 6, paddingBottom: () => 6,
+                    },
+                    margin: [0, 4, 0, 18],
+                  },
+
+                  // Products table
+                  { text: "Products  (" + source.length + " records)", style: "sectionTitle" },
                   {
                     table: {
                       headerRows: 1,
-                      widths: ["auto", "*", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "auto"],
+                      widths: ["auto", "*", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "auto"],
                       body: [
-                        headers.map((h) => ({ text: h, style: "tableHeader" })),
-                        ...rows.map((row) => row.map((c) => cell(c))),
+                        tableHeaders.map(function (h) { return { text: h, style: "tableHeader" }; }),
+                        ...tableRows,
                       ],
                     },
                     layout: {
-                      hLineWidth: () => 1,
-                      vLineWidth: () => 1,
-                      hLineColor: () => "#aaa",
-                      vLineColor: () => "#aaa",
-                      paddingLeft: () => 4,
-                      paddingRight: () => 4,
-                      fillColor: (rowIndex) =>
-                        rowIndex > 0 && rowIndex % 2 === 0 ? "#f3f3f3" : null,
+                      hLineWidth: function (i, node) { return (i === 0 || i === node.table.body.length) ? 1 : 0.5; },
+                      vLineWidth: () => 0,
+                      hLineColor: () => "#c9d8e8",
+                      fillColor:  function (i) { return i === 0 ? null : (i % 2 === 0 ? "#f4f7fb" : null); },
+                      paddingLeft: () => 5, paddingRight: () => 5,
+                      paddingTop:  () => 3, paddingBottom: () => 3,
                     },
+                    margin: [0, 4, 0, 0],
                   },
                 ],
+
                 styles: {
-                  brand: { fontSize: 13, bold: true, alignment: "center", margin: [0, 0, 0, 4] },
-                  title: { fontSize: 11, bold: true, alignment: "center", margin: [0, 0, 0, 4] },
-                  date: { fontSize: 8, alignment: "center", color: "#666", margin: [0, 0, 0, 10] },
-                  tableHeader: {
-                    fillColor: "#2d4154",
-                    color: "white",
-                    fontSize: 8,
-                    bold: true,
-                    alignment: "center",
-                  },
+                  brand:        { fontSize: 17, bold: true, alignment: "center", color: "#1a2436", margin: [0, 0, 0, 4] },
+                  reportTitle:  { fontSize: 12, bold: true, alignment: "center", color: "#0d7377", margin: [0, 0, 0, 4] },
+                  generatedDate:{ fontSize: 7,              alignment: "center", color: "#888",    margin: [0, 0, 0, 8] },
+                  sectionTitle: { fontSize: 9, bold: true,  color: "#2d4154",                      margin: [0, 0, 0, 4] },
+                  filterCell:   { fontSize: 8,              alignment: "center", color: "#444",    margin: [4, 6, 4, 6] },
+                  summaryLabel: { fontSize: 8,              color: "#555",       margin: [0, 0, 0, 0] },
+                  summaryValue: { fontSize: 9, bold: true,  color: "#1a2436", alignment: "right",  margin: [0, 0, 0, 0] },
+                  tableHeader:  { fillColor: "#2d4154", color: "white", fontSize: 7, bold: true, alignment: "center", margin: [0, 3, 0, 3] },
                 },
-                footer: (currentPage, pageCount) => ({
-                  text: currentPage + " / " + pageCount,
-                  alignment: "center",
-                  margin: [0, 10, 0, 0],
-                  fontSize: 8,
-                }),
               };
 
               pdfMake
                 .createPdf(docDefinition)
                 .download("product_list_" + moment().format("YYYY-MM-DD") + ".pdf");
             },
-          }
+          },
         ]
       });
     }
@@ -2251,35 +3642,7 @@ if (auth == undefined) {
       }
     }
 
-    function loadProviderList() {
-      let provider_list = "";
-      let counter = 0;
-      $("#provider_list").empty();
-      if ($.fn.DataTable.isDataTable("#providerList")) {
-        $("#providerList").DataTable().destroy();
-      }
-
-      allProviders.forEach((provider, index) => {
-        counter++;
-        provider_list += `<tr>
-            <td>${provider.name}</td>
-            <td>${provider.phone || ""}</td>
-            <td>${provider.email || ""}</td>
-            <td><span class="btn-group"><button onClick="$(this).editProvider(${index})" class="btn btn-warning"><i class="fa fa-edit"></i></button><button onClick="$(this).deleteProvider(${provider._id})" class="btn btn-danger"><i class="fa fa-trash"></i></button></span></td></tr>`;
-      });
-
-      if (counter == allProviders.length) {
-        $("#provider_list").html(provider_list);
-        $("#providerList").DataTable({
-          autoWidth: false,
-          info: true,
-          JQueryUI: true,
-          ordering: true,
-          paging: true,
-        });
-      }
-    }
-
+  
 
     $("#log-out").on("click", function () {
       const diagOptions = {
@@ -2668,7 +4031,293 @@ function loadTransactions() {
             ordering: true,
             paging: true,
             dom: "Bfrtip",
-            buttons: ["csv", "excel", "pdf"],
+            buttons: [
+              // ── CSV Audit Report ───────────────────────────────────────
+              {
+                text: '<i class="fa fa-download"></i> CSV',
+                className: "btn btn-success",
+                action: function () {
+                  const sym          = (settings && validator.unescape(settings.symbol)) || '';
+                  const cashierLabel = by_user  == 0 ? "All" : $("#users option:selected").text();
+                  const tillLabel    = by_till  == 0 ? "All" : $("#tills option:selected").text();
+                  const statusLabel  = by_status == 1 ? "Paid" : "Unpaid";
+                  const periodLabel  =
+                    moment(start_date).format("YYYY-MM-DD") + " to " +
+                    moment(end_date).format("YYYY-MM-DD");
+
+                  // Quote a single cell value per RFC 4180
+                  function q(v) {
+                    return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
+                  }
+                  // Convert a row (array) to a quoted CSV line
+                  function csvRow(arr) {
+                    return arr.map(q).join(",");
+                  }
+
+                  // Compute summary totals
+                  let totalRevenue = 0, totalTax = 0, totalDiscount = 0, totalItemsCount = 0;
+                  allTransactions.forEach(function (tr) {
+                    totalRevenue  += parseFloat(tr.total    || 0);
+                    totalTax      += parseFloat(tr.tax      || 0);
+                    totalDiscount += parseFloat(tr.discount || 0);
+                    totalItemsCount += (tr.items || []).length;
+                  });
+                  const avg = allTransactions.length > 0
+                    ? (totalRevenue / allTransactions.length).toFixed(2) : "0.00";
+
+                  // Build all rows as arrays, then serialize together
+                  const rows = [];
+
+                  // ── Section 1: Report info ──────────────────────────────
+                  rows.push(["Transaction Audit Report"]);
+                  rows.push(["Period",    periodLabel]);
+                  rows.push(["Generated", moment().format("YYYY-MM-DD HH:mm:ss")]);
+                  rows.push(["Cashier",   cashierLabel]);
+                  rows.push(["Till",      tillLabel]);
+                  rows.push(["Status",    statusLabel]);
+                  rows.push([]);
+
+                  // ── Section 2: Summary ──────────────────────────────────
+                  rows.push(["SUMMARY"]);
+                  rows.push(["Total Transactions",  allTransactions.length]);
+                  rows.push(["Total Revenue",       sym + parseFloat(totalRevenue).toFixed(2)]);
+                  rows.push(["Total Tax",           sym + parseFloat(totalTax).toFixed(2)]);
+                  rows.push(["Total Discount",      sym + parseFloat(totalDiscount).toFixed(2)]);
+                  rows.push(["Avg per Transaction", sym + avg]);
+                  rows.push(["Total Items Sold",    totalItemsCount]);
+                  rows.push([]);
+
+                  // ── Section 3: Transactions ─────────────────────────────
+                  rows.push(["TRANSACTIONS"]);
+                  rows.push([
+                    "Order #", "Date", "Customer",
+                    "Subtotal", "Tax", "Discount", "Total", "Paid", "Change",
+                    "Payment Method", "Till", "Cashier", "Status", "Items",
+                  ]);
+                  allTransactions.forEach(function (tr) {
+                    rows.push([
+                      tr.order,
+                      moment(tr.date).format("YYYY-MM-DD HH:mm:ss"),
+                      tr.customer || "",
+                      parseFloat(tr.subtotal || 0).toFixed(2),
+                      parseFloat(tr.tax      || 0).toFixed(2),
+                      parseFloat(tr.discount || 0).toFixed(2),
+                      parseFloat(tr.total    || 0).toFixed(2),
+                      tr.paid !== "" ? parseFloat(tr.paid || 0).toFixed(2) : "",
+                      tr.change ? Math.abs(parseFloat(tr.change)).toFixed(2) : "",
+                      tr.payment_type || "",
+                      tr.till  || "",
+                      tr.user  || "",
+                      tr.status == 1 ? "Paid" : "Unpaid",
+                      (tr.items || []).length,
+                    ]);
+                  });
+
+                  // Serialize: CRLF line endings for Excel compatibility
+                  const csvContent = "\uFEFF" + rows.map(csvRow).join("\r\n");
+
+                  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                  const url  = URL.createObjectURL(blob);
+                  const link = document.createElement("a");
+                  link.setAttribute("href", url);
+                  link.setAttribute("download",
+                    "transactions_" + moment(start_date).format("YYYY-MM-DD") +
+                    "_to_" + moment(end_date).format("YYYY-MM-DD") + ".csv");
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  URL.revokeObjectURL(url);
+                },
+              },
+
+              // ── PDF Audit Report ───────────────────────────────────────
+              {
+                text: '<i class="fa fa-file-pdf-o"></i> PDF',
+                className: "btn btn-danger",
+                action: function () {
+                  if (!pdfMake.vfs["Tahoma.ttf"]) {
+                    const appRoot = app.getAppPath();
+                    pdfMake.vfs["Tahoma.ttf"]      = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma.ttf")).toString("base64");
+                    pdfMake.vfs["Tahoma-Bold.ttf"] = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma-Bold.ttf")).toString("base64");
+                    pdfMake.fonts = {
+                      Roboto: { normal: "Roboto-Regular.ttf", bold: "Roboto-Medium.ttf", italics: "Roboto-Italic.ttf", bolditalics: "Roboto-MediumItalic.ttf" },
+                      Tahoma: { normal: "Tahoma.ttf", bold: "Tahoma-Bold.ttf", italics: "Tahoma.ttf", bolditalics: "Tahoma-Bold.ttf" },
+                    };
+                  }
+
+                  function cell(value, extra) {
+                    const str = String(value == null ? "" : value);
+                    const isArabic = /[\u0600-\u06FF]/.test(str);
+                    return Object.assign({
+                      text: str, fontSize: 7,
+                      font:      isArabic ? "Tahoma" : "Roboto",
+                      alignment: isArabic ? "right"  : "left",
+                    }, extra || {});
+                  }
+
+                  const sym          = (settings && validator.unescape(settings.symbol)) || '';
+                  const cashierLabel = by_user  == 0 ? "All" : $("#users option:selected").text();
+                  const tillLabel    = by_till  == 0 ? "All" : $("#tills option:selected").text();
+                  const statusLabel  = by_status == 1 ? "Paid" : "Unpaid";
+                  const periodLabel  =
+                    moment(start_date).format("DD MMM YYYY") + "  —  " +
+                    moment(end_date).format("DD MMM YYYY");
+
+                  let totalRevenue = 0, totalTax = 0, totalDiscount = 0, totalItemsCount = 0;
+                  allTransactions.forEach(function (tr) {
+                    totalRevenue  += parseFloat(tr.total    || 0);
+                    totalTax      += parseFloat(tr.tax      || 0);
+                    totalDiscount += parseFloat(tr.discount || 0);
+                    (tr.items || []).forEach(function () { totalItemsCount++; });
+                  });
+                  const avg = allTransactions.length > 0
+                    ? (totalRevenue / allTransactions.length).toFixed(2) : "0.00";
+
+                  // Summary stats (2 rows × 6 cols)
+                  const summaryBody = [
+                    [
+                      { text: "Transactions",       style: "summaryLabel" },
+                      { text: String(allTransactions.length),                style: "summaryValue" },
+                      { text: "Total Revenue",       style: "summaryLabel" },
+                      { text: sym + parseFloat(totalRevenue).toFixed(2),     style: "summaryValue" },
+                      { text: "Avg / Transaction",   style: "summaryLabel" },
+                      { text: sym + avg,                                      style: "summaryValue" },
+                    ],
+                    [
+                      { text: "Items Sold",          style: "summaryLabel" },
+                      { text: String(totalItemsCount),                        style: "summaryValue" },
+                      { text: "Total Tax",           style: "summaryLabel" },
+                      { text: sym + parseFloat(totalTax).toFixed(2),         style: "summaryValue" },
+                      { text: "Total Discount",      style: "summaryLabel" },
+                      { text: sym + parseFloat(totalDiscount).toFixed(2),    style: "summaryValue" },
+                    ],
+                  ];
+
+                  // Transaction rows
+                  const txHeaders = [
+                    "Order #", "Date & Time", "Customer",
+                    "Subtotal", "Tax", "Discount", "Total", "Paid", "Change",
+                    "Method", "Till", "Cashier", "Status",
+                  ];
+                  const txRows = allTransactions.map(function (tr) {
+                    return [
+                      tr.order,
+                      moment(tr.date).format("DD/MM/YY HH:mm"),
+                      tr.customer || "—",
+                      sym + parseFloat(tr.subtotal || 0).toFixed(2),
+                      sym + parseFloat(tr.tax      || 0).toFixed(2),
+                      sym + parseFloat(tr.discount || 0).toFixed(2),
+                      sym + parseFloat(tr.total    || 0).toFixed(2),
+                      tr.paid !== "" ? sym + parseFloat(tr.paid || 0).toFixed(2) : "—",
+                      tr.change ? sym + Math.abs(parseFloat(tr.change)).toFixed(2) : "—",
+                      tr.payment_type || "—",
+                      tr.till  || "—",
+                      tr.user  || "—",
+                      tr.status == 1 ? "Paid" : "Unpaid",
+                    ].map(function (v) { return cell(v); });
+                  });
+
+                  const docDefinition = {
+                    pageOrientation: "landscape",
+                    pageMargins: [28, 50, 28, 36],
+
+                    header: function (currentPage) {
+                      if (currentPage === 1) return null;
+                      return { text: "ShbairPharma — Transaction Audit Report", alignment: "center", fontSize: 7, color: "#888", margin: [0, 14, 0, 0] };
+                    },
+                    footer: function (currentPage, pageCount) {
+                      return {
+                        columns: [
+                          { text: "Generated: " + moment().format("YYYY-MM-DD HH:mm:ss"), fontSize: 7, color: "#888", alignment: "left",  margin: [28, 0, 0, 0] },
+                          { text: "Page " + currentPage + " of " + pageCount,             fontSize: 7, color: "#888", alignment: "right", margin: [0,  0, 28, 0] },
+                        ],
+                      };
+                    },
+
+                    content: [
+                      // Title block
+                      { text: "ShbairPharma",             style: "brand" },
+                      { text: "Transaction Audit Report", style: "reportTitle" },
+                      { text: periodLabel,                style: "reportPeriod" },
+                      { text: moment().format("YYYY-MM-DD HH:mm:ss"), style: "generatedDate" },
+                      { text: " ", margin: [0, 4] },
+
+                      // Active filters bar
+                      {
+                        table: {
+                          widths: ["*", "*", "*"],
+                          body: [[
+                            { text: "Cashier: " + cashierLabel, style: "filterCell" },
+                            { text: "Till: "    + tillLabel,    style: "filterCell" },
+                            { text: "Status: "  + statusLabel,  style: "filterCell" },
+                          ]],
+                        },
+                        layout: { hLineWidth: () => 0, vLineWidth: () => 0, fillColor: () => "#eef3f9" },
+                        margin: [0, 0, 0, 14],
+                      },
+
+                      // Summary stats
+                      { text: "Summary", style: "sectionTitle" },
+                      {
+                        table: {
+                          widths: ["auto", "*", "auto", "*", "auto", "*"],
+                          body: summaryBody,
+                        },
+                        layout: {
+                          hLineWidth: () => 1, vLineWidth: () => 1,
+                          hLineColor: () => "#c9d8e8", vLineColor: () => "#c9d8e8",
+                          fillColor:  function (i) { return i % 2 === 0 ? "#eef3f9" : "#f8fafc"; },
+                          paddingLeft: () => 8, paddingRight: () => 8,
+                          paddingTop:  () => 6, paddingBottom: () => 6,
+                        },
+                        margin: [0, 4, 0, 18],
+                      },
+
+                      // Transactions table
+                      { text: "Transaction Details  (" + allTransactions.length + " records)", style: "sectionTitle" },
+                      {
+                        table: {
+                          headerRows: 1,
+                          widths: ["auto", "auto", "*", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "*", "auto"],
+                          body: [
+                            txHeaders.map(function (h) { return { text: h, style: "tableHeader" }; }),
+                            ...txRows,
+                          ],
+                        },
+                        layout: {
+                          hLineWidth: function (i, node) { return (i === 0 || i === node.table.body.length) ? 1 : 0.5; },
+                          vLineWidth: () => 0,
+                          hLineColor: () => "#c9d8e8",
+                          fillColor:  function (i) { return i === 0 ? null : (i % 2 === 0 ? "#f4f7fb" : null); },
+                          paddingLeft: () => 5, paddingRight: () => 5,
+                          paddingTop:  () => 3, paddingBottom: () => 3,
+                        },
+                        margin: [0, 4, 0, 22],
+                      },
+                    ],
+
+                    styles: {
+                      brand:        { fontSize: 17, bold: true, alignment: "center", color: "#1a2436", margin: [0, 0, 0, 4] },
+                      reportTitle:  { fontSize: 12, bold: true, alignment: "center", color: "#0d7377", margin: [0, 0, 0, 4] },
+                      reportPeriod: { fontSize: 9,              alignment: "center", color: "#444",    margin: [0, 0, 0, 2] },
+                      generatedDate:{ fontSize: 7,              alignment: "center", color: "#888",    margin: [0, 0, 0, 8] },
+                      sectionTitle: { fontSize: 9, bold: true,  color: "#2d4154",                      margin: [0, 0, 0, 4] },
+                      filterCell:   { fontSize: 8,              alignment: "center", color: "#444",    margin: [4, 6, 4, 6] },
+                      summaryLabel: { fontSize: 8,              color: "#555",       margin: [0, 0, 0, 0] },
+                      summaryValue: { fontSize: 9, bold: true,  color: "#1a2436", alignment: "right",  margin: [0, 0, 0, 0] },
+                      tableHeader:  { fillColor: "#2d4154", color: "white", fontSize: 7, bold: true, alignment: "center", margin: [0, 3, 0, 3] },
+                    },
+                  };
+
+                  pdfMake
+                    .createPdf(docDefinition)
+                    .download(
+                      "transactions_" + moment(start_date).format("YYYY-MM-DD") +
+                      "_to_" + moment(end_date).format("YYYY-MM-DD") + ".pdf"
+                    );
+                },
+              },
+            ],
           });
         }
       });

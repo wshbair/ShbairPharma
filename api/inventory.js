@@ -1,29 +1,16 @@
 const app = require("express")();
 const server = require("http").Server(app);
 const bodyParser = require("body-parser");
-const Datastore = require("@seald-io/nedb");
 const async = require("async");
 const sanitizeFilename = require('sanitize-filename');
 const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 const {filterFile} = require('../assets/js/utils');
-const validFileTypes = [
-    "image/jpg",
-    "image/jpeg",
-    "image/png",
-    "image/webp"];
 const maxFileSize = 2097152 //2MB = 2*1024*1024
 const validator = require("validator");
 const appName = process.env.APPNAME;
 const appData = process.env.APPDATA;
-const dbPath = path.join(
-    appData,
-    appName,
-    "server",
-    "databases",
-    "inventory.db",
-);
 
 
 const storage = multer.diskStorage({
@@ -57,12 +44,8 @@ app.use(bodyParser.json());
 
 module.exports = app;
 
-let inventoryDB = new Datastore({
-    filename: dbPath,
-    autoload: true,
-});
-
-inventoryDB.ensureIndex({ fieldName: "_id", unique: true });
+// Use the shared singleton so inventory.db is opened exactly once
+const { inventoryDB } = require("./db");
 
 /**
  * GET endpoint: Get the welcome message for the Inventory API.

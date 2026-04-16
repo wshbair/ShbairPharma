@@ -6,6 +6,7 @@
 /* ── Hidden by default (controlled by JS) ── */
 #transactions_view,
 #products_view,
+#providers_view,
 #pointofsale { display: none; }
 
 #login,
@@ -104,6 +105,15 @@ body {
     margin: 0 auto 32px;
     align-items: unset;
 }
+.login-footer {
+    display: flex; align-items: center; justify-content: center;
+    gap: 16px; margin-top: 24px;
+    color: #ffffff; font-size: 12px; text-align: center;
+}
+.login-footer-name { font-weight: 600; letter-spacing: 0.03em; }
+.login-footer-version { font-family: monospace; }
+.login-footer-copy::before { content: '·'; margin-right: 16px; }
+
 #load {
     background: var(--c-surface) !important;
     border: none !important; border-top: none !important;
@@ -910,3 +920,140 @@ html[dir="rtl"] .panel-heading .panel-title > a:after {
     font-weight: 600;
     letter-spacing: 0.03em;
 }
+
+/* ══ INVOICE STATS CARDS ══ */
+.invoice-stat-card {
+    background: var(--c-surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px 20px;
+    text-align: center;
+    margin-bottom: 10px;
+}
+.invoice-stat-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--c-muted);
+    margin-bottom: 6px;
+}
+.invoice-stat-value {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+.invoice-stat-total  { border-top: 3px solid var(--c-info); }
+.invoice-stat-total  .invoice-stat-value { color: var(--c-info); }
+.invoice-stat-amount { border-top: 3px solid var(--c-primary); }
+.invoice-stat-amount .invoice-stat-value { color: var(--c-primary); }
+.invoice-stat-paid   { border-top: 3px solid var(--c-success); }
+.invoice-stat-paid   .invoice-stat-value { color: var(--c-success); }
+.invoice-stat-pending{ border-top: 3px solid var(--c-warning); }
+.invoice-stat-pending .invoice-stat-value { color: var(--c-warning); }
+
+/* ══ INVOICE STATUS BADGES ══ */
+.invoice-status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+.badge-paid    { background: #d4edda; color: #155724; }
+.badge-pending { background: #fff3cd; color: #856404; }
+.badge-overdue { background: #f8d7da; color: #721c24; }
+
+/* ══ PROVIDERS VIEW — REDESIGNED ══ */
+
+/* Top-bar: title + provider select */
+.pv-topbar {
+    display: flex; align-items: center; gap: 16px;
+    background: var(--c-surface); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 12px 20px;
+    margin: 10px 0 16px; flex-wrap: wrap;
+}
+.pv-topbar-title {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 16px; font-weight: 700; color: var(--c-text);
+    white-space: nowrap;
+}
+.pv-topbar-title .fa {
+    color: var(--c-primary); font-size: 18px;
+}
+.pv-topbar-select { flex: 1; min-width: 220px; max-width: 360px; }
+.pv-topbar-select .form-control {
+    height: 38px !important; border-radius: var(--radius-sm) !important;
+    border: 1.5px solid var(--c-border) !important; font-size: 13px;
+}
+.pv-topbar-select .form-control:focus {
+    border-color: var(--c-primary) !important;
+    box-shadow: 0 0 0 3px rgba(13,115,119,.1) !important;
+}
+
+/* Empty state */
+.pv-empty-state {
+    text-align: center; padding: 80px 20px;
+    color: var(--c-muted);
+}
+.pv-empty-state .fa { font-size: 48px; margin-bottom: 16px; opacity: .35; }
+.pv-empty-state p { font-size: 15px; margin: 0; }
+
+/* Provider profile strip */
+.pv-profile-card {
+    display: flex; align-items: center; gap: 16px;
+    background: var(--c-surface); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 16px 20px;
+    margin-bottom: 16px; flex-wrap: wrap;
+}
+.pv-avatar {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: var(--c-primary-lt); display: flex;
+    align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.pv-avatar .fa { font-size: 22px; color: var(--c-primary); }
+.pv-profile-body { flex: 1; min-width: 160px; }
+.pv-profile-name {
+    font-size: 17px; font-weight: 700; color: var(--c-text); margin-bottom: 4px;
+}
+.pv-profile-meta {
+    display: flex; gap: 18px; flex-wrap: wrap; font-size: 12px; color: var(--c-muted);
+}
+.pv-profile-meta .fa { margin-right: 5px; }
+.pv-balance-chip {
+    background: var(--c-bg); border-radius: var(--radius-sm);
+    border: 1.5px solid var(--c-border);
+    padding: 10px 20px; text-align: center; min-width: 130px;
+}
+.pv-balance-label { font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .5px; color: var(--c-muted); margin-bottom: 4px; }
+.pv-balance-value { font-size: 20px; font-weight: 700; color: var(--c-text); }
+
+/* Unified 6-stat row */
+.pv-stat-payments .invoice-stat-icon { color: #27ae60; }
+.invoice-stat-card.pv-stat-payments { border-left: 3px solid #27ae60; }
+.invoice-stat-card.pv-stat-balance  { border-left: 3px solid var(--c-danger); }
+
+/* Card title row (shared by both panels) */
+#providers_view .card-title {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 16px; border-bottom: 1px solid var(--c-border);
+}
+#providers_view .card-title h4 { margin: 0; font-size: 14px; font-weight: 600; }
+
+/* Slim tables for narrower panels */
+#providerInvoiceTable,
+#paymentTable { font-size: 12px; }
+#providerInvoiceTable th,
+#providerInvoiceTable td,
+#paymentTable th,
+#paymentTable td { padding: 6px 8px !important; vertical-align: middle !important; }
+
+/* RTL overrides */
+html[dir="rtl"] .invoice-stat-card  { text-align: center; }
+html[dir="rtl"] .pv-profile-card    { flex-direction: row-reverse; }
+html[dir="rtl"] .pv-topbar          { flex-direction: row-reverse; }
+html[dir="rtl"] #providers_view .card-title { flex-direction: row-reverse; }
