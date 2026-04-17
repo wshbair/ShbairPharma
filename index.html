@@ -16,7 +16,7 @@
 
     <!-- SPLASH -->
     <div class="splash loading">
-        <img src="assets/images/logo.png" />
+        <img src="assets/images/shbairpharma.png" />
         <h1><i class="fa fa-spinner fa-spin"></i>&nbsp; <span data-i18n="please_wait">Please wait...</span></h1>
     </div>
 
@@ -183,48 +183,148 @@
             <div id="products_view">
                 <div class="container">
 
-                    <!-- Top-bar: title + provider selector -->
-                    <div class="pv-topbar">
-                        <div class="pv-topbar-title">
-                            <i class="fa fa-truck"></i>
-                            <span data-i18n="products">Products</span>
-                        </div>
-                        <div class="pv-topbar-select">
-                            <select id="productProviderFilter" class="form-control">
-                                <option value="" data-i18n="all_providers_opt">— Select a Provider —</option>
-                            </select>
-                        </div>
-                        <div>
-                            <button id="newProductModal" data-toggle="modal" data-target="#newProduct" type="button" class="btn btn-primary waves-effect">
-                                <i class="fa fa-plus"></i> <span data-i18n="add_product_btn">New Product</span>
-                            </button>
-                            <button id="categoryModal" data-toggle="modal" data-target="#Categories" type="button" class="btn btn-warning waves-effect">
-                                <span data-i18n="categories">Categories</span>
-                            </button>
-                        </div>
-                    </div>
+                    <!-- Tab navigation -->
+                    <ul class="nav nav-tabs inv-view-tabs" id="prodViewTabs" role="tablist">
+                        <li role="presentation" class="active">
+                            <a href="#prodTabList" data-toggle="tab">
+                                <i class="fa fa-list"></i> <span data-i18n="products">Products</span>
+                            </a>
+                        </li>
+                        <li role="presentation">
+                            <a href="#prodTabAdd" id="prodTabAddLink" data-toggle="tab">
+                                <i class="fa fa-plus-circle"></i> <span data-i18n="add_product_btn">New Product</span>
+                            </a>
+                        </li>
+                        <li role="presentation">
+                            <a href="#prodTabCat" id="prodTabCatLink" data-toggle="tab">
+                                <i class="fa fa-tags"></i> <span data-i18n="categories">Categories</span>
+                            </a>
+                        </li>
+                    </ul>
 
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="card-box">
-                                <div class="card-body">
-                                    <table class="table table-bordered" id="productList">
-                                        <thead><tr>
-                                            <th data-i18n="barcode_col">Barcode</th>
-                                            <th data-i18n="name_col">Name</th>
-                                            <th data-i18n="price_col">Price</th>
-                                            <th data-i18n="cost_price_col">Cost Price</th>
-                                            <th data-i18n="qty_col">Qty</th>
-                                            <th data-i18n="category_col">Category</th>
-                                            <th data-i18n="invoice_id">Invoice ID</th>
-                                            <th data-i18n="action_col">Action</th>
-                                        </tr></thead>
-                                        <tbody id="product_list"></tbody>
-                                    </table>
+                    <div class="tab-content inv-tab-content">
+
+                        <!-- ══ TAB 1: Product list ══ -->
+                        <div class="tab-pane active" id="prodTabList">
+                            <div class="pv-topbar" style="margin-top:16px; margin-bottom:12px;">
+                                <div class="pv-topbar-select">
+                                    <select id="productProviderFilter" class="form-control">
+                                        <option value="" data-i18n="all_providers_opt">— All Providers —</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <button id="categoryModal" type="button" class="btn btn-warning waves-effect">
+                                        <i class="fa fa-tags"></i> <span data-i18n="categories">Categories</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="card-box">
+                                        <div class="card-body">
+                                            <table class="table table-bordered" id="productList">
+                                                <thead><tr>
+                                                    <th data-i18n="barcode_col">Barcode</th>
+                                                    <th data-i18n="name_col">Name</th>
+                                                    <th data-i18n="price_col">Price</th>
+                                                    <th data-i18n="cost_price_col">Cost Price</th>
+                                                    <th data-i18n="qty_col">Qty</th>
+                                                    <th data-i18n="category_col">Category</th>
+                                                    <th data-i18n="invoice_id">Invoice ID</th>
+                                                    <th data-i18n="action_col">Action</th>
+                                                </tr></thead>
+                                                <tbody id="product_list"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+
+                        <!-- ══ TAB 2: New / Edit Product form ══ -->
+                        <div class="tab-pane" id="prodTabAdd">
+                            <div class="card-box" style="margin-top:16px;">
+                                <div class="card-title">
+                                    <h4>
+                                        <i id="productFormIcon" class="fa fa-plus-circle"></i>
+                                        <span id="productFormTitle" data-i18n="add_modify_product">New Product</span>
+                                    </h4>
+                                </div>
+                                <div class="card-body">
+                                    <form id="saveProduct" encType="multipart/form-data">
+                                        <input type="hidden" name="id" id="product_id">
+                                        <input type="hidden" name="img" id="img">
+                                        <input type="hidden" name="remove" id="remove_img">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group"><label data-i18n="category_lbl">Category</label><select name="category" class="form-control" id="category"></select></div>
+                                                <div class="form-group"><label data-i18n="provider_lbl">Provider</label><select name="provider" class="form-control" id="provider"></select></div>
+                                                <div class="form-group"><label data-i18n="barcode_lbl">Barcode</label><input type="text" required name="barcode" placeholder="Product barcode" class="form-control number-input" id="barcode"></div>
+                                                <div class="form-group"><label data-i18n="cost_price_lbl">Cost Price</label><input type="text" required name="cost_price" placeholder="Cost Price" class="form-control number-input" id="cost_price"></div>
+                                                <div class="form-group"><label data-i18n="expiry_date_lbl">Expiry Date</label><input type="text" name="expirationDate" placeholder="dd/mm/yyyy" class="form-control" id="expirationDate" readonly></div>
+                                                <div class="form-group"><label data-i18n="min_stock_lbl">Minimum Stock</label><input type="number" name="minStock" placeholder="Min stock" class="form-control" id="minStock" value="1"></div>
+                                                <div class="form-group"><label><input type="checkbox" name="stock" id="stock">&nbsp; <span data-i18n="disable_stock_lbl">Disable stock check</span></label></div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group"><label data-i18n="product_name_lbl">Product Name</label><input type="text" required name="name" placeholder="Product name" class="form-control" id="productName"></div>
+                                                <div class="form-group"><label data-i18n="profit_margin_lbl">Profit Margin</label><div class="input-group"><input type="text" required name="profit_margin" placeholder="%" class="form-control number-input" id="profit_margin"><span class="input-group-addon">%</span></div></div>
+                                                <div class="form-group"><label data-i18n="sale_price_lbl">Sale Price</label><input type="text" required name="price" placeholder="Sale Price" class="form-control number-input" id="product_price"></div>
+                                                <div class="form-group"><label data-i18n="quantity_lbl">Quantity</label><input type="text" name="quantity" placeholder="Available quantity" class="form-control" id="quantity" min="0"></div>
+                                                <div class="form-group"><label data-i18n="invoice_id_lbl">Invoice ID</label><input type="text" name="invoice_id" placeholder="Invoice ID" class="form-control" id="invoice_id" list="invoiceIdList" autocomplete="off"><datalist id="invoiceIdList"></datalist></div>
+                                                <div class="form-group"><label data-i18n="entry_date_lbl">Entry Date</label><input type="text" name="entryDate" placeholder="dd/mm/yyyy" class="form-control" id="entryDate" readonly></div>
+                                                <div class="form-group"><label><span id="rmv_img" class="btn btn-xs btn-warning" data-i18n="remove_lbl">Remove</span> <span data-i18n="picture_lbl">Picture</span></label><div id="current_img"></div><input type="file" name="imagename" id="imagename"></div>
+                                            </div>
+                                        </div>
+                                        <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--c-border);">
+                                            <input type="submit" id="submitProduct" class="btn btn-primary waves-effect">
+                                            <button type="button" class="btn btn-default" id="prodCancelBtn" style="margin-left:8px;" data-i18n="cancel_btn">Cancel</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ══ TAB 3: Categories ══ -->
+                        <div class="tab-pane" id="prodTabCat">
+                            <div class="row" style="margin-top:16px;">
+                                <div class="col-md-7">
+                                    <div class="card-box">
+                                        <div class="card-title">
+                                            <h4><i class="fa fa-tags"></i> <span data-i18n="categories">Categories</span></h4>
+                                        </div>
+                                        <div class="card-body">
+                                            <table class="table table-bordered" id="categoryList">
+                                                <thead><tr>
+                                                    <th data-i18n="name_col">Name</th>
+                                                    <th data-i18n="action_col">Action</th>
+                                                </tr></thead>
+                                                <tbody id="category_list"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="card-box">
+                                        <div class="card-title">
+                                            <h4><i id="catFormIcon" class="fa fa-plus-circle"></i> <span id="categoryFormTitle" data-i18n="add_category_lbl">Add New Category</span></h4>
+                                        </div>
+                                        <div class="card-body">
+                                            <form id="saveCategoryModal">
+                                                <input id="category_id_modal" type="hidden" name="id">
+                                                <div class="form-group">
+                                                    <label data-i18n="name_lbl">Name</label>
+                                                    <input id="categoryNameModal" type="text" required name="name" data-i18n-placeholder="category_name_placeholder" placeholder="Category name" class="form-control">
+                                                </div>
+                                                <input type="submit" id="submitCategoryModal" data-i18n-value="add_category_btn" value="New Category" class="btn btn-primary waves-effect">
+                                                <button type="button" id="cancelCategoryEdit" class="btn btn-default" style="margin-left:8px; display:none;" data-i18n="cancel_btn">Cancel</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div><!-- /tab-content -->
                 </div>
             </div>
 
@@ -232,23 +332,29 @@
             <div id="providers_view">
                 <div class="container">
 
-                    <!-- Top-bar: title + provider selector -->
-                    <div class="pv-topbar">
-                        <div class="pv-topbar-title">
-                            <i class="fa fa-truck"></i>
-                            <span data-i18n="providers">Providers</span>
-                        </div>
-                        <div class="pv-topbar-select">
-                            <select id="providerListFilter" class="form-control">
+                    <!-- Tab navigation -->
+                    <ul class="nav nav-tabs inv-view-tabs" id="provViewTabs" role="tablist">
+                        <li role="presentation" class="active">
+                            <a href="#provTabList" data-toggle="tab">
+                                <i class="fa fa-building"></i> <span data-i18n="providers">Providers</span>
+                            </a>
+                        </li>
+                        <li role="presentation">
+                            <a href="#provTabAdd" id="provTabAddLink" data-toggle="tab">
+                                <i class="fa fa-plus-circle"></i> <span data-i18n="add_provider_btn">New Provider</span>
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content inv-tab-content">
+
+                    <!-- ══ TAB 1: Provider list / detail ══ -->
+                    <div class="tab-pane active" id="provTabList">
+                        <div style="margin-top:16px; margin-bottom:16px;">
+                            <select id="providerListFilter" class="form-control" style="max-width:280px;">
                                 <option value="" data-i18n="all_providers_opt">— Select a Provider —</option>
                             </select>
                         </div>
-                        <div>
-                            <button id="newProviderModal" data-toggle="modal" data-target="#newProvider" type="button" class="btn btn-warning waves-effect">
-                                <i class="fa fa-plus"></i> <span data-i18n="add_provider_btn">New Provider</span>
-                            </button>
-                        </div>
-                    </div>
 
                     <!-- Empty state -->
                     <div id="pv_empty_state" class="pv-empty-state">
@@ -395,6 +501,42 @@
 
                         </div><!-- /.row -->
                     </div><!-- /#pv_detail -->
+                    </div><!-- /#provTabList -->
+
+                    <!-- ══ TAB 2: New / Edit Provider form ══ -->
+                    <div class="tab-pane" id="provTabAdd">
+                        <div class="card-box" style="margin-top:16px; max-width:560px;">
+                            <div class="card-title">
+                                <h4>
+                                    <i id="providerFormIcon" class="fa fa-plus-circle"></i>
+                                    <span id="providerFormTitle" data-i18n="add_provider_btn">New Provider</span>
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <form id="saveProvider">
+                                    <input id="provider_id" type="hidden" name="id">
+                                    <div class="form-group">
+                                        <label data-i18n="name_lbl">Name</label>
+                                        <input id="providerName" type="text" required name="name" data-i18n-placeholder="provider_name_placeholder" placeholder="Provider name" class="form-control">
+                                    </div>
+                                    <div class="form-group">
+                                        <label data-i18n="phone_lbl">Phone</label>
+                                        <input id="providerPhone" type="text" name="phone" placeholder="Phone number" class="form-control">
+                                    </div>
+                                    <div class="form-group">
+                                        <label data-i18n="email_lbl">Email</label>
+                                        <input id="providerEmail" type="email" name="email" placeholder="Email address" class="form-control">
+                                    </div>
+                                    <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--c-border);">
+                                        <input type="submit" id="submitProvider" class="btn btn-primary waves-effect">
+                                        <button type="button" class="btn btn-default" id="provCancelBtn" style="margin-left:8px;" data-i18n="cancel_btn">Cancel</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div><!-- /#provTabAdd -->
+
+                    </div><!-- /tab-content -->
                 </div><!-- /.container -->
             </div>
 
@@ -402,183 +544,408 @@
             <div id="invoices_view" style="display:none;">
                 <div class="container">
 
-                    <!-- Top-bar: title + provider selector -->
-                    <div class="pv-topbar">
-                        <div class="pv-topbar-title">
-                            <i class="fa fa-file"></i>
-                            <span data-i18n="invoices_nav_btn">Invoices</span>
-                        </div>                       
-                        <div>
-                            <button id="addInvoiceBtn" class="btn btn-warning waves-effect">
-                               <i class="fa fa-plus"></i> <span data-i18n="add_invoice_btn">Add Invoice</span>
-                            </button>
-                        </div>
-                    </div>
+                    <!-- ── Tab navigation ── -->
+                    <ul class="nav nav-tabs inv-view-tabs" id="invViewTabs" role="tablist">
+                        <li role="presentation" class="active">
+                            <a href="#invTabList" data-toggle="tab">
+                                <i class="fa fa-list"></i> <span data-i18n="invoices_nav_btn">Invoices</span>
+                            </a>
+                        </li>
+                        <li role="presentation">
+                            <a href="#invTabAdd" id="invTabAddLink" data-toggle="tab">
+                                <i class="fa fa-plus-circle"></i> <span data-i18n="add_invoice_btn">New Invoice</span>
+                            </a>
+                        </li>
+                    </ul>
 
-                    <!-- Search / Filter bar -->
-                    <div class="card-box m-b-20">
-                        <div class="card-body" style="padding:16px;">
-                            <div class="row" style="align-items:flex-end;">
+                    <div class="tab-content inv-tab-content">
+
+                        <!-- ══ TAB 1: Invoice list ══ -->
+                        <div class="tab-pane active" id="invTabList">
+
+                            <!-- Stats row -->
+                            <div class="row m-b-20" id="inv_view_stats_row" style="display:none; margin-top:16px;">
                                 <div class="col-md-3">
-                                    <label style="font-size:12px;color:var(--c-muted);" data-i18n="invoice_id_lbl">Invoice ID</label>
-                                    <input type="text" id="inv_search_id" class="form-control" data-i18n-placeholder="inv_search_id_placeholder" placeholder="Search by Invoice ID...">
-                                </div>
-                                <div class="col-md-2">
-                                    <label style="font-size:12px;color:var(--c-muted);" data-i18n="provider_lbl">Provider</label>
-                                    <select id="inv_filter_provider" class="form-control">
-                                        <option value="" data-i18n="inv_all_providers">All Providers</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-1">
-                                    <label style="font-size:12px;color:var(--c-muted);" data-i18n="inv_date_from">From</label>
-                                    <input type="date" id="inv_filter_date_from" class="form-control">
-                                </div>
-                                <div class="col-md-1">
-                                    <label style="font-size:12px;color:var(--c-muted);" data-i18n="inv_date_to">To</label>
-                                    <input type="date" id="inv_filter_date_to" class="form-control">
-                                </div>
-                                <div class="col-md-2">
-                                    <label style="font-size:12px;color:var(--c-muted);" data-i18n="payment_status_lbl">Status</label>
-                                    <select id="inv_filter_status" class="form-control">
-                                        <option value="" data-i18n="inv_all_statuses">All Statuses</option>
-                                        <option value="paid" data-i18n="status_paid">Paid</option>
-                                        <option value="pending" data-i18n="status_pending">Pending</option>
-                                        <option value="overdue" data-i18n="status_overdue">Overdue</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-1">
-                                    <label style="font-size:12px;color:var(--c-muted);" data-i18n="inv_amount_min">Min</label>
-                                    <input type="number" id="inv_filter_amt_min" class="form-control" min="0" placeholder="0">
-                                </div>
-                                <div class="col-md-1">
-                                    <label style="font-size:12px;color:var(--c-muted);" data-i18n="inv_amount_max">Max</label>
-                                    <input type="number" id="inv_filter_amt_max" class="form-control" min="0">
-                                </div>
-                                <div class="col-md-1">
-                                    <label style="font-size:12px;color:var(--c-muted);">&nbsp;</label>
-                                    <button id="inv_clear_filter" class="btn btn-default btn-block" title="Clear Filters">
-                                        <i class="fa fa-times"></i> Clear
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Stats row -->
-                    <div class="row m-b-20" id="inv_view_stats_row" style="display:none;">
-                        <div class="col-md-3">
-                            <div class="invoice-stat-card invoice-stat-total">
-                                <div class="invoice-stat-label" data-i18n="stat_total_invoices">Total Invoices</div>
-                                <div class="invoice-stat-value" id="inv_stat_total">0</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="invoice-stat-card invoice-stat-amount">
-                                <div class="invoice-stat-label" data-i18n="stat_total_amount">Total Amount</div>
-                                <div class="invoice-stat-value" id="inv_stat_amount">0.00</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="invoice-stat-card invoice-stat-paid">
-                                <div class="invoice-stat-label" data-i18n="stat_paid_amount">Paid</div>
-                                <div class="invoice-stat-value" id="inv_stat_paid">0.00</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="invoice-stat-card invoice-stat-pending">
-                                <div class="invoice-stat-label" data-i18n="stat_pending_amount">Pending</div>
-                                <div class="invoice-stat-value" id="inv_stat_pending">0.00</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Invoice list + detail panel -->
-                    <div class="row">
-                        <!-- Invoice list (left) -->
-                        <div class="col-md-7">
-                            <div class="card-box">
-                                <div class="card-title">
-                                    <h4><span data-i18n="invoices_nav_btn">Invoices</span> <span class="badge" id="inv_list_count" style="background:var(--c-primary);color:#fff;">0</span></h4>
-                                </div>
-                                <div class="card-body" style="overflow-x:auto;">
-                                    <table class="table table-hover table-bordered" id="inv_list_table" style="font-size:13px;">
-                                        <thead>
-                                            <tr>
-                                                <th data-i18n="invoice_id_lbl">Invoice ID</th>
-                                                <th data-i18n="provider_lbl">Provider</th>
-                                                <th data-i18n="invoice_issue_date">Date</th>
-                                                <th data-i18n="due_date_lbl">Due</th>
-                                                <th data-i18n="net_amount_lbl">Net Amount</th>
-                                                <th data-i18n="payment_status_lbl">Status</th>
-                                                <th data-i18n="action_col">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="inv_list_body"></tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Detail panel (right) -->
-                        <div class="col-md-5">
-                            <div class="card-box">
-                                <div class="card-title">
-                                    <h4 data-i18n="inv_detail_title">Invoice Details</h4>
-                                </div>
-                                <div class="card-body">
-                                    <div id="inv_detail_placeholder" class="text-center" style="padding:40px 0;color:var(--c-muted);">
-                                        <i class="fa fa-arrow-left fa-2x"></i><br><br>
-                                        <span data-i18n="inv_click_hint">Select an invoice to view details and linked products</span>
+                                    <div class="invoice-stat-card invoice-stat-total">
+                                        <div class="invoice-stat-label" data-i18n="stat_total_invoices">Total Invoices</div>
+                                        <div class="invoice-stat-value" id="inv_stat_total">0</div>
                                     </div>
-                                    <div id="inv_detail_panel" style="display:none;">
-                                        <div id="inv_detail_info" style="margin-bottom:12px;padding:12px;background:var(--c-surface);border-radius:var(--radius-sm);border:1px solid var(--c-border);font-size:13px;"></div>
-                                        <div id="inv_detail_actions" style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;"></div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="invoice-stat-card invoice-stat-amount">
+                                        <div class="invoice-stat-label" data-i18n="stat_total_amount">Total Amount</div>
+                                        <div class="invoice-stat-value" id="inv_stat_amount">0.00</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="invoice-stat-card invoice-stat-paid">
+                                        <div class="invoice-stat-label" data-i18n="stat_paid_amount">Paid</div>
+                                        <div class="invoice-stat-value" id="inv_stat_paid">0.00</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="invoice-stat-card invoice-stat-pending">
+                                        <div class="invoice-stat-label" data-i18n="stat_pending_amount">Pending</div>
+                                        <div class="invoice-stat-value" id="inv_stat_pending">0.00</div>
+                                    </div>
+                                </div>
+                            </div>
 
-                                        <!-- Provider payments summary -->
-                                        <div id="inv_pay_summary" style="display:none;margin-bottom:16px;">
-                                            <h5 style="font-weight:600;margin:0 0 8px;font-size:13px;">
-                                                <i class="fa fa-money" style="color:var(--c-success);margin-right:6px;"></i>
-                                                <span data-i18n="payment_history_lbl">Provider Payments</span>
-                                            </h5>
-                                            <!-- 3 mini stat chips -->
-                                            <div id="inv_pay_stats" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;"></div>
-                                            <!-- Payment rows -->
-                                            <div style="overflow-x:auto;">
-                                                <table class="table table-sm table-bordered" style="font-size:12px;margin:0;">
-                                                    <thead>
-                                                        <tr>
-                                                            <th data-i18n="pay_date_lbl">Date</th>
-                                                            <th data-i18n="pay_amount_lbl">Amount</th>
-                                                            <th data-i18n="pay_method_lbl">Method</th>
-                                                            <th data-i18n="pay_running_balance_lbl">Balance</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody id="inv_pay_rows"></tbody>
-                                                </table>
-                                            </div>
+                            <!-- Filter bar -->
+                            <div class="card-box m-b-20">
+                                <div class="card-body" style="padding:16px;">
+                                    <div class="row" style="align-items:flex-end;">
+                                        <div class="col-md-3">
+                                            <label style="font-size:12px;color:var(--c-muted);" data-i18n="invoice_id_lbl">Invoice ID</label>
+                                            <input type="text" id="inv_search_id" class="form-control" data-i18n-placeholder="inv_search_id_placeholder" placeholder="Search by Invoice ID...">
                                         </div>
+                                        <div class="col-md-2">
+                                            <label style="font-size:12px;color:var(--c-muted);" data-i18n="provider_lbl">Provider</label>
+                                            <select id="inv_filter_provider" class="form-control">
+                                                <option value="" data-i18n="inv_all_providers">All Providers</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-1">
+                                            <label style="font-size:12px;color:var(--c-muted);" data-i18n="inv_date_from">From</label>
+                                            <input type="date" id="inv_filter_date_from" class="form-control">
+                                        </div>
+                                        <div class="col-md-1">
+                                            <label style="font-size:12px;color:var(--c-muted);" data-i18n="inv_date_to">To</label>
+                                            <input type="date" id="inv_filter_date_to" class="form-control">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label style="font-size:12px;color:var(--c-muted);" data-i18n="payment_status_lbl">Status</label>
+                                            <select id="inv_filter_status" class="form-control">
+                                                <option value="" data-i18n="inv_all_statuses">All Statuses</option>
+                                                <option value="paid" data-i18n="status_paid">Paid</option>
+                                                <option value="pending" data-i18n="status_pending">Pending</option>
+                                                <option value="overdue" data-i18n="status_overdue">Overdue</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-1">
+                                            <label style="font-size:12px;color:var(--c-muted);" data-i18n="inv_amount_min">Min</label>
+                                            <input type="number" id="inv_filter_amt_min" class="form-control" min="0" placeholder="0">
+                                        </div>
+                                        <div class="col-md-1">
+                                            <label style="font-size:12px;color:var(--c-muted);" data-i18n="inv_amount_max">Max</label>
+                                            <input type="number" id="inv_filter_amt_max" class="form-control" min="0">
+                                        </div>
+                                        <div class="col-md-1">
+                                            <label style="font-size:12px;color:var(--c-muted);">&nbsp;</label>
+                                            <button id="inv_clear_filter" class="btn btn-default btn-block" title="Clear Filters">
+                                                <i class="fa fa-times"></i> Clear
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                                        <h5 style="font-weight:600;margin:0 0 8px;" data-i18n="inv_linked_products">Linked Products</h5>
-                                        <div style="overflow-x:auto;">
-                                            <table class="table table-sm table-bordered" id="inv_detail_products" style="font-size:12px;">
+                            <!-- Invoice list + detail panel -->
+                            <div class="row">
+                                <div class="col-md-7">
+                                    <div class="card-box">
+                                        <div class="card-title">
+                                            <h4><span data-i18n="invoices_nav_btn">Invoices</span> <span class="badge" id="inv_list_count" style="background:var(--c-primary);color:#fff;">0</span></h4>
+                                        </div>
+                                        <div class="card-body" style="overflow-x:auto;">
+                                            <table class="table table-hover table-bordered" id="inv_list_table" style="font-size:13px;">
                                                 <thead>
                                                     <tr>
-                                                        <th data-i18n="product_name_lbl">Name</th>
-                                                        <th data-i18n="barcode_lbl">Barcode</th>
-                                                        <th data-i18n="quantity_lbl">Qty</th>
-                                                        <th data-i18n="cost_price_lbl">Cost</th>
-                                                        <th data-i18n="sale_price_lbl">Price</th>
-                                                        <th data-i18n="expiry_date_lbl">Expiry</th>
+                                                        <th data-i18n="invoice_id_lbl">Invoice ID</th>
+                                                        <th data-i18n="provider_lbl">Provider</th>
+                                                        <th data-i18n="invoice_issue_date">Date</th>
+                                                        <th data-i18n="due_date_lbl">Due</th>
+                                                        <th data-i18n="net_amount_lbl">Net Amount</th>
+                                                        <th data-i18n="payment_status_lbl">Status</th>
+                                                        <th data-i18n="action_col">Actions</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody id="inv_detail_products_body"></tbody>
+                                                <tbody id="inv_list_body"></tbody>
                                             </table>
                                         </div>
                                     </div>
                                 </div>
+                                <div class="col-md-5">
+                                    <div class="card-box">
+                                        <div class="card-title">
+                                            <h4 data-i18n="inv_detail_title">Invoice Details</h4>
+                                        </div>
+                                        <div class="card-body">
+                                            <div id="inv_detail_placeholder" class="text-center" style="padding:40px 0;color:var(--c-muted);">
+                                                <i class="fa fa-arrow-left fa-2x"></i><br><br>
+                                                <span data-i18n="inv_click_hint">Select an invoice to view details and linked products</span>
+                                            </div>
+                                            <div id="inv_detail_panel" style="display:none;">
+                                                <div id="inv_detail_info" style="margin-bottom:12px;padding:12px;background:var(--c-surface);border-radius:var(--radius-sm);border:1px solid var(--c-border);font-size:13px;"></div>
+                                                <div id="inv_detail_actions" style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;"></div>
+                                                <div id="inv_pay_summary" style="display:none;margin-bottom:16px;">
+                                                    <h5 style="font-weight:600;margin:0 0 8px;font-size:13px;">
+                                                        <i class="fa fa-money" style="color:var(--c-success);margin-right:6px;"></i>
+                                                        <span data-i18n="payment_history_lbl">Provider Payments</span>
+                                                    </h5>
+                                                    <div id="inv_pay_stats" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;"></div>
+                                                    <div style="overflow-x:auto;">
+                                                        <table class="table table-sm table-bordered" style="font-size:12px;margin:0;">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th data-i18n="pay_date_lbl">Date</th>
+                                                                    <th data-i18n="pay_amount_lbl">Amount</th>
+                                                                    <th data-i18n="pay_method_lbl">Method</th>
+                                                                    <th data-i18n="pay_running_balance_lbl">Balance</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="inv_pay_rows"></tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                                <h5 style="font-weight:600;margin:0 0 8px;" data-i18n="inv_linked_products">Linked Products</h5>
+                                                <div style="overflow-x:auto;">
+                                                    <table class="table table-sm table-bordered" id="inv_detail_products" style="font-size:12px;">
+                                                        <thead>
+                                                            <tr>
+                                                                <th data-i18n="product_name_lbl">Name</th>
+                                                                <th data-i18n="barcode_lbl">Barcode</th>
+                                                                <th data-i18n="quantity_lbl">Qty</th>
+                                                                <th data-i18n="cost_price_lbl">Cost</th>
+                                                                <th data-i18n="sale_price_lbl">Price</th>
+                                                                <th data-i18n="expiry_date_lbl">Expiry</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody id="inv_detail_products_body"></tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
+
+                        <!-- ══ TAB 2: New / Edit Invoice form ══ -->
+                        <div class="tab-pane" id="invTabAdd">
+                            <div class="card-box" style="margin-top:16px;">
+                                <div class="card-title">
+                                    <h4>
+                                        <i id="invoiceFormIcon" class="fa fa-plus-circle"></i>
+                                        <span id="invoiceFormTitle" data-i18n="add_invoice_title">New Invoice</span>
+                                    </h4>
+                                </div>
+                                <div class="card-body">
+                                    <form id="saveInvoice" enctype="multipart/form-data">
+                                        <input type="hidden" id="inv_original_invoice_id">
+                                        <!-- Row 1: Provider + Invoice ID -->
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label data-i18n="provider_lbl">Provider</label>
+                                                    <select id="inv_provider_id" name="providerId" class="form-control" required>
+                                                        <option value="" data-i18n="select_provider_hint">Select a provider...</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label data-i18n="invoice_id_lbl">Invoice ID</label>
+                                                    <input type="text" name="invoiceId" id="inv_invoice_id" class="form-control" data-i18n-placeholder="invoice_id_auto_hint" placeholder="Auto-generated if empty">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- Row 2: Dates + Status + Method -->
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label data-i18n="invoice_issue_date">Invoice Date</label>
+                                                    <input type="date" name="invoiceDate" id="inv_invoice_date" class="form-control" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label data-i18n="due_date_lbl">Due Date</label>
+                                                    <input type="date" name="dueDate" id="inv_due_date" class="form-control">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label data-i18n="payment_status_lbl">Payment Status</label>
+                                                    <select name="paymentStatus" id="inv_payment_status" class="form-control">
+                                                        <option value="pending" data-i18n="status_pending">Pending</option>
+                                                        <option value="paid" data-i18n="status_paid">Paid</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label data-i18n="pay_method_lbl">Payment Method</label>
+                                                    <select name="paymentMethod" id="inv_payment_method" class="form-control">
+                                                        <option value="">— none —</option>
+                                                        <option value="cash">Cash</option>
+                                                        <option value="bank_transfer">Bank Transfer</option>
+                                                        <option value="check">Check</option>
+                                                        <option value="other">Other</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- Row 3: Amounts -->
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label data-i18n="total_amount_lbl">Total Amount</label>
+                                                    <input type="number" step="0.01" min="0" name="totalAmount" id="inv_total_amount" class="form-control" value="0">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label data-i18n="tax_amount_lbl">Tax Amount</label>
+                                                    <input type="number" step="0.01" min="0" name="taxAmount" id="inv_tax_amount" class="form-control" value="0">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label data-i18n="discount_amount_lbl">Discount</label>
+                                                    <input type="number" step="0.01" min="0" name="discountAmount" id="inv_discount_amount" class="form-control" value="0">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label data-i18n="net_amount_lbl">Net Amount</label>
+                                                    <input type="number" step="0.01" min="0" name="netAmount" id="inv_net_amount" class="form-control" readonly style="background:#f5f5f5;">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- Row 4: Notes + File -->
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label data-i18n="notes_lbl">Notes</label>
+                                                    <textarea name="notes" id="inv_notes" class="form-control" rows="2" placeholder="Optional notes..."></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group" id="inv_file_section">
+                                                    <label data-i18n="invoice_photo_lbl">Invoice Photo / PDF</label>
+                                                    <input type="file" name="invoiceFile" id="inv_file" accept=".pdf,.jpg,.jpeg,.png">
+                                                    <small class="text-muted" data-i18n="invoice_file_note">Max 10MB · pdf, jpg, png</small>
+                                                </div>
+                                                <div class="form-group" id="inv_current_file_section" style="display:none;">
+                                                    <label data-i18n="current_file_lbl">Attached File</label>
+                                                    <div id="inv_current_file_display" style="padding:6px 0;font-size:13px;color:var(--c-muted);margin-bottom:8px;">—</div>
+                                                    <label style="font-weight:normal;font-size:12px;color:var(--c-muted);" data-i18n="replace_file_lbl">Replace with new file (optional)</label>
+                                                    <input type="file" id="inv_edit_file" accept=".pdf,.jpg,.jpeg,.png">
+                                                    <small class="text-muted" data-i18n="invoice_file_note">Max 10MB · pdf, jpg, png</small>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- ── Items Section ── -->
+                                        <hr class="inv-items-divider">
+                                        <div class="inv-items-section">
+                                            <div class="inv-items-header">
+                                                <span class="inv-items-title"><i class="fa fa-cubes"></i> Items</span>
+                                            </div>
+
+                                            <!-- Smart product search (always visible) -->
+                                            <div style="position:relative; margin-bottom:6px;">
+                                                <input type="text" id="invProductSearch" class="form-control"
+                                                    placeholder="Search by name or barcode — select to restock, or type a new name to create..."
+                                                    autocomplete="off">
+                                                <div id="invProductDropdown" class="inv-product-dropdown"></div>
+                                            </div>
+
+                                            <!-- New product mini-form (revealed when "Create new" is chosen) -->
+                                            <div id="invNewProdPanel" style="display:none;" class="inv-new-prod-panel">
+                                                <div class="row">
+                                                    <div class="col-md-4">
+                                                        <div class="form-group">
+                                                            <label>Name <span class="text-danger">*</span></label>
+                                                            <input type="text" id="inp_name" class="form-control input-sm" placeholder="Product name">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-group">
+                                                            <label>Barcode <span class="text-danger">*</span></label>
+                                                            <input type="text" id="inp_barcode" class="form-control input-sm" placeholder="Barcode">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-group">
+                                                            <label>Category</label>
+                                                            <select id="inp_category" class="form-control input-sm">
+                                                                <option value="">— none —</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label>Qty <span class="text-danger">*</span></label>
+                                                            <input type="number" id="inp_qty" class="form-control input-sm" placeholder="0" min="1">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label>Cost Price <span class="text-danger">*</span></label>
+                                                            <input type="number" step="0.01" id="inp_cost" class="form-control input-sm" placeholder="0.00" min="0">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label>Sale Price <span class="text-danger">*</span></label>
+                                                            <input type="number" step="0.01" id="inp_price" class="form-control input-sm" placeholder="0.00" min="0">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label>Expiry Date</label>
+                                                            <input type="date" id="inp_expiry" class="form-control input-sm">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <button type="button" id="invAddNewProdConfirm" class="btn btn-success btn-sm">
+                                                    <i class="fa fa-plus-circle"></i> Add to Invoice
+                                                </button>
+                                                <button type="button" id="invCancelNewProd" class="btn btn-default btn-sm">Cancel</button>
+                                            </div>
+
+                                            <!-- Items table -->
+                                            <div id="invItemsTableWrap" style="display:none; margin-top:12px;">
+                                                <table class="table table-condensed inv-items-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Type</th>
+                                                            <th>Product</th>
+                                                            <th>Barcode</th>
+                                                            <th>Qty</th>
+                                                            <th>Cost/Unit</th>
+                                                            <th>Subtotal</th>
+                                                            <th>Expiry</th>
+                                                            <th></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="invItemsTbody"></tbody>
+                                                    <tfoot>
+                                                        <tr>
+                                                            <td colspan="5" class="text-right" style="font-weight:600; padding-right:10px;">Items Total</td>
+                                                            <td id="invItemsTotal" style="font-weight:700; color:var(--c-primary);">0.00</td>
+                                                            <td colspan="2"></td>
+                                                        </tr>
+                                                    </tfoot>
+                                                </table>
+                                            </div>
+                                        </div>
+
+                                        <!-- Submit row -->
+                                        <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--c-border);">
+                                            <button type="submit" class="btn btn-primary waves-effect" id="invoiceFormSubmitBtn" data-i18n="save_invoice_btn">Save Invoice</button>
+                                            <button type="button" class="btn btn-default" id="invCancelFormBtn" style="margin-left:8px;" data-i18n="cancel_btn">Cancel</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div><!-- /tab-content -->
                 </div>
             </div>
 
@@ -662,6 +1029,16 @@
                                 </div>
                             </div>
 
+                            <!-- Quick payment shortcuts -->
+                            <div class="pos-pay-shortcuts">
+                                <button type="button" class="btn pos-pay-btn" data-pay-type="1">
+                                    <i class="fa fa-money"></i> Cash
+                                </button>
+                                <button type="button" class="btn pos-pay-btn" data-pay-type="3">
+                                    <i class="fa fa-mobile fa-lg"></i> PalPay
+                                </button>
+                            </div>
+
                             <!-- Action buttons -->
                             <div class="pos-actions">
                                 <button onclick="$(this).submitDueOrder(3);" type="button"
@@ -672,8 +1049,9 @@
                                     class="btn btn-danger waves-effect">
                                     <i class="fa fa-ban"></i> <span data-i18n="cancel">Cancel</span>
                                 </button>
-                                <button type="button" id="hold" class="btn btn-info waves-effect">
+                                <button type="button" id="hold" class="btn btn-info waves-effect" style="position:relative;">
                                     <i class="fa fa-hand-paper-o"></i> <span data-i18n="hold_btn">Hold</span>
+                                    <span id="holdBadge" class="hold-badge" style="display:none;">0</span>
                                 </button>
                                 <button type="button" id="payButton" class="btn btn-success waves-effect">
                                     <i class="fa fa-money"></i> <span data-i18n="pay_now">Pay Now</span>
@@ -685,17 +1063,49 @@
 
                     <!-- RIGHT: Product Browser -->
                     <div class="col-md-6">
-                        <div class="card-box">
+                        <div class="card-box pos-right-panel">
+
+                            <!-- Search bar -->
                             <div class="products-header">
-                                <h5><i class="glyphicon glyphicon-th" style="color:var(--c-primary);margin-right:5px; margin-left: 5px;"></i>Products</h5>
                                 <input type="text" id="search" class="form-control" data-i18n-placeholder="search_products" placeholder="Search by name or SKU...">
-                                <select id="categories" class="form-control"></select>
                             </div>
-                            <div class="row" id="parent"></div>
+
+                            <!-- Category pills -->
+                            <div id="posCategoryPills" class="pos-cat-pills"></div>
+
+                            <!-- Low-stock alert strip -->
+                            <div id="posLowStockStrip" class="pos-lowstock-strip" style="display:none;">
+                                <i class="fa fa-exclamation-triangle"></i>
+                                <span id="posLowStockText"></span>
+                            </div>
+
+                            <div id="posExpiredStockStrip" class="pos-expiredstock-strip" style="display:none;">
+                                <i class="fa fa-exclamation-triangle"></i>
+                                <span id="posExpiredStockText"></span>
+                            </div>
+
+                            <!-- Recent items strip -->
+                            <div id="posRecentStrip" class="pos-recent-strip" style="display:none;">
+                                <div class="pos-recent-label"><i class="fa fa-history"></i> Recent</div>
+                                <div id="posRecentItems" class="pos-recent-items"></div>
+                            </div>
+
+                            <!-- Product results grid -->
+                            <div class="pos-results-wrap">
+                                <div class="row" id="parent"></div>
+                            </div>
+
                         </div>
                     </div>
 
                 </div>
+
+                <!-- Last-added toast -->
+<!--                 <div id="posAddedToast" class="pos-added-toast" style="display:none;">
+                    <i class="fa fa-check-circle"></i>
+                    <span id="posAddedToastText"></span>
+                </div> -->
+
             </div>
 
         </div><!-- /.container -->
@@ -816,44 +1226,6 @@
         </div>
 
         <!-- Add/Modify Product -->
-        <div id="newProduct" class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                        <h4 class="modal-title" data-i18n="add_modify_product">Add / Modify Product</h4>
-                    </div>
-                    <div class="modal-body">
-                        <form id="saveProduct" encType="multipart/form-data">
-                            <input type="hidden" name="id" id="product_id">
-                            <input type="hidden" name="img" id="img">
-                            <input type="hidden" name="remove" id="remove_img">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group"><label data-i18n="category_lbl">Category</label><select name="category" class="form-control" id="category"></select></div>
-                                    <div class="form-group"><label data-i18n="provider_lbl">Provider</label><select name="provider" class="form-control" id="provider"></select></div>
-                                    <div class="form-group"><label data-i18n="barcode_lbl">Barcode</label><input type="text" required name="barcode" placeholder="Product barcode" class="form-control number-input" id="barcode"></div>
-                                    <div class="form-group"><label data-i18n="cost_price_lbl">Cost Price</label><input type="text" required name="cost_price" placeholder="Cost Price" class="form-control number-input" id="cost_price"></div>
-                                    <div class="form-group"><label data-i18n="expiry_date_lbl">Expiry Date</label><input type="text" name="expirationDate" placeholder="dd/mm/yyyy" class="form-control" id="expirationDate" readonly></div>
-                                    <div class="form-group"><label data-i18n="min_stock_lbl">Minimum Stock</label><input type="number" name="minStock" placeholder="Min stock" class="form-control" id="minStock" value="1"></div>
-                                    <div class="form-group"><label><input type="checkbox" name="stock" id="stock">&nbsp; <span data-i18n="disable_stock_lbl">Disable stock check</span></label></div>
-                                    <input type="submit" id="submitProduct" class="btn btn-primary waves-effect">
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group"><label data-i18n="product_name_lbl">Product Name</label><input type="text" required name="name" placeholder="Product name" class="form-control" id="productName"></div>
-                                    <div class="form-group"><label data-i18n="profit_margin_lbl">Profit Margin</label><div class="input-group"><input type="text" required name="profit_margin" placeholder="%" class="form-control number-input" id="profit_margin"><span class="input-group-addon">%</span></div></div>
-                                    <div class="form-group"><label data-i18n="sale_price_lbl">Sale Price</label><input type="text" required name="price" placeholder="Sale Price" class="form-control number-input" id="product_price"></div>
-                                    <div class="form-group"><label data-i18n="quantity_lbl">Quantity</label><input type="text" name="quantity" placeholder="Available quantity" class="form-control" id="quantity" min="0"></div>
-                                    <div class="form-group"><label data-i18n="invoice_id_lbl">Invoice ID</label><input type="text" name="invoice_id" placeholder="Invoice ID" class="form-control" id="invoice_id" list="invoiceIdList" autocomplete="off"><datalist id="invoiceIdList"></datalist></div>
-                                    <div class="form-group"><label data-i18n="entry_date_lbl">Entry Date</label><input type="text" name="entryDate" placeholder="dd/mm/yyyy" class="form-control" id="entryDate" readonly></div>
-                                    <div class="form-group"><label><span id="rmv_img" class="btn btn-xs btn-warning" data-i18n="remove_lbl">Remove</span> <span data-i18n="picture_lbl">Picture</span></label><div id="current_img"></div><input type="file" name="imagename" id="imagename"></div>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- Restock Product -->
         <div id="restockModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
@@ -912,24 +1284,6 @@
             </div>
         </div>
 
-        <!-- Category -->
-        <div id="newCategory" class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog modal-md">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                        <h4 class="modal-title" data-i18n="category_modal">Category</h4>
-                    </div>
-                    <div class="modal-body">
-                        <form id="saveCategory">
-                            <div class="form-group"><label data-i18n="name_lbl">Name</label><input id="category_id" type="hidden" name="id"><input id="categoryName" type="text" required name="name" data-i18n-placeholder="category_name_placeholder" placeholder="Category name" class="form-control"></div>
-                            <input type="submit" id="submitCategory" class="btn btn-primary btn-block waves-effect">
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Products List -->
         <!-- Users -->
         <div id="Users" class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog" aria-hidden="true">
@@ -949,59 +1303,7 @@
             </div>
         </div>
 
-        <!-- Categories -->
-        <div id="Categories" class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog modal-md">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                        <h4 class="modal-title" data-i18n="categories_modal">Categories</h4>
-                    </div>
-                    <div class="modal-body">
-                        <table class="table table-bordered" id="categoryList">
-                            <thead><tr><th data-i18n="name_col">Name</th><th data-i18n="action_col">Action</th></tr></thead>
-                            <tbody id="category_list"></tbody>
-                        </table>
-                        <hr>
-                        <h4 id="categoryFormTitle" data-i18n="add_category_lbl">Add New Category</h4>
-                        <form id="saveCategoryModal">
-                            <input id="category_id_modal" type="hidden" name="id">
-                            <div class="form-group">
-                                <label data-i18n="name_lbl">Name</label>
-                                <input id="categoryNameModal" type="text" required name="name" data-i18n-placeholder="category_name_placeholder" placeholder="Category name" class="form-control">
-                            </div>
-                            <div class="btn-group" style="width:100%">
-                                <input type="submit" id="submitCategoryModal" data-i18n-value="add_category_btn" value="New Category" class="btn btn-primary waves-effect"><br>
-                             </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-default" data-dismiss="modal" data-i18n="close_btn">Close</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- New / Edit Provider -->
-        <div id="newProvider" class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog modal-md">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                        <h4 class="modal-title" data-i18n="provider_modal">Provider</h4>
-                    </div>
-                    <div class="modal-body">
-                        <form id="saveProvider">
-                            <input id="provider_id" type="hidden" name="id">
-                            <div class="form-group"><label data-i18n="name_lbl">Name</label><input id="providerName" type="text" required name="name" data-i18n-placeholder="provider_name_placeholder" placeholder="Provider name" class="form-control"></div>
-                            <div class="form-group"><label data-i18n="phone_lbl">Phone</label><input id="providerPhone" type="text" name="phone" placeholder="Phone number" class="form-control"></div>
-                            <div class="form-group"><label data-i18n="email_lbl">Email</label><input id="providerEmail" type="email" name="email" placeholder="Email address" class="form-control"></div>
-                            <input type="submit" id="submitProvider" class="btn btn-primary waves-effect">
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- Providers List -->
         <div id="Providers" class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog" aria-hidden="true">
@@ -1179,102 +1481,6 @@
             </div>
         </div>
 
-        <!-- Add / Edit Invoice -->
-        <div id="newInvoice" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                        <h4 class="modal-title">
-                            <i id="invoiceFormIcon" class="fa fa-plus-circle"></i>
-                            &nbsp;<span id="invoiceFormTitle" data-i18n="add_invoice_title">Add Invoice</span>
-                        </h4>
-                    </div>
-                    <div class="modal-body">
-                        <form id="saveInvoice" enctype="multipart/form-data">
-                            <!-- hidden: tracks the invoiceId being edited (empty = create mode) -->
-                            <input type="hidden" id="inv_original_invoice_id">
-                            <div class="row">
-                                <div class="col-md-12">
-                                    <div class="form-group">
-                                        <label data-i18n="provider_lbl">Provider</label>
-                                        <select id="inv_provider_id" name="providerId" class="form-control" required>
-                                            <option value="" data-i18n="select_provider_hint">Select a provider...</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label data-i18n="invoice_id_lbl">Invoice ID</label>
-                                        <input type="text" name="invoiceId" id="inv_invoice_id" class="form-control" data-i18n-placeholder="invoice_id_auto_hint" placeholder="Auto-generated if empty">
-                                    </div>
-                                    <div class="form-group">
-                                        <label data-i18n="invoice_issue_date">Invoice Date</label>
-                                        <input type="date" name="invoiceDate" id="inv_invoice_date" class="form-control" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label data-i18n="due_date_lbl">Due Date</label>
-                                        <input type="date" name="dueDate" id="inv_due_date" class="form-control">
-                                    </div>
-                                    <div class="form-group">
-                                        <label data-i18n="payment_status_lbl">Payment Status</label>
-                                        <select name="paymentStatus" id="inv_payment_status" class="form-control">
-                                            <option value="pending" data-i18n="status_pending">Pending</option>
-                                            <option value="paid" data-i18n="status_paid">Paid</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label data-i18n="total_amount_lbl">Total Amount</label>
-                                        <input type="number" step="0.01" min="0" name="totalAmount" id="inv_total_amount" class="form-control" value="0">
-                                    </div>
-                                    <div class="form-group">
-                                        <label data-i18n="tax_amount_lbl">Tax Amount</label>
-                                        <input type="number" step="0.01" min="0" name="taxAmount" id="inv_tax_amount" class="form-control" value="0">
-                                    </div>
-                                    <div class="form-group">
-                                        <label data-i18n="discount_amount_lbl">Discount</label>
-                                        <input type="number" step="0.01" min="0" name="discountAmount" id="inv_discount_amount" class="form-control" value="0">
-                                    </div>
-                                    <div class="form-group">
-                                        <label data-i18n="net_amount_lbl">Net Amount</label>
-                                        <input type="number" step="0.01" min="0" name="netAmount" id="inv_net_amount" class="form-control" readonly style="background:#f5f5f5;">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label data-i18n="notes_lbl">Notes</label>
-                                        <textarea name="notes" id="inv_notes" class="form-control" rows="2" placeholder="Optional notes..."></textarea>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <!-- shown in CREATE mode -->
-                                    <div class="form-group" id="inv_file_section">
-                                        <label data-i18n="invoice_photo_lbl">Invoice Photo / PDF</label>
-                                        <input type="file" name="invoiceFile" id="inv_file" accept=".pdf,.jpg,.jpeg,.png">
-                                        <small class="text-muted" data-i18n="invoice_file_note">Max 10MB · pdf, jpg, png</small>
-                                    </div>
-                                    <!-- shown in EDIT mode -->
-                                    <div class="form-group" id="inv_current_file_section" style="display:none;">
-                                        <label data-i18n="current_file_lbl">Attached File</label>
-                                        <div id="inv_current_file_display" style="padding:6px 0;font-size:13px;color:var(--c-muted);margin-bottom:8px;">—</div>
-                                        <label style="font-weight:normal;font-size:12px;color:var(--c-muted);" data-i18n="replace_file_lbl">Replace with new file (optional)</label>
-                                        <input type="file" id="inv_edit_file" accept=".pdf,.jpg,.jpeg,.png">
-                                        <small class="text-muted" data-i18n="invoice_file_note">Max 10MB · pdf, jpg, png</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <button type="submit" class="btn btn-primary waves-effect" id="invoiceFormSubmitBtn" data-i18n="save_invoice_btn">Save Invoice</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- Add / Edit Payment -->
         <div id="newPayment" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">

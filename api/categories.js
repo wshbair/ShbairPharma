@@ -129,7 +129,7 @@ app.post("/category/batch", function (req, res) {
 app.delete("/category/:categoryId", function (req, res) {
     categoryDB.remove(
         {
-            _id: parseInt(req.params.categoryId),
+            id: parseInt(req.params.categoryId),
         },
         function (err, numRemoved) {
                 if (err) {

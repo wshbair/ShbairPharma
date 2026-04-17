@@ -1244,7 +1244,7 @@ textarea.form-control {
 }
 
 .input-group-addon {
-    border-radius: 2px;
+    /* border-radius: 2px; */
     border: 1px solid #eeeeee;
 }
 

@@ -1,7 +1,7 @@
-const jsPDF = require("jspdf");
-const html2canvas = require("html2canvas");
-const JsBarcode = require("jsbarcode");
-const macaddress = require("macaddress");
+//const jsPDF = require("jspdf");
+//const html2canvas = require("html2canvas");
+//const JsBarcode = require("jsbarcode");
+//const macaddress = require("macaddress");
 const notiflix = require("notiflix");
 const validator = require("validator");
 const DOMPurify = require("dompurify");
@@ -29,6 +29,9 @@ let allUsers = [];
 let allProducts = [];
 let allCategories = [];
 let allProviders = [];
+let invoiceItems = [];
+let posRecentItems = [];   // products added to cart this session
+let posActiveCategory = null; // active category pill filter
 let allTransactions = [];
 let allInvoices = [];
 let currentProvider = null;
@@ -92,7 +95,8 @@ notiflix.Notify.init({
   cssAnimationDuration: 600,
   messageMaxLength: 150,
   clickToClose: true,
-  closeButton: true
+  showCloseButton: true,  // Changed from 'closeButton' to 'showCloseButton'
+  timeout: 5000 
 });
 const {
   DATE_FORMAT,
@@ -246,9 +250,15 @@ if (auth == undefined) {
 
     loadCategories();
     loadProviders();
-    loadProducts();
     loadCustomers();
     loadInvoicesForForm();
+    loadProducts(loadProductList);
+
+    $("#paymentText").on("input", function () {
+     $(this).paymentChange()
+      } );
+
+    renderPosIdle();
 
     if (settings && validator.unescape(settings.symbol)) {
       $("#price_curr, #payment_curr, #change_curr").text(validator.unescape(settings.symbol));
@@ -287,93 +297,205 @@ if (auth == undefined) {
       $(".p_five").hide();
     }
 
-    //load products in pos
-    function loadProducts(data) {
+    function buildProductCard(item) {
+      item.price = parseFloat(item.price).toFixed(2);
+      let item_isExpired = isExpired(item.expirationDate);
+      let item_stockStatus = getStockStatus(item.quantity, item.minStock);
+      let item_img = default_item_img;
+      if (item.img !== "") {
+        let candidate = path.join(img_path, item.img);
+        item_img = checkFileExists(candidate) ? candidate : default_item_img;
+      }
+      return `<div class="col-lg-2 box ${item.category}"
+                  onclick="$(this).addToCart(${item._id}, ${item.quantity}, ${item.stock})">
+                <div class="widget-panel widget-style-2 ${item_isExpired ? "widget-style-danger" : ""}" title="${item.name}">
+                  <div id="image"><img src="${item_img}" id="product_img" alt=""></div>
+                  <div class="text-muted m-t-5 text-center">
+                    <div class="name" id="product_name">
+                      <span class="${item_isExpired ? "text-danger" : ""}">${item.name}</span>
+                    </div>
+                    <span class="sku">${item.barcode || item._id}</span>
+                    <span class="${item_stockStatus < 1 ? "text-danger" : ""}">
+                      <span class="stock" data-i18n="STOCK">STOCK </span>
+                      <span class="count">${item.stock == 1 ? item.quantity : "N/A"}</span>
+                    </span>
+                  </div>
+                  <span class="text-success text-center">
+                    <b>${validator.unescape(settings.symbol) + moneyFormat(item.price)}</b>
+                  </span>
+                </div>
+              </div>`;
+    }
+
+    function renderPosProducts(data, isSearch) {
+      if (!data || data.length === 0) {
+        const msg = isSearch
+          ? `<div class="pos-no-results">
+               <i class="fa fa-search fa-2x" style="opacity:.4;"></i>
+               <p style="margin-top:10px;font-size:14px;">No products found</p>
+               <button class="btn btn-default btn-sm pos-no-results-btn"
+                 onclick="$('#products_view').show();$('#pos_view').hide();$('#pointofsale').hide();">
+                 <i class="fa fa-arrow-right"></i> Go to Products
+               </button>
+             </div>`
+          : `<div class="pos-search-placeholder text-center text-muted">
+               <i class="fa fa-th fa-2x"></i>
+               <p>No products in this category</p>
+             </div>`;
+        $("#parent").html(msg);
+        return;
+      }
+      let html = "";
+      data.forEach((item) => { html += buildProductCard(item); });
+      $("#parent").html(html);
+    }
+
+    // ── POS IDLE STATE ────────────────────────────────────────────
+    function renderPosIdle() {
+      posActiveCategory = null;
+      $(".pos-cat-pill").removeClass("active");
+      $(".pos-cat-pill[data-cat='']").addClass("active");
+      renderPosLowStock();
+      renderPosRecent();
+      $("#parent").html(
+        `<div class="pos-search-placeholder text-center text-muted">
+           <i class="fa fa-search fa-3x"></i>
+           <p data-i18n="search_placeholder">Search for a product by name or scan a barcode</p>
+         </div>`
+      );
+    }
+
+    function renderPosCategoryPills() {
+      let html = `<button class="pos-cat-pill active" data-cat="">All</button>`;
+      allCategories.forEach(function (c) {
+        html += `<button class="pos-cat-pill" data-cat="${c.name}">${c.name}</button>`;
+      });
+      $("#posCategoryPills").html(html);
+    }
+
+    function renderPosLowStock() {
+      const low = allProducts.filter(function (p) {
+        return p.stock == 1 && parseInt(p.quantity) <= parseInt(p.minStock || 1);
+      });
+      if (!low.length) { $("#posLowStockStrip").hide(); return; }
+      const names = low.slice(0, 4).map(function (p) {
+        return `Low Stock Alert: <strong>${p.name}</strong> (${p.quantity})`;
+      }).join(", ") + (low.length > 4 ? ` +${low.length - 4} more` : "");
+      $("#posLowStockText").html(names);
+      $("#posLowStockStrip").show();
+    }
+
+    function renderPosExpiredStock(msg) {
+      $("#posExpiredStockText").html(msg);
+      $("#posExpiredStockStrip").show();
+    }
+
+    function renderPosRecent() {
+      if (!posRecentItems.length) { $("#posRecentStrip").hide(); return; }
+      const sym = (settings && validator.unescape(settings.symbol)) || '';
+      let html = "";
+      posRecentItems.forEach(function (p) {
+        html += `<div class="pos-recent-card"
+                   onclick="$(this).addToCart(${p._id}, ${p.quantity}, ${p.stock})">
+                   <div class="pos-rc-name">${p.name}</div>
+                   <div class="pos-rc-price">${sym}${moneyFormat(parseFloat(p.price).toFixed(2))}</div>
+                 </div>`;
+      });
+      $("#posRecentItems").html(html);
+      $("#posRecentStrip").show();
+    }
+
+    function addToPosRecent(product) {
+      posRecentItems = posRecentItems.filter(function (p) { return p._id !== product._id; });
+      posRecentItems.unshift(product);
+      if (posRecentItems.length > 8) posRecentItems = posRecentItems.slice(0, 8);
+      if ($("#search").val().trim().length < 2 && !posActiveCategory) {
+        renderPosRecent();
+      }
+    }
+
+/*     let _addedToastTimer;
+    function showPosAddedToast(productName) {
+      clearTimeout(_addedToastTimer);
+      $("#posAddedToastText").text(productName + " added");
+      $("#posAddedToast").stop(true).fadeIn(150);
+      _addedToastTimer = setTimeout(function () {
+        $("#posAddedToast").fadeOut(300);
+      }, 2000);
+    } */
+
+    function updateHoldBadge(count) {
+      if (count > 0) {
+        $("#holdBadge").text(count).show();
+      } else {
+        $("#holdBadge").hide();
+      }
+    }
+
+    // Category pill clicks
+    $(document).on("click", ".pos-cat-pill", function () {
+      const cat = $(this).data("cat");
+      $("#search").val("");
+      if (!cat) {
+        renderPosIdle();
+        return;
+      }
+      $(".pos-cat-pill").removeClass("active");
+      $(this).addClass("active");
+      posActiveCategory = cat;
+      const filtered = allProducts.filter(function (p) { return p.category === cat; });
+      renderPosProducts(filtered, false);
+    });
+
+    // Fetch all products into allProducts (for management view) with expiry notifications
+    function loadProducts(callback) {
       $.get(api + "inventory/products", function (data) {
-        data.forEach((item) => {
-          item.price = parseFloat(item.price).toFixed(2);
-        });
-
+        data.forEach((item) => { item.price = parseFloat(item.price).toFixed(2); });
         allProducts = [...data];
-
-        loadProductList();
-
-        let delay = 0;
+        console.log("Loaded products:", allProducts);
         let expiredCount = 0;
         allProducts.forEach((product) => {
-          let todayDate = moment();
           let expiryDate = moment(product.expirationDate, DATE_FORMAT);
-
           if (!isExpired(expiryDate)) {
             const diffDays = daysToExpire(expiryDate);
-
             if (diffDays > 0 && diffDays <= 30) {
-              var days_noun = diffDays > 1 ? "days" : "day";
-              notiflix.Notify.warning(
-                `${product.name} has only ${diffDays} ${days_noun} left to expiry`,
-              );
+              let days_noun = diffDays > 1 ? "days" : "day";
+              notiflix.Notify.warning(`${product.name} has only ${diffDays} ${days_noun} left to expiry`);
             }
           } else {
             expiredCount++;
           }
         });
-
-        //Show notification if there are any expired goods.
-        if(expiredCount>0)
-        {
-           notiflix.Notify.failure(
-          `${expiredCount} ${
-            expiredCount > 0 ? "products" : "product"
-          } expired. Please restock!`,
-        );
+        if (expiredCount > 0) {
+          notiflix.Notify.failure(`${expiredCount} products expired. Please restock!`);
         }
 
-        $("#parent").text("");
-
-        data.forEach((item) => {
-          if (!categories.includes(item.category)) {
-            categories.push(item.category);
-          }
-          let item_isExpired = isExpired(item.expirationDate);
-          let item_stockStatus = getStockStatus(item.quantity,item.minStock);
-          if(item.img==="")
-          {
-            item_img = default_item_img;
-          }
-          else
-          {
-            item_img = path.join(img_path, item.img);
-            item_img = checkFileExists(item_img) ? item_img : default_item_img;
-          }
-          
-          let item_info = `<div class="col-lg-2 box ${item.category}"
-                                onclick="$(this).addToCart(${item._id}, ${
-                                  item.quantity
-                                }, ${item.stock})">
-                            <div class="widget-panel widget-style-2 ${item_isExpired || item_stockStatus < 1 ? "widget-style-danger" : ""}" title="${item.name}">                    
-                            <div id="image"><img src="${item_img}" id="product_img" alt=""></div>                    
-                                        <div class="text-muted m-t-5 text-center">
-                                        <div class="name" id="product_name"><span class="${
-                                          item_isExpired ? "text-danger" : ""
-                                        }">${item.name}</span></div> 
-                                        <span class="sku">${
-                                          item.barcode || item._id
-                                        }</span>
-                                        <span class="${item_stockStatus<1?'text-danger':''}"><span class="stock" data-i18n="STOCK">STOCK </span><span class="count">${
-                                          item.stock == 1
-                                            ? item.quantity
-                                            : "N/A"
-                                        }</span></span></div>
-                                        <span class="text-success text-center"><b data-plugin="counterup">${
-                                          validator.unescape(settings.symbol) +
-                                          moneyFormat(item.price)
-                                        }</b> </span>
-                            </div>
-                        </div>`;
-          $("#parent").append(item_info);
-        });
+        renderPosLowStock();
+        renderPosExpiredStock(`${expiredCount} products expired. Please restock!`);
+        if (typeof callback === "function") callback();
       });
     }
+
+    let _searchDebounce;
+    function posSearchProducts(query) {
+      clearTimeout(_searchDebounce);
+      if (!query || query.trim().length < 2) {
+        renderPosIdle();
+        return;
+      }
+      posActiveCategory = null;
+      $(".pos-cat-pill").removeClass("active");
+      _searchDebounce = setTimeout(function () {
+        $.post(api + "inventory/product/name", { productName: query }, function (data) {
+          renderPosProducts(data, true);
+        });
+      }, 300);
+    }
+
+    // Wire search input
+    $("#search").on("input", function () {
+      posSearchProducts($(this).val().trim());
+    });
 
     //load providers in dropdown
     function loadProviders() {
@@ -400,6 +522,7 @@ if (auth == undefined) {
       $.get(api + "categories/all", function (data) {
         allCategories = data;
         loadCategoryList();
+        renderPosCategoryPills();
         $("#category,#categories").html(`<option value="0" data-i18n="select_category">Select</option>`);
         allCategories.forEach((category) => {
           $("#category,#categories").append(
@@ -409,7 +532,7 @@ if (auth == undefined) {
       });
     }
 
-    //
+    // load customers in dropdown
     function loadCustomers() {
       $.get(api + "customers/all", function (customers) {
         $("#customer").html(
@@ -1276,6 +1399,8 @@ if (auth == undefined) {
         cart.push(item);
         $(this).renderTable(cart);
       }
+      addToPosRecent(data);
+      //showPosAddedToast(data.name);
     };
 
     $.fn.isExist = function (data) {
@@ -1488,6 +1613,20 @@ if (auth == undefined) {
       } else {
         notiflix.Report.warning("Oops!", "There is nothing to pay!", "Ok");
       }
+    });
+
+    // Quick-pay shortcut buttons: open modal + pre-select payment type
+    $(document).on("click", ".pos-pay-btn", function () {
+      if (cart.length === 0) {
+        notiflix.Report.warning("Oops!", "There is nothing to pay!", "Ok");
+        return;
+      }
+      const type = $(this).data("pay-type");
+      $("#paymentModel").modal("show");
+      // Pre-select the matching payment method after modal is shown
+      $("#paymentModel").one("shown.bs.modal", function () {
+        $(`.list-group-item[data-payment-type="${type}"]`).trigger("click");
+      });
     });
 
     $("#hold").on("click", function () {
@@ -1751,7 +1890,7 @@ if (auth == undefined) {
     $.get(api + "on-hold", function (data) {
       holdOrderList = data;
       holdOrderlocation.empty();
-      // clearInterval(dotInterval);
+      updateHoldBadge(data.length);
       $(this).renderHoldOrders(holdOrderList, holdOrderlocation, 1);
     });
 
@@ -1760,6 +1899,7 @@ if (auth == undefined) {
         holdOrderList = data;
         clearInterval(dotInterval);
         holdOrderlocation.empty();
+        updateHoldBadge(data.length);
         $(this).renderHoldOrders(holdOrderList, holdOrderlocation, 1);
       });
     };
@@ -2162,6 +2302,8 @@ if (auth == undefined) {
       $("#providers_view").hide();
       $("#invoices_view").hide();
       $(this).hide();
+      $("#search").val("");
+      renderPosIdle();
     });
 
     $("#viewRefOrders").on("click", function () {
@@ -2176,11 +2318,24 @@ if (auth == undefined) {
       }, 500);
     });
 
-    $("#newProductModal").on("click", function () {
+    // ── NEW PRODUCT TAB: reset form when tab link is clicked ────
+    function resetProductFormForNew() {
       $("#saveProduct").get(0).reset();
       $("#current_img").text("");
       $("#invoice_id").val("");
-      loadInvoicesForForm(); // load all invoices (no provider filter yet)
+      $("#product_id").val("");
+      $("#img").val("");
+      $("#rmv_img").hide();
+      $("#imagename").show();
+      $("#productFormIcon").attr("class", "fa fa-plus-circle");
+      $("#productFormTitle").text("New Product");
+      loadInvoicesForForm();
+    }
+
+    $("#prodTabAddLink").on("click", resetProductFormForNew);
+
+    $("#prodCancelBtn").on("click", function () {
+      $('#prodViewTabs a[href="#prodTabList"]').tab("show");
     });
 
     // When provider changes in the product form, filter invoice datalist to that provider
@@ -2199,25 +2354,17 @@ if (auth == undefined) {
       $(this).ajaxSubmit({
         contentType: "application/json",
         success: function (response) {
-          $("#saveProduct").get(0).reset();
-          $("#current_img").text("");
-
           loadProducts();
-          diagOptions = {
-            title: "Product Saved",
-            text: "Select an option below to continue.",
-            okButtonText: "Add another",
-            cancelButtonText: "Close",
-          };
-
           notiflix.Confirm.show(
-            diagOptions.title,
-            diagOptions.text,
-            diagOptions.okButtonText,
-            diagOptions.cancelButtonText,
-            ()=>{},
-            () => {
-              $("#newProduct").modal("hide");
+            "Product Saved",
+            "Select an option below to continue.",
+            "Add another",
+            "Back to list",
+            function () {
+              resetProductFormForNew();
+            },
+            function () {
+              $('#prodViewTabs a[href="#prodTabList"]').tab("show");
             },
           );
         },
@@ -2233,27 +2380,261 @@ if (auth == undefined) {
       });
     });
 
-    // ── ADD INVOICE BUTTON ──────────────────────────────────
-    $("#addInvoiceBtn").on("click", function () {
+    // ── NEW INVOICE TAB: reset form when user clicks the tab ────
+    function resetInvoiceFormForNew() {
       const today = new Date().toISOString().split('T')[0];
       $("#saveInvoice")[0].reset();
       $("#inv_original_invoice_id").val("");
       $("#inv_invoice_id").prop("readonly", false);
       $("#inv_invoice_date").val(today);
       $("#inv_payment_status").val("pending");
+      $("#inv_payment_method").val("");
       $("#inv_net_amount").val("0.00");
-      // Populate provider select from allProviders
       let provOpts = '<option value="">' + t('select_provider_hint') + '</option>';
       allProviders.forEach(function (p) {
         provOpts += '<option value="' + p._id + '">' + (p.name || p._id) + '</option>';
       });
       $("#inv_provider_id").html(provOpts).prop("disabled", false);
-      // Switch to create mode UI
       $("#inv_file_section").show();
       $("#inv_current_file_section").hide();
       $("#invoiceFormIcon").attr("class", "fa fa-plus-circle");
       $("#invoiceFormTitle").text(t('add_invoice_title'));
-      $("#newInvoice").modal("show");
+      invoiceItems = [];
+      renderInvoiceItems();
+      $("#invNewProdPanel").hide();
+      $("#invProductSearch").val("");
+      $("#invProductDropdown").hide();
+      let catOpts = '<option value="">— none —</option>';
+      allCategories.forEach(function (c) {
+        catOpts += '<option value="' + c._id + '">' + (c.name || c._id) + '</option>';
+      });
+      $("#inp_category").html(catOpts);
+    }
+
+    // Clicking "New Invoice" tab resets to create mode
+    $("#invTabAddLink").on("click", resetInvoiceFormForNew);
+
+    // Cancel button → go back to list tab
+    $("#invCancelFormBtn").on("click", function () {
+      $('#invViewTabs a[href="#invTabList"]').tab("show");
+    });
+
+    // ── INVOICE ITEMS: render helper ─────────────────────────────
+    function renderInvoiceItems() {
+      const sym = (settings && validator.unescape(settings.symbol)) || '';
+      let total = 0;
+      let html  = '';
+
+      invoiceItems.forEach(function (item, idx) {
+        const subtotal = (parseFloat(item.qty) || 0) * (parseFloat(item.cost) || 0);
+        total += subtotal;
+        const badge = item.type === 'new'
+          ? '<span class="inv-badge-new">NEW</span>'
+          : '<span class="inv-badge-restock">RESTOCK</span>';
+        html += '<tr>' +
+          '<td>' + badge + '</td>' +
+          '<td>' + item.name + '</td>' +
+          '<td><small>' + (item.barcode || '—') + '</small></td>' +
+          '<td><input type="number" min="1" value="' + item.qty + '" class="form-control inv-qty-input" style="width:70px;" data-idx="' + idx + '"></td>' +
+          '<td><input type="number" step="0.01" min="0" value="' + item.cost + '" class="form-control inv-cost-input" style="width:80px;" data-idx="' + idx + '"></td>' +
+          '<td>' + sym + subtotal.toFixed(2) + '</td>' +
+          '<td style="font-size:12px;">' + (item.expiry || '—') + '</td>' +
+          '<td><button type="button" class="btn btn-danger btn-xs inv-remove-item" data-idx="' + idx + '"><i class="fa fa-times"></i></button></td>' +
+          '</tr>';
+      });
+
+      if (invoiceItems.length > 0) {
+        $("#invItemsTableWrap").show();
+        $("#invItemsTbody").html(html);
+      } else {
+        $("#invItemsTableWrap").hide();
+        $("#invItemsTbody").html('');
+      }
+
+      const sym2 = (settings && validator.unescape(settings.symbol)) || '';
+      $("#invItemsTotal").text(sym2 + total.toFixed(2));
+
+      // Auto-fill total amount from items subtotal sum
+      if (invoiceItems.length > 0) {
+        $("#inv_total_amount").val(total.toFixed(2));
+        const tax      = parseFloat($("#inv_tax_amount").val())      || 0;
+        const discount = parseFloat($("#inv_discount_amount").val()) || 0;
+        $("#inv_net_amount").val((total + tax - discount).toFixed(2));
+      }
+    }
+
+    // ── INVOICE ITEMS: smart product search ─────────────────────
+    $("#invProductSearch").on("input", function () {
+      const q = $(this).val().trim();
+      const ql = q.toLowerCase();
+
+      if (!q) { $("#invProductDropdown").hide(); return; }
+
+      const matches = allProducts.filter(function (p) {
+        return (p.name  || "").toLowerCase().includes(ql) ||
+               String(p.barcode || "").toLowerCase().includes(ql);
+      }).slice(0, 8);
+
+      let ddHtml = '';
+
+      matches.forEach(function (p) {
+        const stockVal  = p.stock == 1 ? (p.quantity || 0) : '∞';
+        const stockColor = (p.stock == 1 && parseInt(p.quantity) <= 0) ? 'color:var(--c-danger);' : '';
+        ddHtml += '<div class="inv-drop-item" data-pid="' + p._id + '">' +
+          '<div style="display:flex;align-items:center;gap:8px;">' +
+            '<span class="inv-badge-restock">RESTOCK</span>' +
+            '<span class="inv-drop-name">' + p.name + '</span>' +
+          '</div>' +
+          '<div class="inv-drop-meta">' +
+            'Barcode: ' + (p.barcode || '—') +
+            ' &nbsp;|&nbsp; Stock: <span style="' + stockColor + 'font-weight:600;">' + stockVal + '</span>' +
+            ' &nbsp;|&nbsp; Cost: ' + (p.costPrice || '—') +
+          '</div>' +
+          '</div>';
+      });
+
+      // Always show "Create new" option at the bottom
+      ddHtml += '<div class="inv-drop-item inv-drop-create" data-create="1">' +
+        '<div style="display:flex;align-items:center;gap:8px;">' +
+          '<span class="inv-badge-new">NEW</span>' +
+          '<span class="inv-drop-name">Create new product: <em>"' + q + '"</em></span>' +
+        '</div>' +
+        '<div class="inv-drop-meta">Add a brand-new product to the system</div>' +
+        '</div>';
+
+      $("#invProductDropdown").html(ddHtml).show();
+    });
+
+    // Close dropdown when clicking outside the search area
+    $(document).on("click", function (e) {
+      if (!$(e.target).closest("#invProductSearch, #invProductDropdown").length) {
+        $("#invProductDropdown").hide();
+      }
+    });
+
+    // ── INVOICE ITEMS: handle dropdown selection ─────────────────
+    $(document).on("click", ".inv-drop-item", function () {
+      const isCreate = $(this).data("create");
+
+      if (isCreate) {
+        // Pre-fill new product form with the current search text
+        const searchText = $("#invProductSearch").val().trim();
+        $("#inp_name").val(searchText);
+        $("#inp_barcode, #inp_qty, #inp_cost, #inp_price, #inp_expiry").val("");
+        $("#inp_category").val("");
+        $("#invNewProdPanel").show();
+        $("#invProductSearch").val("");
+        $("#invProductDropdown").hide();
+        $("#inp_barcode").focus();
+        return;
+      }
+
+      const pid  = $(this).data("pid");
+      const prod = allProducts.find(function (p) { return p._id == pid; });
+      if (!prod) return;
+
+      const exists = invoiceItems.some(function (i) { return i.type === 'restock' && i.productId == pid; });
+      if (exists) {
+        notiflix.Report.warning("Already Added", prod.name + " is already in the list.", "Ok");
+        return;
+      }
+
+      invoiceItems.push({
+        type:      'restock',
+        productId: prod._id,
+        name:      prod.name,
+        barcode:   prod.barcode,
+        qty:       1,
+        cost:      parseFloat(prod.costPrice) || 0,
+        expiry:    prod.expirationDate || '',
+      });
+      renderInvoiceItems();
+      $("#invProductSearch").val("");
+      $("#invProductDropdown").hide();
+    });
+
+    // ── INVOICE ITEMS: inline qty/cost edits ─────────────────────
+    $(document).on("input", ".inv-qty-input", function () {
+      const idx = parseInt($(this).data("idx"));
+      invoiceItems[idx].qty = parseFloat($(this).val()) || 0;
+      const subtotal = invoiceItems[idx].qty * invoiceItems[idx].cost;
+      $(this).closest("tr").find("td:eq(5)").text(
+        ((settings && validator.unescape(settings.symbol)) || '') + subtotal.toFixed(2)
+      );
+      let total = 0;
+      invoiceItems.forEach(function (i) { total += (i.qty || 0) * (i.cost || 0); });
+      const sym = (settings && validator.unescape(settings.symbol)) || '';
+      $("#invItemsTotal").text(sym + total.toFixed(2));
+      $("#inv_total_amount").val(total.toFixed(2));
+      const tax = parseFloat($("#inv_tax_amount").val()) || 0;
+      const disc = parseFloat($("#inv_discount_amount").val()) || 0;
+      $("#inv_net_amount").val((total + tax - disc).toFixed(2));
+    });
+
+    $(document).on("input", ".inv-cost-input", function () {
+      const idx = parseInt($(this).data("idx"));
+      invoiceItems[idx].cost = parseFloat($(this).val()) || 0;
+      const subtotal = invoiceItems[idx].qty * invoiceItems[idx].cost;
+      $(this).closest("tr").find("td:eq(5)").text(
+        ((settings && validator.unescape(settings.symbol)) || '') + subtotal.toFixed(2)
+      );
+      let total = 0;
+      invoiceItems.forEach(function (i) { total += (i.qty || 0) * (i.cost || 0); });
+      const sym = (settings && validator.unescape(settings.symbol)) || '';
+      $("#invItemsTotal").text(sym + total.toFixed(2));
+      $("#inv_total_amount").val(total.toFixed(2));
+      const tax = parseFloat($("#inv_tax_amount").val()) || 0;
+      const disc = parseFloat($("#inv_discount_amount").val()) || 0;
+      $("#inv_net_amount").val((total + tax - disc).toFixed(2));
+    });
+
+    // ── INVOICE ITEMS: remove row ─────────────────────────────────
+    $(document).on("click", ".inv-remove-item", function () {
+      const idx = parseInt($(this).data("idx"));
+      invoiceItems.splice(idx, 1);
+      renderInvoiceItems();
+    });
+
+    // ── INVOICE ITEMS: add new product to list ────────────────────
+    $("#invAddNewProdConfirm").on("click", function () {
+      const name    = $("#inp_name").val().trim();
+      const barcode = $("#inp_barcode").val().trim();
+      const qty     = parseFloat($("#inp_qty").val());
+      const cost    = parseFloat($("#inp_cost").val());
+      const price   = parseFloat($("#inp_price").val());
+
+      if (!name)            { notiflix.Report.warning("Validation", "Product name is required.", "Ok"); return; }
+      if (!barcode)         { notiflix.Report.warning("Validation", "Barcode is required.", "Ok"); return; }
+      if (!qty  || qty  <= 0) { notiflix.Report.warning("Validation", "Quantity must be greater than 0.", "Ok"); return; }
+      if (!cost || cost < 0)  { notiflix.Report.warning("Validation", "Cost price is required.", "Ok"); return; }
+      if (!price|| price< 0)  { notiflix.Report.warning("Validation", "Sale price is required.", "Ok"); return; }
+
+      invoiceItems.push({
+        type:     'new',
+        name:     name,
+        barcode:  barcode,
+        qty:      qty,
+        cost:     cost,
+        price:    price,
+        category: $("#inp_category").val(),
+        expiry:   $("#inp_expiry").val(),
+      });
+      renderInvoiceItems();
+      $("#inp_name, #inp_barcode, #inp_qty, #inp_cost, #inp_price, #inp_expiry").val("");
+      $("#inp_category").val("");
+    });
+
+    $("#invCancelNewProd").on("click", function () {
+      $("#invNewProdPanel").hide();
+    });
+
+    // Reset items when returning to list tab
+    $('#invViewTabs a[href="#invTabList"]').on("shown.bs.tab", function () {
+      invoiceItems = [];
+      renderInvoiceItems();
+      $("#invNewProdPanel").hide();
+      $("#invProductSearch").val("");
+      $("#invProductDropdown").hide();
     });
 
     // ── PROVIDER INVOICE EXPORT ─────────────────────────────────
@@ -2524,7 +2905,7 @@ if (auth == undefined) {
           processData: false,
           contentType: false,
           success: function () {
-            $("#newInvoice").modal("hide");
+            $('#invViewTabs a[href="#invTabList"]').tab("show");
             notiflix.Report.success("Invoice Updated", "Invoice updated successfully.", "Ok");
             const providerId = $("#providerListFilter").val();
             if (providerId) loadInvoiceList(providerId);
@@ -2539,19 +2920,100 @@ if (auth == undefined) {
       } else {
         // POST: send FormData (supports file upload)
         const fd = new FormData(this);
+        const itemsSnapshot = invoiceItems.slice();
+        const invProviderId = $("#inv_provider_id").val();
+        const invDate       = $("#inv_invoice_date").val();
+
         $.ajax({
           url: api + "invoice/invoice",
           type: "POST",
           data: fd,
           processData: false,
           contentType: false,
-          success: function () {
-            $("#newInvoice").modal("hide");
-            notiflix.Report.success("Invoice Saved", "Invoice added successfully.", "Ok");
-            const providerId = $("#providerListFilter").val();
-            if (providerId) loadInvoiceList(providerId);
-            loadInvoicesForForm();
-            loadInvoicesView();
+          success: function (newInvoice) {
+            const newInvoiceId = newInvoice.invoiceId;
+
+            if (!itemsSnapshot.length) {
+              $('#invViewTabs a[href="#invTabList"]').tab("show");
+              notiflix.Report.success("Invoice Saved", "Invoice added successfully.", "Ok");
+              const providerId = $("#providerListFilter").val();
+              if (providerId) loadInvoiceList(providerId);
+              loadInvoicesForForm();
+              loadInvoicesView();
+              return;
+            }
+
+            // Process items sequentially
+            let done = 0;
+            let errors = 0;
+
+            function processNext(idx) {
+              if (idx >= itemsSnapshot.length) {
+                $('#invViewTabs a[href="#invTabList"]').tab("show");
+                const msg = errors
+                  ? "Invoice saved. " + errors + " item(s) had errors — check the product list."
+                  : "Invoice and " + done + " item(s) saved successfully.";
+                notiflix.Report.success("Done", msg, "Ok");
+                const providerId = $("#providerListFilter").val();
+                if (providerId) loadInvoiceList(providerId);
+                loadInvoicesForForm();
+                loadInvoicesView();
+                loadProducts();
+                return;
+              }
+
+              const item = itemsSnapshot[idx];
+
+              if (item.type === 'restock') {
+                $.ajax({
+                  url: api + "inventory/restock/" + item.productId,
+                  type: "POST",
+                  contentType: "application/json",
+                  data: JSON.stringify({
+                    quantity:   item.qty,
+                    invoiceId:  newInvoiceId,
+                    providerId: invProviderId,
+                    costPrice:  item.cost,
+                    entryDate:  invDate,
+                  }),
+                  success: function () { done++; processNext(idx + 1); },
+                  error:   function () { errors++; processNext(idx + 1); },
+                });
+
+              } else {
+                // New product — send as FormData (multer endpoint)
+                const pfd = new FormData();
+                pfd.append("id",             "");
+                pfd.append("name",           item.name);
+                pfd.append("barcode",        item.barcode);
+                pfd.append("quantity",       item.qty);
+                pfd.append("cost_price",     item.cost);
+                pfd.append("price",          item.price);
+                pfd.append("profit_margin",  item.price && item.cost
+                  ? (((item.price - item.cost) / item.cost) * 100).toFixed(2)
+                  : "0");
+                pfd.append("provider",       invProviderId);
+                pfd.append("invoice_id",     newInvoiceId);
+                pfd.append("category",       item.category || "");
+                pfd.append("expirationDate", item.expiry || "");
+                pfd.append("entryDate",      invDate);
+                pfd.append("minStock",       "1");
+                pfd.append("img",            "");
+                pfd.append("remove",         "");
+
+                $.ajax({
+                  url: api + "inventory/product",
+                  type: "POST",
+                  data: pfd,
+                  processData: false,
+                  contentType: false,
+                  success: function () { done++; processNext(idx + 1); },
+                  error:   function () { errors++; processNext(idx + 1); },
+                });
+              }
+            }
+
+            processNext(0);
           },
           error: function (err) {
             const msg = (err.responseJSON && err.responseJSON.message) || "Unknown error.";
@@ -2644,10 +3106,15 @@ if (auth == undefined) {
           $("#inv_current_file_display").html('<span style="color:var(--c-muted);">No file attached</span>');
         }
 
-        // Update modal title and icon
+        // Switch to form tab in edit mode
+        invoiceItems = [];
+        renderInvoiceItems();
+        $("#invNewProdPanel").hide();
+        $("#invProductSearch").val("");
         $("#invoiceFormIcon").attr("class", "fa fa-edit");
         $("#invoiceFormTitle").text(t('edit_invoice_title'));
-        $("#newInvoice").modal("show");
+        $("#invoiceFormSubmitBtn").text(t('save_invoice_btn') || 'Update Invoice');
+        $('#invViewTabs a[href="#invTabAdd"]').tab("show");
       }).fail(function () {
         notiflix.Report.failure("Error", "Failed to load invoice details.", "Ok");
       });
@@ -2715,25 +3182,7 @@ if (auth == undefined) {
       $("#invoicePreviewBody").empty();
     });
 
-    // Handler for the standalone #newCategory modal form (edit-only, kept for backward compatibility)
-    $("#saveCategory").submit(function (e) {
-      e.preventDefault();
-      let method = $("#category_id").val() == "" ? "POST" : "PUT";
-      $.ajax({
-        type: method,
-        url: api + "categories/category",
-        data: $(this).serialize(),
-        success: function () {
-          $("#saveCategory").get(0).reset();
-          loadCategories();
-          loadProducts();
-          $("#newCategory").modal("hide");
-          notiflix.Report.success("Done!", "Category saved", "Ok");
-        },
-      });
-    });
-
-    // Handler for the inline form inside the #Categories modal
+    // Handler for the categories tab form
     $("#saveCategoryModal").submit(function (e) {
       e.preventDefault();
       let method = $("#category_id_modal").val() == "" ? "POST" : "PUT";
@@ -2744,6 +3193,7 @@ if (auth == undefined) {
         success: function () {
           $("#saveCategoryModal")[0].reset();
           $("#category_id_modal").val("");
+          $("#catFormIcon").attr("class", "fa fa-plus-circle");
           $("#categoryFormTitle").text(t("add_category_lbl"));
           $("#submitCategoryModal").val(t("add_category_btn"));
           $("#cancelCategoryEdit").hide();
@@ -2757,9 +3207,24 @@ if (auth == undefined) {
     $("#cancelCategoryEdit").on("click", function () {
       $("#saveCategoryModal")[0].reset();
       $("#category_id_modal").val("");
+      $("#catFormIcon").attr("class", "fa fa-plus-circle");
       $("#categoryFormTitle").text(t("add_category_lbl"));
       $("#submitCategoryModal").val(t("add_category_btn"));
       $(this).hide();
+    });
+
+    // ── NEW PROVIDER TAB: reset form when tab link is clicked ────
+    function resetProviderFormForNew() {
+      $("#saveProvider").get(0).reset();
+      $("#provider_id").val("");
+      $("#providerFormIcon").attr("class", "fa fa-plus-circle");
+      $("#providerFormTitle").text("New Provider");
+    }
+
+    $("#provTabAddLink").on("click", resetProviderFormForNew);
+
+    $("#provCancelBtn").on("click", function () {
+      $('#provViewTabs a[href="#provTabList"]').tab("show");
     });
 
     $("#saveProvider").submit(function (e) {
@@ -2771,23 +3236,17 @@ if (auth == undefined) {
         url: api + "providers/provider",
         data: $(this).serialize(),
         success: function () {
-          $("#saveProvider").get(0).reset();
           loadProviders();
-          diagOptions = {
-            title: "Provider Saved",
-            text: "Select an option below to continue.",
-            okButtonText: "Add another",
-            cancelButtonText: "Close",
-          };
-
           notiflix.Confirm.show(
-            diagOptions.title,
-            diagOptions.text,
-            diagOptions.okButtonText,
-            diagOptions.cancelButtonText,
-            () => {},
-            () => {
-              $("#newProvider").modal("hide");
+            "Provider Saved",
+            "Select an option below to continue.",
+            "Add another",
+            "Back to list",
+            function () {
+              resetProviderFormForNew();
+            },
+            function () {
+              $('#provViewTabs a[href="#provTabList"]').tab("show");
             },
           );
         },
@@ -2860,8 +3319,11 @@ if (auth == undefined) {
     });
 
     $.fn.editProduct = function (index) {
+      // Show products view and switch to form tab
       $("#products_view").show();
       $("#pos_view").hide();
+      $("#productFormIcon").attr("class", "fa fa-edit");
+      $("#productFormTitle").text("Edit Product");
       $("#category option")
         .filter(function () {
           return $(this).val() == allProducts[index].category;
@@ -2900,7 +3362,7 @@ if (auth == undefined) {
         $("#stock").prop("checked", true);
       }
 
-      $("#newProduct").modal("show");
+      $('#prodViewTabs a[href="#prodTabAdd"]').tab("show");
     };
 
     $("#userModal").on("hide.bs.modal", function () {
@@ -2935,6 +3397,7 @@ if (auth == undefined) {
     $.fn.editCategory = function (index) {
       $("#categoryNameModal").val(allCategories[index].name);
       $("#category_id_modal").val(allCategories[index]._id);
+      $("#catFormIcon").attr("class", "fa fa-edit");
       $("#categoryFormTitle").text(t("edit_category_lbl"));
       $("#submitCategoryModal").val(t("save_category_btn"));
       $("#cancelCategoryEdit").show();
@@ -2959,7 +3422,7 @@ if (auth == undefined) {
             url: api + "inventory/product/" + id,
             type: "DELETE",
             success: function (result) {
-              loadProducts();
+              loadProducts(loadProductList);
               notiflix.Report.success("Done!", "Product deleted", "Ok");
             },
           });
@@ -3100,7 +3563,15 @@ if (auth == undefined) {
       $("#providerPhone").val(allProviders[index].phone || "");
       $("#providerEmail").val(allProviders[index].email || "");
       $("#provider_id").val(allProviders[index]._id);
-      $("#newProvider").modal("show");
+      $("#providerFormIcon").attr("class", "fa fa-edit");
+      $("#providerFormTitle").text("Edit Provider");
+      // Show providers view and switch to form tab
+      $("#pos_view").hide();
+      $("#transactions_view").hide();
+      $("#products_view").hide();
+      $("#invoices_view").hide();
+      $("#providers_view").show();
+      $('#provViewTabs a[href="#provTabAdd"]').tab("show");
     };
 
     $.fn.deleteProvider = function (id) {
@@ -3136,7 +3607,11 @@ if (auth == undefined) {
           `<option value="${prov._id}">${prov.name}</option>`
         );
       });
-      loadProductList();
+      if (allProducts.length === 0) {
+        loadProducts(loadProductList);
+      } else {
+        loadProductList();
+      }
 
       // Switch to products view
       $("#pos_view").hide();
@@ -3247,6 +3722,7 @@ if (auth == undefined) {
 
     $("#categoryModal").on("click", function () {
       loadCategoryList();
+      $('#prodViewTabs a[href="#prodTabCat"]').tab("show");
     });
 
     $("#cost_price").off("input change").on("input change", function () {
@@ -3338,6 +3814,7 @@ if (auth == undefined) {
       $("#productList").DataTable().destroy();
 
       products.forEach((product, index) => {
+       
         counter++;
         let category = allCategories.filter(function (category) {
           return category.name == product.category;
@@ -3425,23 +3902,6 @@ if (auth == undefined) {
         }
       });
 
-      // $("#productList").DataTable({
-      //   order: [[1, "desc"]],
-      //   autoWidth: true,
-      //   info: true,
-      //   JQueryUI: true,
-      //   ordering: true,
-      //   paging: true,
-      //   dom: "Bfrtip",
-      //   buttons: [
-      //     {
-      //       extend: "pdfHtml5",
-      //       className: "btn btn-light", // Custom class name
-      //       text: " Download PDF", // Custom text
-      //       filename: "product_list", // Default filename
-      //     },
-      //   ],
-      // });
       $("#productList").DataTable({
         dom: "Bfrtip",
         buttons: [
@@ -3713,7 +4173,7 @@ if (auth == undefined) {
         counter++;
         category_list += `<tr>
             <td>${category.name}</td>
-            <td><span class="btn-group"><button onClick="$(this).editCategory(${index})" class="btn btn-warning"><i class="fa fa-edit"></i></button><button onClick="$(this).deleteCategory(${category._id})" class="btn btn-danger"><i class="fa fa-trash"></i></button></span></td></tr>`;
+            <td><span class="btn-group"><button onClick="$(this).editCategory(${index})" class="btn btn-warning"><i class="fa fa-edit"></i></button><button onClick="$(this).deleteCategory(${category.id})" class="btn btn-danger"><i class="fa fa-trash"></i></button></span></td></tr>`;
       });
 
       if (counter == allCategories.length) {
@@ -4064,10 +4524,11 @@ function loadTransactions() {
                                 <td>${
                                   trans.paid == ""
                                     ? '<button class="btn btn-dark"><i class="fa fa-search-plus"></i></button>'
-                                    : '<button onClick="$(this).viewTransaction(' +
+                                    : '<span class="btn-group"><button onClick="$(this).viewTransaction(' +
                                       index +
-                                      ')" class="btn btn-info"><i class="fa fa-search-plus"></i></button></td>'
-                                }</tr>
+                                      ')" class="btn btn-info"><i class="fa fa-search-plus"></i></button><button onClick="$(this).deleteTransaction(' + index + ')" class="btn btn-danger"><i class="fa fa-trash"></i></button></span>'
+                                }</td>
+                              </tr>
                     `;
 
         if (counter == transactions.length) {
@@ -4648,6 +5109,34 @@ $.fn.viewTransaction = function (index) {
   $("#viewTransaction").html(receipt);
 
   $("#orderModal").modal("show");
+};
+
+$.fn.deleteTransaction = function (index) {
+  const transaction = allTransactions[index];
+  if (!transaction) return;
+
+  notiflix.Confirm.show(
+    "Delete Transaction",
+    `Are you sure you want to delete transaction ${transaction.order}?`,
+    "Yes",
+    "No",
+    function () {
+      $.ajax({
+        url: api + "delete",
+        type: "POST",
+        contentType: "application/json; charset=utf-8",
+        data: JSON.stringify({ orderId: transaction._id }),
+        success: function () {
+          loadTransactions();
+          notiflix.Report.success("Deleted", "Transaction deleted successfully.", "Ok");
+        },
+        error: function () {
+          notiflix.Report.failure("Error", "Failed to delete transaction.", "Ok");
+        },
+      });
+    },
+    function () {},
+  );
 };
 
 $("#status").on("change", function () {

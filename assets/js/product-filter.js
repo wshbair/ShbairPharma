@@ -1,7 +1,6 @@
 $(document).ready(function () {
   $("#categories").on("change", function () {
     let selected = $("#categories option:selected").val();
-    console.log(selected)
     if (selected == "0") {
       $("#parent > div").fadeIn(450);
     } else {
@@ -10,26 +9,16 @@ $(document).ready(function () {
     }
   });
 
-  function searchProducts() {
-    console.log($("#search").val());
-    var matcher = new RegExp($("#search").val(), "gi");
-    $(".box")
-      .show()
-      .not(function () {
-        return matcher.test($(this).find(".name, .sku").text());
-      })
-      .hide();
-  }
-
-  let $search = $("#search").on("input", function () {
-    searchProducts();
+  $("#search").on("input", function () {
+    if (typeof window.posSearchProducts === "function") {
+      window.posSearchProducts($(this).val());
+    }
   });
 
   // Listen for clicks on virtual keyboard buttons inside #jq-keyboard
   $("body").on("click", "#jq-keyboard button", function (e) {
-    // Only trigger search if the search input is currently focused
-    if ($("#search").is(":focus")) {
-      searchProducts();
+    if ($("#search").is(":focus") && typeof window.posSearchProducts === "function") {
+      window.posSearchProducts($("#search").val());
     }
   });
 
