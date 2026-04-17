@@ -65,7 +65,7 @@ body {
     width: 100vw; height: 100vh;
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
-    background: var(--c-navbar) !important;
+    background: linear-gradient(135deg, #1a2436 0%, #0d7377 100%) !important;
     border: none;
     opacity: 0;
     animation: fade-in 0.6s ease-in-out forwards;
@@ -470,6 +470,16 @@ body {
 #categories {
     height: 36px !important; border-radius: var(--radius-sm) !important;
     border-color: var(--c-border) !important; font-size: 13px; min-width: 130px;
+}
+
+.pos-search-placeholder {
+    width: 100%;
+    padding: 80px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    opacity: 0.5;
 }
 
 /* Product grid — override old fixed height */
@@ -925,10 +935,11 @@ html[dir="rtl"] .panel-heading .panel-title > a:after {
 .invoice-stat-card {
     background: var(--c-surface);
     border-radius: var(--radius);
-    box-shadow: var(--shadow);
+    /* box-shadow: var(--shadow); */
     padding: 16px 20px;
     text-align: center;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
+    
 }
 .invoice-stat-label {
     font-size: 11px;
@@ -943,13 +954,13 @@ html[dir="rtl"] .panel-heading .panel-title > a:after {
     font-weight: 700;
     line-height: 1.2;
 }
-.invoice-stat-total  { border-top: 3px solid var(--c-info); }
+.invoice-stat-total  { border: 1px solid var(--c-info); }
 .invoice-stat-total  .invoice-stat-value { color: var(--c-info); }
-.invoice-stat-amount { border-top: 3px solid var(--c-primary); }
+.invoice-stat-amount { border: 1px solid var(--c-primary); }
 .invoice-stat-amount .invoice-stat-value { color: var(--c-primary); }
-.invoice-stat-paid   { border-top: 3px solid var(--c-success); }
+.invoice-stat-paid   { border: 1px solid var(--c-success); }
 .invoice-stat-paid   .invoice-stat-value { color: var(--c-success); }
-.invoice-stat-pending{ border-top: 3px solid var(--c-warning); }
+.invoice-stat-pending{ border: 1px solid var(--c-warning); }
 .invoice-stat-pending .invoice-stat-value { color: var(--c-warning); }
 
 /* ══ INVOICE STATUS BADGES ══ */

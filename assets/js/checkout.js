@@ -7,6 +7,15 @@ $(document).ready(function () {
    * @param {string} value - The keypad value to be processed.
    * @param {boolean} isDueInput - Indicates whether the input is for due payment.
    */
+
+  $.fn.paymentChange = function () {
+    let paymentAmount = $("#paymentText").val();
+    console.log("Payment Amount: " + paymentAmount)
+    $("#paymentText").val(utils.moneyFormat(paymentAmount));
+    $("#payment").val(paymentAmount);
+    $(this).calculateChange();
+  }
+
   $.fn.keypadBtnPressed = function (value, isDueInput) {
     let paymentAmount = $("#payment").val();
     if (isDueInput) {

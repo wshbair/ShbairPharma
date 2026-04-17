@@ -436,9 +436,12 @@ app.post("/product/name", function (req, res) {
     console.log("Search Product name API")
     let name = validator.escape(req.body.productName);
     inventoryDB.find(
-        {
-            // Build a case-insensitive regex to match product names containing the provided substring
-            name: { $regex: new RegExp(name, "i") },
+        {  
+            $or: 
+            [
+                { barcode: parseInt(name) },
+                { name: { $regex: new RegExp(name, "i") } }
+            ]
         },
         function (err, doc) {
             if (err) {
