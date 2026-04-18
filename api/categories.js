@@ -5,24 +5,14 @@ const Datastore =  require('@seald-io/nedb');
 const path = require("path");
 const appName = process.env.APPNAME;
 const appData = process.env.APPDATA;
-const dbPath = path.join(
-    appData,
-    appName,
-    "server",
-    "databases",
-    "categories.db",
-);
+ 
 
 app.use(bodyParser.json());
 module.exports = app;
 
-let categoryDB = new Datastore({
-    filename: dbPath,
-    autoload: true,
-});
-
-categoryDB.ensureIndex({ fieldName: "_id", unique: true });
-
+// Use the shared singleton so inventory.db is opened exactly once
+const { categoriesDB } = require("./db");
+ 
 /**
  * GET endpoint: Get the welcome message for the Category API.
  *
@@ -42,7 +32,7 @@ app.get("/", function (req, res) {
  * @returns {void}
  */
 app.get("/all", function (req, res) {
-    categoryDB.find({}, function (err, docs) {
+    categoriesDB.find({}, function (err, docs) {
         res.send(docs);
     });
 });
@@ -56,7 +46,7 @@ app.get("/all", function (req, res) {
  */
 app.get("/category/:name", function (req, res) {
     // Query the NeDB datastore for documents whose 'name' field matches the provided parameter
-    categoryDB.find(
+    categoriesDB.find(
         {
             name: req.params.name,
         },
@@ -77,7 +67,7 @@ app.get("/category/:name", function (req, res) {
 app.post("/category", function (req, res) {
     let newCategory = req.body;
     newCategory.id = Math.floor(Date.now() / 1000);
-    categoryDB.insert(newCategory, function (err, category) {
+    categoriesDB.insert(newCategory, function (err, category) {
             if (err) {
                     console.error(err);
                     res.status(500).json({
@@ -106,7 +96,7 @@ app.post("/category/batch", function (req, res) {
         return c;
     });
 
-    categoryDB.insert(categories, function (err, newDocs) {
+    categoriesDB.insert(categories, function (err, newDocs) {
         if (err) {
             console.error(err);
             res.status(500).json({
@@ -127,7 +117,7 @@ app.post("/category/batch", function (req, res) {
  * @returns {void}
  */
 app.delete("/category/:categoryId", function (req, res) {
-    categoryDB.remove(
+    categoriesDB.remove(
         {
             id: parseInt(req.params.categoryId),
         },
@@ -152,7 +142,7 @@ app.delete("/category/:categoryId", function (req, res) {
  * @returns {void}
  */
 app.put("/category", function (req, res) {
-    categoryDB.update(
+    categoriesDB.update(
         {
             _id: parseInt(req.body.id),
         },

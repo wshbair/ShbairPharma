@@ -47,6 +47,8 @@ express.use("/api/users", require("./api/users"));
 express.use("/api", require("./api/transactions"));
 express.use("/api/invoice",  require("./api/invoice"));
 express.use("/api/payment",  require("./api/payment"));
+express.use("/api/settings",  require("./api/settings"));
+
 
 
 server.listen(PORT, () => {

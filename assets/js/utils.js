@@ -36,7 +36,6 @@ const daysToExpire = (dueDate) => {
 const getStockStatus = (currentStock, minimumStock)=>{
   currentStock = Number(currentStock);
   minimumStock = Number(minimumStock);
-
    if (isNaN(currentStock) || isNaN(minimumStock)) {
     throw new Error("Invalid input: both currentStock and minimumStock should be numbers.");
   }

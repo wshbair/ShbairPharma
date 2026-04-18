@@ -187,5 +187,79 @@ app.post("/post", function (req, res) {
         );
     }
 });
-
 });
+
+/**
+ * POST endpoint: Reset application by clearing all databases.
+ *
+ * @param {Object} req request object.
+ * @param {Object} res response object.
+ * @returns {void}
+ */
+app.post("/reset", function (req, res) {
+    const fs = require("fs");
+    const path = require("path");
+    const Datastore = require("@seald-io/nedb");
+    
+    const appName = process.env.APPNAME;
+    const appData = process.env.APPDATA;
+    const dbDir = path.join(appData, appName, "server", "databases");
+    
+    // List of all database files
+    const dbFiles = [
+        'inventory.db',
+        'invoices.db',
+        'payments.db',
+        'categories.db',
+        'customers.db',
+        'transactions.db',
+        'users.db',
+        'providers.db'
+    ];
+    
+    // Clear all databases by recreating them
+    const clearDatabase = (dbFile, callback) => {
+        const dbPath = path.join(dbDir, dbFile);
+        const tempFile = dbPath + '~';
+        
+        try {
+            // Remove the database file if it exists
+            if (fs.existsSync(dbPath)) {
+                fs.unlinkSync(dbPath);
+            }
+            // Remove any temp file
+            if (fs.existsSync(tempFile)) {
+                fs.unlinkSync(tempFile);
+            }
+            
+            // Create a new empty database without autoload to avoid issues
+            const db = new Datastore({ filename: dbPath, autoload: false });
+            db.ensureIndex({ fieldName: "_id", unique: true }, (err) => {
+                if (err) {
+                    console.error(`Error ensuring index for ${dbFile}:`, err);
+                }
+                callback();
+            });
+        } catch (error) {
+            console.error(`Error clearing ${dbFile}:`, error);
+            callback();
+        }
+    };
+    
+    let completed = 0;
+    const total = dbFiles.length;
+    
+    dbFiles.forEach(dbFile => {
+        clearDatabase(dbFile, () => {
+            completed++;
+            console.log(`Cleared database: ${dbFile}`);
+            if (completed === total) {
+                res.json({ 
+                    success: true,
+                    message: "All data has been cleared successfully. Please restart the application."
+                });
+            }
+        });
+    });
+});
+

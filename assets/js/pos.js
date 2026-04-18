@@ -1,7 +1,7 @@
 //const jsPDF = require("jspdf");
 //const html2canvas = require("html2canvas");
 //const JsBarcode = require("jsbarcode");
-//const macaddress = require("macaddress");
+const macaddress = require("macaddress");
 const notiflix = require("notiflix");
 const validator = require("validator");
 const DOMPurify = require("dompurify");
@@ -301,6 +301,7 @@ if (auth == undefined) {
     function buildProductCard(item) {
       item.price = parseFloat(item.price).toFixed(2);
       let item_isExpired = isExpired(item.expirationDate);
+      
       let item_stockStatus = getStockStatus(item.quantity, item.minStock);
       let item_img = default_item_img;
       if (item.img !== "") {
@@ -468,10 +469,11 @@ if (auth == undefined) {
         });
         if (expiredCount > 0) {
           notiflix.Notify.failure(`${expiredCount} products expired. Please restock!`);
+          renderPosExpiredStock(`${expiredCount} products expired. Please restock!`);
         }
 
         renderPosLowStock();
-        renderPosExpiredStock(`${expiredCount} products expired. Please restock!`);
+        
         if (typeof callback === "function") callback();
       });
     }
@@ -3260,11 +3262,41 @@ if (auth == undefined) {
       });
     });
 
+    //  BATCH UPLOAD HANDLERS  
     // Upload products in batch using csv file
     $("#upload_products").on("click", function (e) {
       e.preventDefault();
       var $btn = $(this);
       var input = $("#productsFile")[0];
+       // create categories in batch
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const csvText = e.target.result;
+        const categoriesList = utils.extractUniqueCategories(csvText);
+        $.ajax({
+          url: api + "categories/category/batch",
+          type: "POST",
+          data: JSON.stringify(categoriesList),
+          contentType: "application/json",
+          success: function (resp) {
+            loadCategories();
+            notiflix.Report.success(
+            "Categories Uploaded Successfully",
+            "",
+            "Ok"
+          );
+                
+          },
+          error: function (jqXHR) {
+            var message = jqXHR.responseJSON && jqXHR.responseJSON.message ? jqXHR.responseJSON.message : "Failed to upload categories.";
+            var errorTitle = jqXHR.responseJSON && jqXHR.responseJSON.error ? jqXHR.responseJSON.error : "Error";
+            notiflix.Report.failure(errorTitle, message, "Ok");
+          }
+        });
+      };
+      reader.readAsText(input.files[0]);
+  
+      
       if (!input || !input.files || input.files.length === 0) {
         notiflix.Report.warning("No file selected", "Please choose a CSV file to upload.", "Ok");
         return;
@@ -3272,6 +3304,7 @@ if (auth == undefined) {
       var fd = new FormData();
       fd.append("csvfile", input.files[0]);
       $btn.prop("disabled", true).text("Uploading...");
+
       $.ajax({
         url: api + "inventory/products/csv",
         type: "POST",
@@ -3282,7 +3315,8 @@ if (auth == undefined) {
           $btn.prop("disabled", false).text("Upload Products");
           $("#productsFile").val("");
           loadProducts();
-          loadCategories();
+          
+          //loadCategories();
           notiflix.Report.success(
             "Products Uploaded",
             "Inserted: " + resp.inserted + ", Updated: " + resp.updated,
@@ -3296,35 +3330,11 @@ if (auth == undefined) {
           notiflix.Report.failure(errorTitle, message, "Ok");
         }
       });
-      // create categories in batch
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const csvText = e.target.result;
-        const categoriesList = utils.extractUniqueCategories(csvText);
-        console.log(categoriesList);
-        $.ajax({
-          url: api + "categories/category/batch",
-          type: "POST",
-          data: JSON.stringify(categoriesList),
-          contentType: "application/json",
-          success: function (resp) {
-            loadCategories();
-            notiflix.Report.success(
-              "Categories Uploaded",
-              "Inserted: " + resp.inserted + ", Updated: " + resp.updated,
-              "Ok"
-            );
-          },
-          error: function (jqXHR) {
-            var message = jqXHR.responseJSON && jqXHR.responseJSON.message ? jqXHR.responseJSON.message : "Failed to upload categories.";
-            var errorTitle = jqXHR.responseJSON && jqXHR.responseJSON.error ? jqXHR.responseJSON.error : "Error";
-            notiflix.Report.failure(errorTitle, message, "Ok");
-          }
-        });
-      };
-      reader.readAsText(input.files[0]);
+      
+       
+    
     });
-
+        
     $.fn.editProduct = function (index) {
       // Show products view and switch to form tab
       $("#products_view").show();
@@ -3832,7 +3842,7 @@ if (auth == undefined) {
         const todayDate = moment();
         const expiryDate = moment(product.expirationDate, DATE_FORMAT);
 
-        //show stock status indicator
+        //show stock status indicator        
         const stockStatus = getStockStatus(product.quantity,product.minStock);
           if(stockStatus<=0)
           {
@@ -4461,6 +4471,45 @@ if (auth == undefined) {
     $("#current_img").hide(500);
     $(this).hide(500);
     $("#imagename").show(500);
+  });
+
+  $("#reset_database").on("click", function () {
+    notiflix.Confirm.show(
+      "Reset Application",
+      "This will PERMANENTLY delete all data including:\n\n• All Products\n• All Invoices\n• All Payments\n• All Customers\n• All Transactions\n\nThis action CANNOT be undone. Are you sure?",
+      "Yes, Reset",
+      "Cancel",
+      () => {
+        // User confirmed - show loading
+        notiflix.Loading.standard("Resetting application...");
+        
+        $.post(api + "settings/reset", function (response) {
+          notiflix.Loading.remove();
+          notiflix.Report.success(
+            "Success",
+            "All data has been cleared successfully.\n\nThe application will now restart.",
+            "Ok",
+            () => {
+              ipcRenderer.send("app-reload", "");
+            }
+          );
+        }).fail(function (jqXHR) {
+          notiflix.Loading.remove();
+          let errorMsg = "Failed to reset the application";
+          if (jqXHR.responseJSON && jqXHR.responseJSON.message) {
+            errorMsg = jqXHR.responseJSON.message;
+          }
+          notiflix.Report.failure(
+            "Error",
+            errorMsg,
+            "Ok"
+          );
+        });
+      },
+      () => {
+        // User cancelled
+      }
+    );
   });
 }
 

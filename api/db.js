@@ -21,9 +21,12 @@ function dbFile(name) {
 const inventoryDB = new Datastore({ filename: dbFile("inventory.db"),    autoload: true });
 const invoicesDB  = new Datastore({ filename: dbFile("invoices.db"),     autoload: true });
 const paymentsDB  = new Datastore({ filename: dbFile("payments.db"),     autoload: true });
+const categoriesDB  = new Datastore({ filename: dbFile("categories.db"),     autoload: true });
+
 
 inventoryDB.ensureIndex({ fieldName: "_id", unique: true });
 invoicesDB.ensureIndex({  fieldName: "_id", unique: true });
 paymentsDB.ensureIndex({  fieldName: "_id", unique: true });
+categoriesDB.ensureIndex({  fieldName: "_id", unique: true });
 
-module.exports = { inventoryDB, invoicesDB, paymentsDB };
+module.exports = { inventoryDB, invoicesDB, paymentsDB, categoriesDB };
