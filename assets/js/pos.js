@@ -16,6 +16,7 @@ let dotInterval = setInterval(function () {
 let Store = require("electron-store");
 const remote = require("@electron/remote");
 const app = remote.app;
+
 const utils = require("./utils");
 const { t } = require("./i18n");
 
@@ -452,7 +453,6 @@ if (auth == undefined) {
       $.get(api + "inventory/products", function (data) {
         data.forEach((item) => { item.price = parseFloat(item.price).toFixed(2); });
         allProducts = [...data];
-        console.log("Loaded products:", allProducts);
         let expiredCount = 0;
         allProducts.forEach((product) => {
           let expiryDate = moment(product.expirationDate, DATE_FORMAT);
@@ -1199,6 +1199,7 @@ if (auth == undefined) {
           summaryValue: { fontSize: 11, bold: true, color: "#1a3c5e" },
         },
         content: [
+          { text: "ShbairPharma", style: "title", margin: [0, 0, 0, 4] },
           { text: "Provider Payment Report", style: "title", margin: [0, 0, 0, 4] },
           { text: "Generated: " + now, style: "meta", margin: [0, 0, 0, 12] },
 
@@ -1622,6 +1623,7 @@ if (auth == undefined) {
         return;
       }
       const type = $(this).data("pay-type");
+      $("#paymentText").val("");
       $("#paymentModel").modal("show");
       // Pre-select the matching payment method after modal is shown
       $("#paymentModel").one("shown.bs.modal", function () {
@@ -1655,7 +1657,6 @@ if (auth == undefined) {
 
       let currentTime = new Date(moment());
       let discount = $("#inputDiscount").val();
-      console.log($("#customer").val()) 
       let customer = JSON.parse($("#customer").val());
       let date = moment(currentTime).format("YYYY-MM-DD HH:mm:ss");
       let paymentAmount = $("#payment").val().replace(",", "");
@@ -1733,7 +1734,7 @@ if (auth == undefined) {
 
       logo = path.join(img_path, validator.unescape(settings.img));
 
-      receipt = `<div style="font-size: 10px">                            
+      receipt = `<div style="font-size: 10px; font-family: 'Courier New', Courier, monospace; color: #000;">                            
         <p style="text-align: center;">
         ${
           checkFileExists(logo)
@@ -1885,6 +1886,8 @@ if (auth == undefined) {
       $("#refNumber").val("");
       $("#change").text("");
       $("#payment,#paymentText").val("");
+      $("#paymentText").val("");
+
     };
 
     $.get(api + "on-hold", function (data) {
@@ -2710,8 +2713,12 @@ if (auth == undefined) {
 
       if (!pdfMake.vfs["Tahoma.ttf"]) {
         const appRoot = app.getAppPath();
-        pdfMake.vfs["Tahoma.ttf"]      = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma.ttf")).toString("base64");
-        pdfMake.vfs["Tahoma-Bold.ttf"] = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma-Bold.ttf")).toString("base64");
+        pdfMake.vfs["Tahoma.ttf"]           = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma.ttf")).toString("base64");
+        pdfMake.vfs["Tahoma-Bold.ttf"]      = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma-Bold.ttf")).toString("base64");
+        pdfMake.vfs["Roboto-Regular.ttf"]   = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-Regular.ttf")).toString("base64");
+        pdfMake.vfs["Roboto-Medium.ttf"]    = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-Medium.ttf")).toString("base64");
+        pdfMake.vfs["Roboto-Italic.ttf"]    = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-Italic.ttf")).toString("base64");
+        pdfMake.vfs["Roboto-MediumItalic.ttf"] = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-MediumItalic.ttf")).toString("base64");
         pdfMake.fonts = {
           Roboto: { normal: "Roboto-Regular.ttf", bold: "Roboto-Medium.ttf", italics: "Roboto-Italic.ttf", bolditalics: "Roboto-MediumItalic.ttf" },
           Tahoma: { normal: "Tahoma.ttf", bold: "Tahoma-Bold.ttf", italics: "Tahoma.ttf", bolditalics: "Tahoma-Bold.ttf" },
@@ -3625,7 +3632,6 @@ if (auth == undefined) {
     });
 
     $("#providerModal").on("click", function () {
-      // loadProviders() now rebuilds all filter dropdowns internally
       loadProviders();
 
       $("#pos_view").hide();
@@ -3635,6 +3641,8 @@ if (auth == undefined) {
       $("#pointofsale").hide();
       $("#transactions").hide();
       $("#invoices_view").hide();
+      $("#pv_empty_state").show();
+      $("#pv_detail").hide();
 
       // Reset view to blank state
       updateProviderInfo(null);
@@ -3993,7 +4001,12 @@ if (auth == undefined) {
               if (!pdfMake.vfs["Tahoma.ttf"]) {
                 const appRoot = app.getAppPath();
                 pdfMake.vfs["Tahoma.ttf"]      = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma.ttf")).toString("base64");
-                pdfMake.vfs["Tahoma-Bold.ttf"] = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma-Bold.ttf")).toString("base64");
+                pdfMake.vfs["Tahoma-Bold.ttf"] = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma-Bold.ttf")).toString("base64");                
+                pdfMake.vfs["Roboto-Regular.ttf"]   = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-Regular.ttf")).toString("base64");
+                pdfMake.vfs["Roboto-Medium.ttf"]    = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-Medium.ttf")).toString("base64");
+                pdfMake.vfs["Roboto-Italic.ttf"]    = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-Italic.ttf")).toString("base64");
+                pdfMake.vfs["Roboto-MediumItalic.ttf"] = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-MediumItalic.ttf")).toString("base64");
+                  
                 pdfMake.fonts = {
                   Roboto: { normal: "Roboto-Regular.ttf", bold: "Roboto-Medium.ttf", italics: "Roboto-Italic.ttf", bolditalics: "Roboto-MediumItalic.ttf" },
                   Tahoma: { normal: "Tahoma.ttf", bold: "Tahoma-Bold.ttf", italics: "Tahoma.ttf", bolditalics: "Tahoma-Bold.ttf" },
@@ -4687,6 +4700,11 @@ function loadTransactions() {
                     const appRoot = app.getAppPath();
                     pdfMake.vfs["Tahoma.ttf"]      = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma.ttf")).toString("base64");
                     pdfMake.vfs["Tahoma-Bold.ttf"] = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma-Bold.ttf")).toString("base64");
+                    
+                    pdfMake.vfs["Roboto-Regular.ttf"]   = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-Regular.ttf")).toString("base64");
+                    pdfMake.vfs["Roboto-Medium.ttf"]    = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-Medium.ttf")).toString("base64");
+                    pdfMake.vfs["Roboto-Italic.ttf"]    = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-Italic.ttf")).toString("base64");
+                    pdfMake.vfs["Roboto-MediumItalic.ttf"] = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-MediumItalic.ttf")).toString("base64");
                     pdfMake.fonts = {
                       Roboto: { normal: "Roboto-Regular.ttf", bold: "Roboto-Medium.ttf", italics: "Roboto-Italic.ttf", bolditalics: "Roboto-MediumItalic.ttf" },
                       Tahoma: { normal: "Tahoma.ttf", bold: "Tahoma-Bold.ttf", italics: "Tahoma.ttf", bolditalics: "Tahoma-Bold.ttf" },
