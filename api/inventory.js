@@ -41,7 +41,6 @@ const csvUpload = multer({
 
 
 app.use(bodyParser.json());
-
 module.exports = app;
 
 // Use the shared singleton so inventory.db is opened exactly once

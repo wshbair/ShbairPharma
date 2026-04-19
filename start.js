@@ -85,6 +85,28 @@ ipcMain.on("restart-app", () => {
     autoUpdater.quitAndInstall();
 });
 
+ipcMain.on("open-csv-review", () => {
+    let csvReviewWindow = new BrowserWindow({
+        width: 1100,
+        height: 800,
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false,
+            enableRemoteModule: false,
+        },
+        title: 'CSV Product Review & Upload',
+        parent: mainWindow,
+        modal: false
+    });
+    
+    require("@electron/remote/main").enable(csvReviewWindow.webContents);
+    csvReviewWindow.loadURL(`file://${path.join(__dirname, "csv-review.html")}`);
+    
+    csvReviewWindow.on("closed", () => {
+        csvReviewWindow = null;
+    });
+});
+
 //Context menu
 contextMenu({
     prepend: (params, browserWindow) => [

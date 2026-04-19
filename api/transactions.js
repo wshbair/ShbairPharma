@@ -6,24 +6,12 @@ let Inventory = require("./inventory");
 const path = require("path");
 const appName = process.env.APPNAME;
 const appData = process.env.APPDATA;
-const dbPath = path.join(
-  appData,
-  appName,
-  "server",
-  "databases",
-  "transactions.db",
-);
-
+ 
 app.use(bodyParser.json());
-
 module.exports = app;
 
-let transactionsDB = new Datastore({
-  filename: dbPath,
-  autoload: true,
-});
-
-transactionsDB.ensureIndex({ fieldName: "_id", unique: true });
+// Use the shared singleton so transactionsDB is opened exactly once
+ const { transactionsDB } = require("./db");
 
 /**
  * GET endpoint: Get the welcome message for the Transactions API.

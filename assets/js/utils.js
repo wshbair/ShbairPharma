@@ -100,13 +100,18 @@ const setContentSecurityPolicy = () => {
 const extractCategories = (text) => {
   const rows = text.split(/\r?\n/).filter(r => r.trim().length);
   if (rows.length === 0) return [];
+
   const header = rows[0].split(",").map(h => h.trim().toLowerCase());
   const colIndex = header.indexOf("category");
   if (colIndex === -1) return [];
+
   return rows.slice(1)
-    .map(r => r.split(",")[colIndex])
-    .filter(v => v !== undefined && v !== "");
-}
+    .map(r => {
+      const value = r.split(",")[colIndex];
+      return value ? value.trim().toLowerCase() : "";
+    })
+    .filter(v => v !== "");
+};
 
 const extractUniqueCategories = (csvFile) => {
   const all = extractCategories(csvFile);

@@ -40,7 +40,6 @@ const upload = multer({
 
 
 app.use(bodyParser.json());
-
 module.exports = app;
 
 let settingsDB = new Datastore({

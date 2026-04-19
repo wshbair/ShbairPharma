@@ -7,24 +7,15 @@ const path = require("path");
 const validator = require("validator");
 const appName = process.env.APPNAME;
 const appData = process.env.APPDATA;
-const dbPath = path.join(
-    appData,
-    appName,
-    "server",
-    "databases",
-    "customers.db",
-);
+ 
 
 app.use(bodyParser.json());
-
 module.exports = app;
 
-let customerDB = new Datastore({
-    filename: dbPath,
-    autoload: true,
-});
+ 
 
-customerDB.ensureIndex({ fieldName: "_id", unique: true });
+// Use the shared singleton so customersDB is opened exactly once
+const { customersDB } = require("./db");
 
 /**
  * GET endpoint: Get the welcome message for the Customer API.
@@ -48,7 +39,7 @@ app.get("/customer/:customerId", function (req, res) {
     if (!req.params.customerId) {
         res.status(500).send("ID field is required.");
     } else {
-        customerDB.findOne(
+        customersDB.findOne(
             {
                 _id: req.params.customerId,
             },
@@ -67,7 +58,7 @@ app.get("/customer/:customerId", function (req, res) {
  * @returns {void}
  */
 app.get("/all", function (req, res) {
-    customerDB.find({}, function (err, docs) {
+    customersDB.find({}, function (err, docs) {
         res.send(docs);
     });
 });
@@ -81,7 +72,7 @@ app.get("/all", function (req, res) {
  */
 app.post("/customer", function (req, res) {
     var newCustomer = req.body;
-    customerDB.insert(newCustomer, function (err, customer) {
+    customersDB.insert(newCustomer, function (err, customer) {
         if (err) {
             console.error(err);
             res.status(500).json({
@@ -102,7 +93,7 @@ app.post("/customer", function (req, res) {
  * @returns {void}
  */
 app.delete("/customer/:customerId", function (req, res) {
-    customerDB.remove(
+    customersDB.remove(
         {
             _id: req.params.customerId,
         },
@@ -130,7 +121,7 @@ app.delete("/customer/:customerId", function (req, res) {
 app.put("/customer", function (req, res) {
     let customerId = validator.escape(req.body._id);
 
-    customerDB.update(
+    customersDB.update(
         {
             _id: customerId,
         },

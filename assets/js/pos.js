@@ -509,6 +509,7 @@ if (auth == undefined) {
           $("#provider").append(
             `<option value="${provider._id}">${provider.name}</option>`,
           );
+          $("#inv_filter_provider").append(`<option value="${provider._id}">${provider.name}</option>`);
         });
         // Rebuild provider filter dropdowns (providers view + products view)
         let filterOpts = `<option value="">All Providers</option>`;
@@ -1677,7 +1678,7 @@ if (auth == undefined) {
           type = "Cash";
           break;
         case 3:
-          type = "Mobile App (PalPay)";
+          type = "PalPay";
           break;
       }
 
@@ -2341,6 +2342,11 @@ if (auth == undefined) {
 
     $("#prodCancelBtn").on("click", function () {
       $('#prodViewTabs a[href="#prodTabList"]').tab("show");
+    });
+
+    $("#openCsvReviewBtn").on("click", function () {
+      // Send IPC message to main process to open CSV review window
+      ipcRenderer.send("open-csv-review");
     });
 
     // When provider changes in the product form, filter invoice datalist to that provider
@@ -3665,6 +3671,7 @@ if (auth == undefined) {
 
     $("#invoicesModal").on("click", function () {
       loadInvoicesView();
+      loadProviders();
       $("#pos_view").hide();
       $("#transactions_view").hide();
       $("#products_view").hide();
@@ -3739,11 +3746,46 @@ if (auth == undefined) {
     });
 
     $("#categoryModal").on("click", function () {
-      loadCategoryList();
+      loadCategories();
+      loadCategoryList()
       $('#prodViewTabs a[href="#prodTabCat"]').tab("show");
     });
 
-    $("#cost_price").off("input change").on("input change", function () {
+    $("#prodTabCatLink").on("click", function () {
+      loadCategories();
+      loadCategoryList()
+      $('#prodViewTabs a[href="#prodTabCat"]').tab("show");
+    });
+
+    $("#prodTabListLink").on("click", function () {
+      loadProducts();
+      loadProductList();
+      $('#prodViewTabs a[href="#prodTabList"]').tab("show");
+    });
+
+    // $("#openCsvReviewBtn").on("click", function () {
+    //   // Open the CSV review page in a new window
+    //   const { BrowserWindow } = require('@electron/remote');
+    //   const path = require('path');
+      
+    //   let csvReviewWindow = new BrowserWindow({
+    //     width: 1200,
+    //     height: 800,
+    //     webPreferences: {
+    //       nodeIntegration: true,
+    //       contextIsolation: false,
+    //       enableRemoteModule: true
+    //     },
+    //     title: 'CSV Product Review & Upload'
+    //   });
+      
+    //   csvReviewWindow.loadFile('csv-review.html');
+      
+    //   // Optional: Handle window closed
+    //   csvReviewWindow.on('closed', () => {
+    //     csvReviewWindow = null;
+    //   });
+    // });
         var price = parseFloat($("#cost_price").val()) || 0;
         var margin = parseFloat($("#profit_margin").val()) || 0;
         var salePrice = price + (price * margin / 100);
@@ -3752,6 +3794,14 @@ if (auth == undefined) {
       });
 
       $("#profit_margin").off("input change").on("input change", function () {
+        var price = parseFloat($("#cost_price").val()) || 0;
+        var margin = parseFloat($("#profit_margin").val()) || 0;
+        var salePrice = price + (price * margin / 100);
+        //var salePrice = price + margin;
+        $("#product_price").val(salePrice.toFixed(2));
+      });
+
+      $("#cost_price").off("input change").on("input change", function () {
         var price = parseFloat($("#cost_price").val()) || 0;
         var margin = parseFloat($("#profit_margin").val()) || 0;
         var salePrice = price + (price * margin / 100);
@@ -3832,7 +3882,6 @@ if (auth == undefined) {
       $("#productList").DataTable().destroy();
 
       products.forEach((product, index) => {
-       
         counter++;
         let category = allCategories.filter(function (category) {
           return category.name == product.category;
@@ -3868,6 +3917,7 @@ if (auth == undefined) {
             product.expiryStatus = `${diffDays} ${days_noun} left`;
             product.expiryAlert = `<p class="text-danger"><small><i class="${icon}"></i> ${product.expiryStatus}</small></p>`;
           }
+          
         } else {
           icon = "fa fa-exclamation-triangle";
           product.expiryStatus = "Expired";
@@ -3887,7 +3937,7 @@ if (auth == undefined) {
         }
         //render product list
         product_list +=
-          '<tr>'+
+          `<tr>`+
           //   <td><img id="` +
           // product._id +
           // `"></td>
@@ -3902,6 +3952,7 @@ if (auth == undefined) {
             </td>
             <td>${product.category}</td>
             <td>${product.invoiceId || "N/A"}${product.invoiceHistory && product.invoiceHistory.length > 1 ? ` <span class="badge" title="${product.invoiceHistory.length} restocks" style="cursor:default;">${product.invoiceHistory.length}</span>` : ""}</td>
+            <td>${product.expiryStatus || "N/A"}</td>
             <td class="nobr"><span class="btn-group"><button onClick="$(this).editProduct(${index})" class="btn btn-warning btn-sm"><i class="fa fa-edit"></i></button><button onClick="$(this).restockProduct(${product._id})" class="btn btn-success btn-sm" title="Restock"><i class="fa fa-refresh"></i></button><button onClick="$(this).deleteProduct(${
               product._id
             })" class="btn btn-danger btn-sm"><i class="fa fa-trash"></i></button></span></td></tr>`;
@@ -4455,7 +4506,6 @@ if (auth == undefined) {
           .prop("selected", true);
       }
     });
- });
 
   $("#rmv_logo").on("click", function () {
     $("#remove_logo").val("1");
@@ -4532,10 +4582,11 @@ function loadTransactions() {
   let query = `by-date?start=${start_date}&end=${end_date}&user=${by_user}&status=${by_status}&till=${by_till}`;
 
   $.get(api + query, function (transactions) {
+    
     if (transactions.length > 0) {
       $("#transaction_list").empty();
       $("#transactionList").DataTable().destroy();
-
+      
       allTransactions = [...transactions];
 
       transactions.forEach((trans, index) => {
@@ -4585,10 +4636,10 @@ function loadTransactions() {
                                 <td>${trans.user}</td>
                                 <td>${
                                   trans.paid == ""
-                                    ? '<button class="btn btn-dark"><i class="fa fa-search-plus"></i></button>'
+                                    ? '<button class="btn btn-info btn-sm"><i class="fa fa-search-plus"></i></button>'
                                     : '<span class="btn-group"><button onClick="$(this).viewTransaction(' +
                                       index +
-                                      ')" class="btn btn-info"><i class="fa fa-search-plus"></i></button><button onClick="$(this).deleteTransaction(' + index + ')" class="btn btn-danger"><i class="fa fa-trash"></i></button></span>'
+                                      ')" class="btn btn-info btn-sm"><i class="fa fa-search-plus"></i></button><button onClick="$(this).deleteTransaction(' + index + ')" class="btn btn-warning btn-sm"><i class="fa fa-trash"></i></button></span>'
                                 }</td>
                               </tr>
                     `;
@@ -5194,7 +5245,11 @@ $.fn.deleteTransaction = function (index) {
         contentType: "application/json; charset=utf-8",
         data: JSON.stringify({ orderId: transaction._id }),
         success: function () {
+          $("#transaction_list").empty();
+          $("#transactionList").DataTable().destroy();
+          $("#product_sales").empty();
           loadTransactions();
+          loadSoldProducts();
           notiflix.Report.success("Deleted", "Transaction deleted successfully.", "Ok");
         },
         error: function () {

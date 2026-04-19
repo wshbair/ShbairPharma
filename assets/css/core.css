@@ -1047,6 +1047,7 @@ textarea.form-control {
 .tab-content {
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
     color: #777777;
+    border-radius: 0 10px 10px 10px;
 }
 
 .nav.nav-tabs>li:last-of-type a {
@@ -1056,6 +1057,7 @@ textarea.form-control {
 .nav.nav-tabs {
     border-bottom: 0;
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
 }
 
 .navtab-bg {
@@ -1076,6 +1078,7 @@ textarea.form-control {
 .tabs-vertical>li.active>a:focus,
 .tabs-vertical>li.active>a:hover {
     color: #5fbeaa !important;
+    border-radius: 10px 10px 0 0;
 }
 
 /* List group */
@@ -2630,3 +2633,4 @@ body.fixed-left .side-menu.left {
         margin-top:0;
     }
 }
+

@@ -224,8 +224,7 @@ body {
 .pos-navbar #pointofsale:hover,
 .pos-navbar #pointofsale:focus,
 .pos-navbar #pointofsale:active {
-    background-color: var(--c-danger) !important;
-    border-color: var(--c-danger) !important;
+     
     color: #fff !important; font-weight: 600 !important;
 }
 .pos-navbar #pointofsale:hover {
@@ -1301,3 +1300,5 @@ html[dir="rtl"] #providers_view .card-title { flex-direction: row-reverse; }
 .table tbody tr:nth-child(even) {
   background-color: #ffffff;
 }
+
+ 

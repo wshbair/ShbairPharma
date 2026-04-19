@@ -6,24 +6,13 @@ const bcrypt = require("bcrypt");
 const saltRounds = 10;
 const validator = require("validator");
 const path = require("path");
-const dbPath = path.join(
-    process.env.APPDATA,
-    process.env.APPNAME,
-    "server",
-    "databases",
-    "users.db",
-);
-
+ 
 app.use(bodyParser.json());
-
 module.exports = app;
 
-let usersDB = new Datastore({
-    filename: dbPath,
-    autoload: true,
-});
-
-usersDB.ensureIndex({ fieldName: "username", unique: true });
+ 
+// Use the shared singleton so usersDB is opened exactly once
+ const { usersDB } = require("./db");
 
 /**
  * GET endpoint: Get the welcome message for the Users API.

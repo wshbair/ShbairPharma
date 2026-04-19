@@ -61,16 +61,16 @@
                 <div class="nav-sep"></div>
                
                 <!-- Left actions -->
+                <button id="pointofsale" type="button" class="btn btn-primary waves-effect">
+                    <i class="glyphicon glyphicon-shopping-cart"></i> <span data-i18n="point_of_sale">Point of Sale</span>
+                </button>
+
                 <div class="p_one btn-group" style="gap:5px;display:flex;">
                     <button id="productModal" type="button" class="btn btn-success waves-effect">
                         <i class="glyphicon glyphicon-barcode"></i> <span data-i18n="products">Products</span>
                     </button>
                 </div>
-                <!-- <div class="p_two btn-group" style="gap:5px;display:flex;">
-                    <button id="categoryModal" data-toggle="modal" data-target="#Categories" type="button" class="btn btn-success waves-effect">
-                        <i class="glyphicon glyphicon-th"></i> <span data-i18n="categories">Categories</span>
-                    </button>
-                </div> -->
+
                 <div class="p_two btn-group" style="gap:5px;display:flex;">
                     <button id="providerModal" type="button" class="btn btn-success waves-effect">
                         <i class="fa fa-truck"></i> <span data-i18n="providers">Providers</span>
@@ -79,32 +79,30 @@
                 <button id="invoicesModal" type="button" class="btn btn-success waves-effect">
                     <i class="fa fa-file-text-o"></i> <span data-i18n="invoices_nav_btn">Invoices</span>
                 </button>
-                <button id="viewRefOrders" data-toggle="modal" data-target="#holdOrdersModal" type="button" class="btn btn-info waves-effect">
+                <button id="viewRefOrders" data-toggle="modal" data-target="#holdOrdersModal" type="button" class="btn btn-success waves-effect">
                     <i class="fa fa-shopping-basket"></i> <span data-i18n="hold_orders">Hold Orders</span>
                 </button>
-                <button id="viewCustomerOrders" data-toggle="modal" data-target="#customerModal" type="button" onclick="$(this).getCustomerOrders()" class="btn btn-info waves-effect">
-                    <i class="fa fa-shopping-cart"></i> <span data-i18n="orders">Orders</span>
-                </button>
+                
 
                 <div class="nav-spacer"></div>
 
                 <!-- Right actions -->
-                <button id="pointofsale" type="button" class="btn btn-danger waves-effect">
-                    <i class="glyphicon glyphicon-shopping-cart"></i> <span data-i18n="point_of_sale">Point of Sale</span>
+                 <button id="viewCustomerOrders" data-toggle="modal" data-target="#customerModal" type="button" onclick="$(this).getCustomerOrders()" class="btn btn-default waves-effect">
+                    <i class="fa fa-shopping-cart"></i> <span data-i18n="orders">Orders</span>
                 </button>
-                <button id="transactions" type="button" class="btn btn-success waves-effect p_three">
+                <button id="transactions" type="button" class="btn btn-default waves-effect p_three">
                     <i class="glyphicon glyphicon-credit-card"></i> <span data-i18n="transactions">Transactions</span>
                 </button>
                 <div class="nav-sep"></div>
                 <div class="p_four btn-group" style="gap:5px;display:flex;">
-                    <button id="usersModal" data-toggle="modal" data-target="#Users" type="button" class="btn btn-success waves-effect">
+                    <button id="usersModal" data-toggle="modal" data-target="#Users" type="button" class="btn btn-default waves-effect">
                         <i class="glyphicon glyphicon-user"></i> <span data-i18n="users">Users</span>
                     </button>
-                    <button id="add-user" data-toggle="modal" type="button" class="btn btn-warning waves-effect">
+                    <button id="add-user" data-toggle="modal" type="button" class="btn btn-default waves-effect">
                         <i class="fa fa-plus"></i>
                     </button>
                 </div>
-                <button id="settings" data-toggle="modal" data-target="#settingsModal" type="button" class="btn btn-success waves-effect p_five" data-i18n-title="settings">
+                <button id="settings" data-toggle="modal" data-target="#settingsModal" type="button" class="btn btn-default waves-effect p_five" data-i18n-title="settings">
                     <i class="glyphicon glyphicon-cog"></i>
                 </button>
                 <button type="button" class="btn btn-default waves-effect" id="cashier" data-i18n-title="my_profile" title="My Profile">
@@ -112,7 +110,7 @@
                 </button>
                 <!-- <button id="langToggle" type="button" class="btn btn-default waves-effect" title="Toggle Language / تغيير اللغة">عربي</button>
                  -->
-                <button id="log-out" type="button" class="btn btn-warning waves-effect" data-i18n-title="sign_out">
+                <button id="log-out" type="button" class="btn btn-default waves-effect" data-i18n-title="sign_out">
                     <i class="glyphicon glyphicon-log-out"></i>
                 </button> 
             </div>
@@ -142,7 +140,7 @@
                         <div class="col-md-4"><div class="input-group"><span class="input-group-addon" id="date-addon" data-i18n="date">Date</span><div id="reportrange"><i class="fa fa-calendar"></i>&nbsp;<span></span>&nbsp;<i class="fa fa-caret-down"></i></div></div></div>
                     </div>
                     <div class="row">
-                        <div class="col-md-4" id="productSales">
+                        <div class="col-md-3" id="productSales">
                             <div class="card-box">
                                 <div class="card-title"><h4 data-i18n="products_title">Products</h4></div>
                                 <div class="card-body">
@@ -153,7 +151,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-8" id="transactionDetails">
+                        <div class="col-md-9" id="transactionDetails">
                             <div class="card-box">
                                 <div class="card-title"><h4 data-i18n="trans_details">Transaction Details</h4></div>
                                 <div class="card-body">
@@ -186,13 +184,18 @@
                     <!-- Tab navigation -->
                     <ul class="nav nav-tabs inv-view-tabs" id="prodViewTabs" role="tablist">
                         <li role="presentation" class="active">
-                            <a href="#prodTabList" data-toggle="tab">
+                            <a href="#prodTabList" id="prodTabListLink" data-toggle="tab">
                                 <i class="fa fa-list"></i> <span data-i18n="products">Products</span>
                             </a>
                         </li>
                         <li role="presentation">
                             <a href="#prodTabAdd" id="prodTabAddLink" data-toggle="tab">
                                 <i class="fa fa-plus-circle"></i> <span data-i18n="add_product_btn">New Product</span>
+                            </a>
+                        </li>
+                        <li role="presentation">
+                            <a href="#prodTabImport" data-toggle="tab">
+                                <i class="fa fa-upload"></i> <span>CSV Import</span>
                             </a>
                         </li>
                         <li role="presentation">
@@ -231,6 +234,7 @@
                                                     <th data-i18n="qty_col">Qty</th>
                                                     <th data-i18n="category_col">Category</th>
                                                     <th data-i18n="invoice_id">Invoice ID</th>
+                                                    <th data-i18n="expiry_status_col">Expiry Status</th>
                                                     <th data-i18n="action_col">Action</th>
                                                 </tr></thead>
                                                 <tbody id="product_list"></tbody>
@@ -284,7 +288,34 @@
                             </div>
                         </div>
 
-                        <!-- ══ TAB 3: Categories ══ -->
+                        <!-- ══ TAB 3: CSV Import ══ -->
+                        <div class="tab-pane" id="prodTabImport">
+                            <div class="card-box" style="margin-top:16px;">
+                                <div class="card-title">
+                                    <h4>
+                                        <i class="fa fa-upload"></i>
+                                        <span>CSV Product Import & Review</span>
+                                    </h4>
+                                </div>
+                                <div class="card-body">
+                                    <div>
+                                        <strong>CSV Import Instructions:</strong>
+                                        <ul>
+                                            <li>Upload a CSV file with product data</li>
+                                            <li>Review and edit product information before importing</li>
+                                            <li>Expected columns: id, name, barcode, price, costPrice, quantity, category, minStock, expirationDate, profitMargin, stock, img</li>
+                                        </ul>
+                                    </div>
+                                    <div class="text-left">
+                                        <button id="openCsvReviewBtn" class="btn btn-primary waves-effect">
+                                            <i class="fa fa-upload"></i> Open CSV Review Tool
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ══ TAB 4: Categories ══ -->
                         <div class="tab-pane" id="prodTabCat">
                             <div class="row" style="margin-top:16px;">
                                 <div class="col-md-7">
@@ -1218,7 +1249,7 @@
                             <div class="form-group"><label data-i18n="phone_lbl">Phone</label><input type="text" name="phone" data-i18n-placeholder="phone_placeholder" placeholder="Phone number" class="form-control" id="phoneNumber"></div>
                             <div class="form-group"><label data-i18n="email_lbl">Email</label><input type="email" name="email" data-i18n-placeholder="email_placeholder" placeholder="Email address" class="form-control" id="emailAddress"></div>
                             <div class="form-group"><label data-i18n="address_lbl">Address</label><input type="text" name="address" data-i18n-placeholder="address_placeholder" placeholder="Address" class="form-control" id="userAddress"></div>
-                            <input type="submit" class="btn btn-primary btn-block waves-effect">
+                            <input type="submit" class="btn btn-primary waves-effect">
                         </form>
                     </div>
                 </div>
@@ -1275,8 +1306,8 @@
                                     </div>
                                 </div>
                             </div>
-                            <button type="submit" class="btn btn-success btn-block">
-                                <i class="fa fa-plus-circle"></i> Confirm Restock
+                            <button type="submit" class="btn btn-primary">
+                                 Confirm Restock
                             </button>
                         </form>
                     </div>
@@ -1346,7 +1377,7 @@
                                 <div class="form-group"><label><input type="checkbox" name="perm_users" id="perm_users"> <span data-i18n="perm_users">Manage Users and Permissions</span></label></div>
                                 <div class="form-group"><label><input type="checkbox" name="perm_settings" id="perm_settings"> <span data-i18n="perm_settings">Manage Settings</span></label></div>
                             </div>
-                            <input type="submit" class="btn btn-primary btn-block waves-effect">
+                            <input type="submit" class="btn btn-primary btn waves-effect">
                         </form>
                     </div>
                 </div>
@@ -1418,7 +1449,7 @@
                                         <div class="form-group"><label data-i18n="server_ip_lbl">Server IP Address*</label><input type="text" required placeholder="IP address of admin computer" name="ip" class="form-control" id="ip"></div>
                                         <div class="col-md-5"><div class="form-group"><label data-i18n="till_number_lbl">Till Number*</label><input type="text" required placeholder="Number" name="till" class="form-control" id="till"></div></div>
                                         <div class="col-md-7"><div class="form-group"><label data-i18n="hardware_id_lbl">Hardware ID</label><input type="text" required name="mac" class="form-control" id="mac" readonly></div></div>
-                                        <div class="form-group"><input id="save_settings" type="submit" class="btn btn-success btn-block waves-effect" data-i18n-value="save_settings_val" value="Save Settings"></div>
+                                        <div class="form-group"><input id="save_settings" type="submit" class="btn btn-primary waves-effect" data-i18n-value="save_settings_val" value="Save Settings"></div>
                                     </form>
                                 </div>
                             </div>
@@ -1446,20 +1477,17 @@
                                     </div>
                                 </div>
                             </form>
-                            <div class="row">
-                                <div class="col-md-12">
-                                    <h4 data-i18n="upload_products_h4">Upload Products File</h4><hr>
-                                    <div class="form-group"><label><span id="rmv_img" class="btn btn-xs btn-warning" data-i18n="remove_lbl">Remove</span></label><input type="file" name="productsFile" id="productsFile"></div>
-                                    <button id="upload_products" type="submit" class="btn btn-primary waves-effect" data-i18n="upload_btn">Upload Products</button>
-                                </div>
-                            </div>
-                            <hr>
-                            <div class="row">
-                                <div class="col-md-12">
-                                    <h4 style="color: #dc3545;">Danger Zone</h4>
-                                    <p style="color: #666; font-size: 14px;">This will permanently delete all data including products, invoices, payments, customers, and all other records.</p>
-                                    <button id="reset_database" type="button" class="btn btn-danger waves-effect" style="background-color: #dc3545;">Reset Application (Clear All Data)</button>
-                                </div>
+                            
+                            
+                        </div>
+                    </div>
+
+                    <div class="modal-footer" style="text-align:left">
+                        <div class="row">
+                            <div class="col-md-12 card-box" style="background-color: #fed5da;">
+                                <h4 style="color: #dc3545;">Danger Zone</h4>
+                                <p style="color: #666; font-size: 14px;">This will permanently delete all data including products, invoices, payments, customers, and all other records.</p>
+                                <button id="reset_database" type="button" class="btn btn-danger waves-effect" style="background-color: #dc3545;">Reset Application (Clear All Data)</button>
                             </div>
                         </div>
                     </div>
@@ -1530,7 +1558,7 @@
                                 <label data-i18n="notes_lbl">Notes</label>
                                 <textarea id="pay_notes" name="notes" class="form-control" rows="2" placeholder="Optional"></textarea>
                             </div>
-                            <button type="submit" class="btn btn-primary btn-block waves-effect" data-i18n="save_payment_btn">Save Payment</button>
+                            <button type="submit" class="btn btn-primary waves-effect" data-i18n="save_payment_btn">Save Payment</button>
                         </form>
                     </div>
                 </div>

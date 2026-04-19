@@ -10,7 +10,7 @@ const appData = process.env.APPDATA;
 app.use(bodyParser.json());
 module.exports = app;
 
-// Use the shared singleton so inventory.db is opened exactly once
+// Use the shared singleton so categoriesDB is opened exactly once
 const { categoriesDB } = require("./db");
  
 /**

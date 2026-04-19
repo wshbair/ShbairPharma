@@ -7,30 +7,21 @@ const validator = require("validator");
 const e = require("express");
 const appName = process.env.APPNAME;
 const appData = process.env.APPDATA;
-const dbPath = path.join(
-    appData,
-    appName,
-    "server",
-    "databases",
-    "providers.db",
-);
+
 
 app.use(bodyParser.json());
 module.exports = app;
 
-let providerDB = new Datastore({
-    filename: dbPath,
-    autoload: true,
-});
+// Use the shared singleton so providersDB is opened exactly once
+const { providersDB } = require("./db");
 
-providerDB.ensureIndex({ fieldName: "_id", unique: true });
 
 app.get("/", function (req, res) {
     res.send("Providers API");
 });
 
 app.get("/all", function (req, res) {
-    providerDB.find({}, function (err, docs) {
+    providersDB.find({}, function (err, docs) {
         res.send(docs);
     });
 });
@@ -44,7 +35,7 @@ app.post("/provider", function (req, res) {
         entryDate: new Date().toISOString(),
 
     };
-    providerDB.insert(newProvider, function (err) {
+    providersDB.insert(newProvider, function (err) {
         if (err) {
             console.error(err);
             res.status(500).json({ error: "Internal Server Error", message: "An unexpected error occurred." });
@@ -61,7 +52,7 @@ app.put("/provider", function (req, res) {
         phone: validator.escape(req.body.phone || ""),
         email: validator.escape(req.body.email || ""),
     };
-    providerDB.update(
+    providersDB.update(
         { _id: parseInt(req.body.id) },
         update,
         {},
@@ -77,7 +68,7 @@ app.put("/provider", function (req, res) {
 });
 
 app.delete("/provider/:providerId", function (req, res) {
-    providerDB.remove(
+    providersDB.remove(
         { _id: parseInt(req.params.providerId) },
         function (err) {
             if (err) {

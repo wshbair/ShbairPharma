@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSV Product Review & Upload</title>
+
+<link href="assets/css/bootstrap.min.css" rel="stylesheet">
+<link href="assets/css/icons.css" rel="stylesheet">
+
+<style>
+:root {
+    --primary: #3b82f6;
+    --bg: #f8fafc;
+    --text: #1e293b;
+    --muted: #64748b;
+    --border: #e2e8f0;
+}
+
+body {
+    background: var(--bg);
+    font-family: "Segoe UI", sans-serif;
+    color: var(--text);
+}
+
+/* Layout */
+h2 {
+    font-weight: 600;
+}
+
+/* Cards */
+.card {
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    padding: 10px;
+}
+
+/* Inputs */
+.form-control {
+    border-radius: 10px;
+}
+
+ 
+
+/* Table */
+.table-responsive {
+    max-height: 65vh;
+    overflow: auto;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+}
+
+thead th {
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 2;
+    font-size: 12px;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.table tbody tr {
+    transition: background 0.2s ease;
+}
+
+.table tbody tr:hover {
+    background: #eef4ff;
+}
+
+/* Editable */
+.editable-cell {
+    cursor: pointer;
+    padding: 4px;
+}
+
+.edit-input {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px;
+}
+
+/* Validation */
+.cell-valid {
+    background: #ecfdf5 !important;
+}
+
+.cell-invalid {
+    background: #fef2f2 !important;
+}
+
+/* Toolbar */
+.toolbar {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+}
+
+/* Hide review initially */
+.review-section {
+    display: none;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h2 class="mb-4">CSV Product Review & Upload</h2>
+
+    <!-- Upload -->
+     <div id="uploadSection">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="form-group">
+                <h4>Step 1: Upload CSV File</h4>
+
+                <input 
+                    type="file" 
+                    id="csvFile" 
+                    accept=".csv" 
+                    class="form-control"
+                >
+                <small class="text-muted">
+                    Upload your product CSV file to begin processing
+                </small>
+            </div>
+
+            <div class="form-group">
+                <button 
+                    id="parseBtn" 
+                    class="btn btn-primary" 
+                    disabled
+                >
+                    Parse & Review
+                </button>
+            </div>
+
+            <div class="form-group text-muted">
+                <label>Expected CSV Columns</label>
+                <div>
+                    id, name, barcode, salePrice, costPrice, quantity, category, expiryDate, profitMargin
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+    <!-- Review -->
+    <div class="review-section" id="reviewSection">
+        <div class="card-body">
+
+            <h4>Step 2: Review & Edit</h4>
+
+            <!-- Toolbar -->
+            <div class="toolbar">
+
+                <input type="text" id="searchInput" class="form-control" placeholder="Search product, barcode..." style="max-width:300px;">
+
+                <div class="d-flex gap-2">
+                    <button id="bulkDeleteBtn" class="btn btn-danger">Delete Selected</button>
+                    <button id="uploadBtn" class="btn btn-primary">Upload</button>
+                    <button id="backBtn" class="btn btn-purple">Back</button>
+                </div>
+
+            </div>
+
+            <!-- Table -->
+            <div>
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAll"></th>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Barcode</th>
+                            <th>Sale Price</th>
+                            <th>Cost Price</th>
+                            <th>Qty</th>
+                            <th>Category</th>
+                            <th>Min Stock</th>
+                            <th>Expiry</th>
+                            <th>Profit Margin</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productsTableBody"></tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="assets/dist/js/bundle.min.js"></script>
+<!-- Your external logic file -->
+<script src="assets/js/csv-review.js"></script>
+
+<script>
+// ========================
+// SEARCH FILTER
+// ========================
+document.getElementById("searchInput").addEventListener("input", function () {
+    const value = this.value.toLowerCase();
+    document.querySelectorAll("#productsTableBody tr").forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(value) ? "" : "none";
+    });
+});
+
+// ========================
+// SELECT ALL
+// ========================
+document.getElementById("selectAll").addEventListener("change", function () {
+    document.querySelectorAll("#productsTableBody input[type='checkbox']")
+        .forEach(cb => cb.checked = this.checked);
+});
+
+// ========================
+// SIMPLE VALIDATION
+// ========================
+function validateCell(cell, type) {
+    const value = cell.innerText.trim();
+    let valid = true;
+
+    if (type === "number") {
+        valid = !isNaN(value) && value !== "";
+    }
+
+    if (type === "text") {
+        valid = value.length > 1;
+    }
+
+    cell.classList.remove("cell-valid", "cell-invalid");
+    cell.classList.add(valid ? "cell-valid" : "cell-invalid");
+
+    return valid;
+}
+
+ 
+
+ 
+</script>
+
+</body>
+</html>

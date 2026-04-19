@@ -22,11 +22,28 @@ const inventoryDB = new Datastore({ filename: dbFile("inventory.db"),    autoloa
 const invoicesDB  = new Datastore({ filename: dbFile("invoices.db"),     autoload: true });
 const paymentsDB  = new Datastore({ filename: dbFile("payments.db"),     autoload: true });
 const categoriesDB  = new Datastore({ filename: dbFile("categories.db"),     autoload: true });
+const customersDB  = new Datastore({ filename: dbFile("customers.db"),     autoload: true });
+const transactionsDB  = new Datastore({ filename: dbFile("transactions.db"),     autoload: true });
+const usersDB  = new Datastore({ filename: dbFile("users.db"),     autoload: true });
+const providersDB  = new Datastore({ filename: dbFile("providers.db"),     autoload: true });
 
 
 inventoryDB.ensureIndex({ fieldName: "_id", unique: true });
 invoicesDB.ensureIndex({  fieldName: "_id", unique: true });
 paymentsDB.ensureIndex({  fieldName: "_id", unique: true });
-categoriesDB.ensureIndex({  fieldName: "_id", unique: true });
+categoriesDB.ensureIndex({  fieldName: "name", unique: true });
+customersDB.ensureIndex({  fieldName: "_id", unique: true });
+transactionsDB.ensureIndex({  fieldName: "_id", unique: true });
+usersDB.ensureIndex({  fieldName: "_id", unique: true });
+providersDB.ensureIndex({  fieldName: "_id", unique: true });
 
-module.exports = { inventoryDB, invoicesDB, paymentsDB, categoriesDB };
+module.exports = { 
+    inventoryDB, 
+    invoicesDB, 
+    paymentsDB, 
+    categoriesDB, 
+    customersDB, 
+    transactionsDB, 
+    usersDB, 
+    providersDB 
+};

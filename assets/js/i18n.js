@@ -195,7 +195,6 @@ var translations = {
     charge_vat_lbl: 'Charge VAT',
     logo_lbl: 'Pharmacy Logo',
     logo_note: 'Max 2MB · jpeg, jpg, png, webp',
-    upload_products_h4: 'Upload Products File',
     upload_btn: 'Upload Products',
 
     //Providers
@@ -286,7 +285,9 @@ var translations = {
 
     // Providers view hints
     no_invoices_msg: 'No invoices found for this provider.',
-    select_provider_hint: 'Select a provider above to view invoices',
+    select_provider_hint: 'Select a provider above to add an invoice',
+
+    expiry_status_col: 'Expiry Status',
   },
 
   ar: {
@@ -576,6 +577,7 @@ var translations = {
     // Providers view hints
     no_invoices_msg: 'لا توجد فواتير لهذا المورد.',
     select_provider_hint: 'اختر موردًا أعلاه لعرض الفواتير',
+    expiry_status_col: 'حالة الانتهاء',
   }
 };
 
