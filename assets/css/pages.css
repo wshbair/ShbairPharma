@@ -596,7 +596,7 @@ body {
     transform: translateY(-2px);
 }
 .widget-panel.widget-style-2:active { transform: scale(.97); }
-.widget-panel.widget-style-danger { background: var(--c-caution); }
+.widget-panel.widget-style-danger { background: var(--c-primary-lt); }
 
 
 #image { height: auto !important; }

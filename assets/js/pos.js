@@ -255,6 +255,7 @@ if (auth == undefined) {
     loadInvoicesForForm();
     loadProducts(loadProductList);
 
+
     $("#paymentText").on("input", function () {
      $(this).paymentChange()
       } );
@@ -310,7 +311,7 @@ if (auth == undefined) {
       }
       return `<div class="col-lg-2 box ${item.category}"
                   onclick="$(this).addToCart(${item._id}, ${item.quantity}, ${item.stock})">
-                <div class="widget-panel widget-style-2 ${item_isExpired ? "widget-style-danger" : ""}" title="${item.name}">
+                <div class="widget-panel widget-style-2 ${item_isExpired || item_stockStatus < 1 ? "widget-style-danger" : ""}" title="${item.name}">
                   <div id="image"><img src="${item_img}" id="product_img" alt=""></div>
                   <div class="text-muted m-t-5 text-center">
                     <div class="name" id="product_name">
@@ -468,8 +469,10 @@ if (auth == undefined) {
           }
         });
         if (expiredCount > 0) {
-          notiflix.Notify.failure(`${expiredCount} products expired. Please restock!`);
-          renderPosExpiredStock(`${expiredCount} products expired. Please restock!`);
+          notiflix.Notify.failure(`${expiredCount} products are expired. Please restock!`);
+          renderPosExpiredStock(`${expiredCount} products are expired. Please restock!`);
+           
+          
         }
 
         renderPosLowStock();
@@ -3904,7 +3907,7 @@ if (auth == undefined) {
             icon = "fa fa-caret-down";
           }
 
-          product.stockAlert = `<p class="text-danger"><small><i class="${icon}"></i> ${product.stockStatus}</small></p>`;
+          product.stockAlert = `<span class="text-danger"><small><i class="${icon}"></i> ${product.stockStatus}</small></span>`;
         }
         //calculate days to expiry
         product.expiryAlert = "";
@@ -3915,13 +3918,13 @@ if (auth == undefined) {
             var days_noun = diffDays > 1 ? "days" : "day";
             icon = "fa fa-clock-o";
             product.expiryStatus = `${diffDays} ${days_noun} left`;
-            product.expiryAlert = `<p class="text-danger"><small><i class="${icon}"></i> ${product.expiryStatus}</small></p>`;
+            product.expiryAlert = `<span class="text-danger"><small><i class="${icon}"></i> ${product.expiryStatus}</small></span>`;
           }
           
         } else {
           icon = "fa fa-exclamation-triangle";
           product.expiryStatus = "Expired";
-          product.expiryAlert = `<p class="text-danger"><small><i class="${icon}"></i> ${product.expiryStatus}</small></p>`;
+          product.expiryAlert = `<span class="text-danger"><small><i class="${icon}"></i> ${product.expiryStatus}</small></span>`;
         }
 
         if(product.img==="")
@@ -3938,17 +3941,16 @@ if (auth == undefined) {
         //render product list
         product_list +=
           `<tr>`+
-          //   <td><img id="` +
+          // <td><img id="` +
           // product._id +
           // `"></td>
-            `<td>${product.barcode}
-            <td>${product.name}
-            ${product.expiryAlert}</td>
+            `<td>${counter} </td>
+            <td>${product.barcode} </td>
+            <td>${product.name} ${product.expiryAlert}</td>
             <td>${validator.unescape(settings.symbol)}${product.price}</td>
             <td>${validator.unescape(settings.symbol)}${product.costPrice}</td>
 
-             <td>${product.stock == 1 ? product.quantity : "N/A"}
-            ${product.stockAlert}
+             <td>${product.stock == 1 ? product.quantity : "N/A"} ${product.stockAlert}
             </td>
             <td>${product.category}</td>
             <td>${product.invoiceId || "N/A"}${product.invoiceHistory && product.invoiceHistory.length > 1 ? ` <span class="badge" title="${product.invoiceHistory.length} restocks" style="cursor:default;">${product.invoiceHistory.length}</span>` : ""}</td>
@@ -3972,7 +3974,9 @@ if (auth == undefined) {
       });
 
       $("#productList").DataTable({
-        dom: "Bfrtip",
+        dom: "lfrtBip",
+        pageLength: 5,
+        lengthMenu: [5, 10, 25, 50, 100],
         buttons: [
           // ── CSV Product Report ──────────────────────────────────────────
           {
@@ -4639,7 +4643,7 @@ function loadTransactions() {
                                     ? '<button class="btn btn-info btn-sm"><i class="fa fa-search-plus"></i></button>'
                                     : '<span class="btn-group"><button onClick="$(this).viewTransaction(' +
                                       index +
-                                      ')" class="btn btn-info btn-sm"><i class="fa fa-search-plus"></i></button><button onClick="$(this).deleteTransaction(' + index + ')" class="btn btn-warning btn-sm"><i class="fa fa-trash"></i></button></span>'
+                                      ')" class="btn btn-info btn-sm"><i class="fa fa-search-plus"></i></button><button onClick="$(this).deleteTransaction(' + index + ')" class="btn btn-danger btn-sm"><i class="fa fa-trash"></i></button></span>'
                                 }</td>
                               </tr>
                     `;

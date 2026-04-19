@@ -227,6 +227,7 @@
                                         <div class="card-body">
                                             <table class="table table-bordered" id="productList">
                                                 <thead><tr>
+                                                    <th>#</th>
                                                     <th data-i18n="barcode_col">Barcode</th>
                                                     <th data-i18n="name_col">Name</th>
                                                     <th data-i18n="price_col">Price</th>
@@ -1095,15 +1096,6 @@
                     <!-- RIGHT: Product Browser -->
                     <div class="col-md-6">
                         <div class="card-box pos-right-panel">
-
-                            <!-- Search bar -->
-                            <div class="products-header">
-                                <input type="text" id="search" class="form-control" data-i18n-placeholder="search_products" placeholder="Search by name or SKU...">
-                            </div>
-
-                            <!-- Category pills -->
-                            <div id="posCategoryPills" class="pos-cat-pills"></div>
-
                             <!-- Low-stock alert strip -->
                             <div id="posLowStockStrip" class="pos-lowstock-strip" style="display:none;">
                                 <i class="fa fa-exclamation-triangle"></i>
@@ -1114,6 +1106,16 @@
                                 <i class="fa fa-exclamation-triangle"></i>
                                 <span id="posExpiredStockText"></span>
                             </div>
+                            
+                            <!-- Search bar -->
+                            <div class="products-header">
+                                <input type="text" id="search" class="form-control" data-i18n-placeholder="search_products" placeholder="Search by name or SKU...">
+                            </div>
+
+                            <!-- Category pills -->
+                            <div id="posCategoryPills" class="pos-cat-pills"></div>
+
+                            
 
                             <!-- Recent items strip -->
                             <div id="posRecentStrip" class="pos-recent-strip" style="display:none;">
@@ -1123,7 +1125,7 @@
 
                             <!-- Product results grid -->
                             <div class="pos-results-wrap">
-                                <div class="row" id="parent"></div>
+                                <div id="parent"></div>
                             </div>
 
                         </div>
