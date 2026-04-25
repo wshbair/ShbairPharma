@@ -75,10 +75,13 @@
                     <button id="providerModal" type="button" class="btn btn-success waves-effect">
                         <i class="fa fa-truck"></i> <span data-i18n="providers">Providers</span>
                     </button>
+                    <button id="invoicesModal" type="button" class="btn btn-success waves-effect ">
+                        <i class="fa fa-file-text-o"></i> <span data-i18n="invoices_nav_btn">Invoices</span>
+                    </button>
                 </div>
-                <button id="invoicesModal" type="button" class="btn btn-success waves-effect">
-                    <i class="fa fa-file-text-o"></i> <span data-i18n="invoices_nav_btn">Invoices</span>
-                </button>
+
+               
+                
                 <button id="viewRefOrders" data-toggle="modal" data-target="#holdOrdersModal" type="button" class="btn btn-success waves-effect">
                     <i class="fa fa-shopping-basket"></i> <span data-i18n="hold_orders">Hold Orders</span>
                 </button>
@@ -102,9 +105,12 @@
                         <i class="fa fa-plus"></i>
                     </button>
                 </div>
-                <button id="settings" data-toggle="modal" data-target="#settingsModal" type="button" class="btn btn-default waves-effect p_five" data-i18n-title="settings">
-                    <i class="glyphicon glyphicon-cog"></i>
-                </button>
+                <div class="p_five btn-group" style="gap:5px;display:flex;">
+                    <button id="settings" data-toggle="modal" data-target="#settingsModal" type="button" class="btn btn-default waves-effect" data-i18n-title="settings">
+                        <i class="glyphicon glyphicon-cog"></i>
+                    </button>
+                </div>
+               
                 <button type="button" class="btn btn-default waves-effect" id="cashier" data-i18n-title="my_profile" title="My Profile">
                     <i class="glyphicon glyphicon-user"></i> <span id="loggedin-user"></span>
                 </button>

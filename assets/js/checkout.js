@@ -10,7 +10,6 @@ $(document).ready(function () {
 
   $.fn.paymentChange = function () {
     let paymentAmount = $("#paymentText").val();
-    console.log("Payment Amount: " + paymentAmount)
     $("#paymentText").val(utils.moneyFormat(paymentAmount));
     $("#payment").val(paymentAmount);
     $(this).calculateChange();
@@ -44,9 +43,7 @@ $(document).ready(function () {
   $.fn.calculateChange = function () {
     var payablePrice = $("#payablePrice").val().replace(",", "");
     var payment = $("#payment").val().replace(",", "");
-
     var change = payablePrice - payment;
-    console.log(change)
     if (change <= 0) {
       $("#change").text(utils.moneyFormat(Math.abs(change.toFixed(2))));
       $("#confirmPayment").show();
@@ -59,7 +56,6 @@ $(document).ready(function () {
   $(".keypad-btn").on("click", function () {
     const key = $(this).data("val");
     const isdue = $(this).data("isdue");
-    console.log("Key: " + key)
     switch(key)
     {
     case "del" : { 

@@ -107,6 +107,7 @@ const {
   getStockStatus,
   checkFileExists,
   setContentSecurityPolicy,
+  playNotificationSound,
 } = require("./utils");
 
 //set the content security policy of the app
@@ -1769,7 +1770,7 @@ if (auth == undefined) {
 
         </left>
         <hr>
-        <table width="90%">
+        <table width="100%">
             <thead>
             <tr>
                 <th>Item</th>
@@ -1893,7 +1894,7 @@ if (auth == undefined) {
       $("#change").text("");
       $("#payment,#paymentText").val("");
       $("#paymentText").val("");
-
+      playNotificationSound();
     };
 
     $.get(api + "on-hold", function (data) {
@@ -2369,6 +2370,7 @@ if (auth == undefined) {
         contentType: "application/json",
         success: function (response) {
           loadProducts();
+          playNotificationSound();
           notiflix.Confirm.show(
             "Product Saved",
             "Select an option below to continue.",
@@ -5295,8 +5297,10 @@ function authenticate() {
   $("body").attr("class", "login-page");
   $("#login").show();
   let savedUsername = storage.get("remember_me_username");
+  let savePassword = storage.get("remember_me_password");
   if (savedUsername) {
     $("input[name='username']").val(savedUsername);
+    $("input[name='password']").val(savePassword);
     $("#remember_me").prop("checked", true);
   }
 }
@@ -5319,13 +5323,16 @@ $("body").on("submit", "#account", function (e) {
         if (data.auth === true) {
           if (formData.remember_me) {
             storage.set("remember_me_username", formData.username);
+            storage.set("remember_me_password", formData.password);
           } else {
             storage.delete("remember_me_username");
+            storage.delete("remember_me_password");
           }
           storage.set("auth", { auth: true });
           storage.set("user", data);
           ipcRenderer.send("app-reload", "");
           $("#login").hide();
+          
         } else {
           notiflix.Report.warning("Oops!", auth_error, "Ok");
         }

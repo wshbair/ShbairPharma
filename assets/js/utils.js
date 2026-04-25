@@ -116,7 +116,15 @@ const extractCategories = (text) => {
 const extractUniqueCategories = (csvFile) => {
   const all = extractCategories(csvFile);
   return Array.from(new Set(all));
-}
+};
+
+
+const playNotificationSound = () => {
+  console.log("Playing notification sound...");
+  const audio = new Audio('./notification.mp3'); 
+  audio.play().catch(err => console.error(err));
+};
+
 module.exports = {
   DATE_FORMAT,
   moneyFormat,
@@ -127,5 +135,6 @@ module.exports = {
   checkFileExists,
   checkFileType,
   setContentSecurityPolicy,
-  extractUniqueCategories
+  extractUniqueCategories,
+  playNotificationSound
 };
