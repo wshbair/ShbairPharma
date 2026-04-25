@@ -248,20 +248,156 @@ if (auth == undefined) {
     let appTitle = !!settings ? `${validator.unescape(settings.store)} - ${appName}` : appName;
     $("title").text(appTitle);
 
-    $(".loading").hide();
+    // ── OPTIMIZED ASYNC LOADING ──────────────────────────────────
+    $(".loading").show();
+    
+    // Convert jQuery AJAX to Promise-based
+    function promiseGet(url) {
+      return new Promise((resolve, reject) => {
+        $.get(url, resolve).fail(reject);
+      });
+    }
 
-    loadCategories();
-    loadProviders();
-    loadCustomers();
-    loadInvoicesForForm();
-    loadProducts(loadProductList);
+    function promisePost(url, data) {
+      return new Promise((resolve, reject) => {
+        $.post(url, data, resolve).fail(reject);
+      });
+    }
 
+    // Load critical data first (categories) then parallel load everything else
+    async function initializeApp() {
+      try {
+        // PHASE 1: Load categories (critical for POS display)
+        console.time('App Initialization');
+        console.time('Phase 1: Categories');
+        
+        await promiseGet(api + "categories/all").then(data => {
+          // Use requestAnimationFrame to prevent blocking renders
+          requestAnimationFrame(() => {
+            allCategories = data;
+            loadCategoryList();
+            renderPosCategoryPills();
+            $("#category,#categories").html(`<option value="0" data-i18n="select_category">Select</option>`);
+            allCategories.forEach((category) => {
+              $("#category,#categories").append(
+                `<option value="${category.name}">${category.name}</option>`
+              );
+            });
+          });
+          console.timeEnd('Phase 1: Categories');
+        });
+
+        // Immediately show the UI with categories loaded
+        renderPosIdle();
+        
+        // Hide loading indicator (UI is now interactive)
+        requestAnimationFrame(() => {
+          $(".loading").hide();
+        });
+
+        // PHASE 2: Load non-critical data in parallel (won't block UI)
+        console.time('Phase 2: Parallel Loading');
+        
+        Promise.all([
+          promiseGet(api + "providers/all").then(data => {
+            allProviders = data;
+            requestAnimationFrame(() => {
+              updateProviderSelects();
+            });
+          }),
+          promiseGet(api + "customers/all").then(customers => {
+            requestAnimationFrame(() => {
+              updateCustomerSelect(customers);
+            });
+          }),
+          promiseGet(api + "inventory/products").then(data => {
+            processProductData(data);
+            requestAnimationFrame(() => {
+              renderPosLowStock();
+            });
+          })
+        ]).then(() => {
+          console.timeEnd('Phase 2: Parallel Loading');
+          
+          // PHASE 3: Load invoices (least critical)
+          console.time('Phase 3: Invoices');
+          promiseGet(api + "invoice/invoices").then(data => {
+            allInvoices = data || [];
+            console.timeEnd('Phase 3: Invoices');
+            console.timeEnd('App Initialization');
+            console.log('✅ All data loaded - App is fully optimized and responsive');
+          });
+        }).catch(err => console.error('Error loading parallel data:', err));
+
+      } catch (err) {
+        console.error('Error during initialization:', err);
+        requestAnimationFrame(() => {
+          $(".loading").hide();
+        });
+      }
+    }
+
+    // Helper function: Update provider selects
+    function updateProviderSelects() {
+      $("#provider").html(`<option value="">Select</option>`);
+      allProviders.forEach((provider) => {
+        $("#provider").append(`<option value="${provider._id}">${provider.name}</option>`);
+        $("#inv_filter_provider").append(`<option value="${provider._id}">${provider.name}</option>`);
+      });
+      let filterOpts = `<option value="">All Providers</option>`;
+      allProviders.forEach((p) => {
+        filterOpts += `<option value="${p._id}">${p.name}</option>`;
+      });
+      $("#providerListFilter, #productProviderFilter").html(filterOpts);
+    }
+
+    // Helper function: Update customer select
+    function updateCustomerSelect(customers) {
+      $("#customer").html(
+        `<option value="0" selected="selected" data-i18n="walk_in_customer">Walk in customer</option>`
+      );
+      customers.forEach((cust) => {
+        let customer = `<option value='{"id": ${cust._id}, "name": "${cust.name}"}'>${cust.name}</option>`;
+        $("#customer").append(customer);
+      });
+    }
+
+    // Helper function: Process product data
+    function processProductData(data) {
+      data.forEach((item) => { item.price = parseFloat(item.price).toFixed(2); });
+      allProducts = [...data];
+      let expiredCount = 0;
+      
+      // Batch expiry checks to avoid blocking
+      allProducts.forEach((product) => {
+        let expiryDate = moment(product.expirationDate, DATE_FORMAT);
+        if (!isExpired(expiryDate)) {
+          const diffDays = daysToExpire(expiryDate);
+          if (diffDays > 0 && diffDays <= 30) {
+            let days_noun = diffDays > 1 ? "days" : "day";
+            requestAnimationFrame(() => {
+              notiflix.Notify.warning(`${product.name} has only ${diffDays} ${days_noun} left to expiry`);
+            });
+          }
+        } else {
+          expiredCount++;
+        }
+      });
+      
+      if (expiredCount > 0) {
+        requestAnimationFrame(() => {
+          notiflix.Notify.failure(`${expiredCount} products are expired. Please restock!`);
+          renderPosExpiredStock(`${expiredCount} products are expired. Please restock!`);
+        });
+      }
+    }
+
+    // Start the optimized initialization
+    initializeApp();
 
     $("#paymentText").on("input", function () {
      $(this).paymentChange()
       } );
-
-    renderPosIdle();
 
     if (settings && validator.unescape(settings.symbol)) {
       $("#price_curr, #payment_curr, #change_curr").text(validator.unescape(settings.symbol));
@@ -1869,8 +2005,8 @@ if (auth == undefined) {
           $("#viewTransaction").html("");
           $("#viewTransaction").html(receipt);
           $("#orderModal").modal("show");
-          loadProducts();
-          loadCustomers();
+          //loadProducts();
+          //loadCustomers();
           $(".loading").hide();
           $("#dueModal").modal("hide");
           $("#paymentModel").modal("hide");
@@ -3218,7 +3354,7 @@ if (auth == undefined) {
           $("#submitCategoryModal").val(t("add_category_btn"));
           $("#cancelCategoryEdit").hide();
           loadCategories();
-          loadProducts();
+          //loadProducts();
           notiflix.Report.success("Done!", "Category saved", "Ok");
         },
       });
