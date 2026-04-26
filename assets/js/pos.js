@@ -312,9 +312,9 @@ if (auth == undefined) {
           }),
           promiseGet(api + "inventory/products").then(data => {
             processProductData(data);
-            requestAnimationFrame(() => {
-              renderPosLowStock();
-            });
+            // requestAnimationFrame(() => {
+            //   renderPosLowStock();
+            // });
           })
         ]).then(() => {
           console.timeEnd('Phase 2: Parallel Loading');
@@ -377,6 +377,7 @@ if (auth == undefined) {
             let days_noun = diffDays > 1 ? "days" : "day";
             requestAnimationFrame(() => {
               notiflix.Notify.warning(`${product.name} has only ${diffDays} ${days_noun} left to expiry`);
+              renderPosLowStock(); // Refresh low stock strip to show expiry warnings as well 
             });
           }
         } else {
@@ -599,14 +600,14 @@ if (auth == undefined) {
             const diffDays = daysToExpire(expiryDate);
             if (diffDays > 0 && diffDays <= 30) {
               let days_noun = diffDays > 1 ? "days" : "day";
-              notiflix.Notify.warning(`${product.name} has only ${diffDays} ${days_noun} left to expiry`);
+              //notiflix.Notify.warning(`${product.name} has only ${diffDays} ${days_noun} left to expiry`);
             }
           } else {
             expiredCount++;
           }
         });
         if (expiredCount > 0) {
-          notiflix.Notify.failure(`${expiredCount} products are expired. Please restock!`);
+          //notiflix.Notify.failure(`${expiredCount} products are expired. Please restock!`);
           renderPosExpiredStock(`${expiredCount} products are expired. Please restock!`);
            
           
