@@ -1,13 +1,27 @@
 const { ipcRenderer } = require("electron");
 const notiflix = require("notiflix");
-
 const path = require("path");
-let utils;
-try {
-    utils = require("./utils");
-} catch (err) {
-    utils = require(path.join(process.cwd(), "assets/js/utils.js"));
-}
+
+const extractCategories = (text) => {
+  const rows = text.split(/\r?\n/).filter(r => r.trim().length);
+  if (rows.length === 0) return [];
+
+  const header = rows[0].split(",").map(h => h.trim().toLowerCase());
+  const colIndex = header.indexOf("category");
+  if (colIndex === -1) return [];
+
+  return rows.slice(1)
+    .map(r => {
+      const value = r.split(",")[colIndex];
+      return value ? value.trim().toLowerCase() : "";
+    })
+    .filter(v => v !== "");
+};
+
+const extractUniqueCategories = (csvFile) => {
+  const all = extractCategories(csvFile);
+  return Array.from(new Set(all));
+};
 
 $(document).ready(function() {
     let parsedProducts = [];
@@ -19,6 +33,7 @@ $(document).ready(function() {
     // File input change handler
     $('#csvFile').on('change', function() {
         const file = this.files[0];
+        console.log("Selected file:", file);
         if (file) {
             $('#parseBtn').prop('disabled', false);
         } else {
@@ -327,7 +342,7 @@ $(document).ready(function() {
         const reader = new FileReader();
         reader.onload = function(e) {
         const csvText = e.target.result;
-        const categoriesList = utils.extractUniqueCategories(csvText);
+        const categoriesList = extractUniqueCategories(csvText);
         console.log("Extracted categories:", categoriesList);
         $.ajax({
             url: api + "categories/category/batch",
