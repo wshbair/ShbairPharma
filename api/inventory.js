@@ -522,9 +522,9 @@ app.decrementInventory = function (products) {
                     callback();
                 } else {
                     let updatedQuantity =
-                        parseInt(product.quantity) -
-                        parseInt(transactionProduct.quantity);
-
+                        parseFloat(product.quantity) -
+                        parseFloat(transactionProduct.quantity);
+                    //console.log(`Decrementing product ${product._id} quantity from ${product.quantity} to ${updatedQuantity}`);
                     inventoryDB.update(
                         {
                             _id: parseInt(product._id),
@@ -540,5 +540,9 @@ app.decrementInventory = function (products) {
                 }
             },
         );
+        inventoryDB.compactDatafile((err) => {
+        if (err) console.error('Compaction failed:', err);
+        else console.log('Database compacted.');
+    });
     });
 };

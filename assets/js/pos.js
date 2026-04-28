@@ -609,8 +609,6 @@ if (auth == undefined) {
         if (expiredCount > 0) {
           //notiflix.Notify.failure(`${expiredCount} products are expired. Please restock!`);
           renderPosExpiredStock(`${expiredCount} products are expired. Please restock!`);
-           
-          
         }
 
         renderPosLowStock();
@@ -3772,11 +3770,14 @@ if (auth == undefined) {
           `<option value="${prov._id}">${prov.name}</option>`
         );
       });
-      if (allProducts.length === 0) {
-        loadProducts(loadProductList);
-      } else {
-        loadProductList();
-      }
+
+      loadProducts(loadProductList);
+
+      // if (allProducts.length === 0) {
+      //   loadProducts(loadProductList);
+      // } else {
+      //   loadProductList();
+      // }
 
       // Switch to products view
       $("#pos_view").hide();
