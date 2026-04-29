@@ -11,7 +11,7 @@ const maxFileSize = 2097152 //2MB = 2*1024*1024
 const validator = require("validator");
 const appName = process.env.APPNAME;
 const appData = process.env.APPDATA;
-
+let moment = require("moment");
 
 const storage = multer.diskStorage({
     destination: path.join(appData, appName, "uploads"),
@@ -91,6 +91,36 @@ app.get("/products", function (req, res) {
         res.send(docs);
     });
 });
+
+app.get("/stock-check", function(req, res){
+    inventoryDB.find({}, function(err, docs){
+        
+        const low = docs.filter(function (p) {
+        return p.stock == 1 && parseInt(p.quantity) <= parseInt(p.minStock || 1);
+        });
+         
+        const lowStockProducts = low.slice(0, 4).map(function (p) {
+            return `<strong>${p.name}</strong> (${p.quantity})`;
+        }).join(", ") + (low.length > 4 ? ` +${low.length - 4} more` : "");
+        
+        // expire check 
+        const expired = docs.filter(function (p) {
+           let expiryDate = moment(p.expirationDate, "DD-MMM-YYYY"); 
+            return moment().isSameOrAfter(expiryDate);
+        });
+        
+        const expiredProducts = expired.slice(0, 4).map(function (p) {
+            return `<strong>${p.name}</strong>`;
+        }).join(", ") + (expired.length > 4 ? ` +${expired.length - 4} more` : "");
+
+
+        res.send({
+            "lowStockMsg": low.length > 0 ? `Inventory Alert: <strong>${low.length}</strong> products are at or below minimum stock levels, including ${lowStockProducts}` : "",
+            "expiredMsg": expired.length > 0 ? `Expiry Alert: <strong>${expired.length}</strong> products have expired, including ${expiredProducts}` : ""
+        })
+
+    })
+})
 
 /**
  * POST endpoint: Create or update a product.

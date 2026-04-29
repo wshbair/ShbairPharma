@@ -324,8 +324,8 @@ $(document).ready(function() {
             processData: false,
             contentType: false,
             success: function(response) {
-                showMessage(`Upload successful! Inserted: ${response.inserted}, Updated: ${response.updated}`, 'success');
-                $('#uploadBtn').prop('disabled', false).text('Upload to Database');
+                //showMessage(`Upload successful! Inserted: ${response.inserted}, Updated: ${response.updated}`, 'success');
+                $('#uploadBtn').prop('disabled', true).text('Uploaded to Database');
             },
             error: function(xhr) {
                 let errorMsg = 'Upload failed';

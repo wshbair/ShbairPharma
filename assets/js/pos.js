@@ -1,15 +1,18 @@
 //const jsPDF = require("jspdf");
 //const html2canvas = require("html2canvas");
 //const JsBarcode = require("jsbarcode");
-const macaddress = require("macaddress");
+//const macaddress = require("macaddress");
 const notiflix = require("notiflix");
 const validator = require("validator");
-const DOMPurify = require("dompurify");
+//const DOMPurify = require("dompurify"); // called when needed 
+//const { dialog } = require('electron')
+
 const _ = require("lodash");
 let fs = require("fs");
 let path = require("path");
 let moment = require("moment");
 let { ipcRenderer } = require("electron");
+
 let dotInterval = setInterval(function () {
   $(".dot").text(".");
 }, 3000);
@@ -157,20 +160,20 @@ $(function () {
 
   cb(start, end);
 
-  $("#expirationDate").daterangepicker({
-    singleDatePicker: true,
-    locale: {
-      format: DATE_FORMAT,
-    },
-  });
+  // $("#expirationDate").daterangepicker({
+  //   singleDatePicker: true,
+  //   locale: {
+  //     format: DATE_FORMAT,
+  //   },
+  // });
 
-  $("#entryDate").daterangepicker({
-    singleDatePicker: true,
-    defaultDate: moment(),
-    locale: {
-      format: DATE_FORMAT,
-    },
-  });
+  // $("#entryDate").daterangepicker({
+  //   singleDatePicker: true,
+  //   defaultDate: moment(),
+  //   locale: {
+  //     format: DATE_FORMAT,
+  //   },
+  // });
 
 
   
@@ -237,6 +240,7 @@ if (auth == undefined) {
 
   $.get(api + "settings/get", function (data) {
     settings = data.settings;
+    
   });
 
   $.get(api + "users/all", function (users) {
@@ -310,23 +314,36 @@ if (auth == undefined) {
               updateCustomerSelect(customers);
             });
           }),
+          promiseGet(api + "inventory/stock-check").then(data => {
+            if (!data.lowStockMsg) { 
+              $("#posLowStockStrip").hide();
+            } else {
+              $("#posLowStockText").html(data.lowStockMsg);
+              $("#posLowStockStrip").show();
+            }
+          
+            if (!data.expiredMsg) { 
+              $("#posLowStockStrip").hide();
+            } else {
+              $("#posExpiredStockText").html(data.expiredMsg);
+              $("#posExpiredStockStrip").show();
+            }
+          }),
           promiseGet(api + "inventory/products").then(data => {
-            processProductData(data);
-            // requestAnimationFrame(() => {
-            //   renderPosLowStock();
-            // });
+            data.forEach((item) => { item.price = parseFloat(item.price).toFixed(2); });
+            allProducts = [...data];
           })
         ]).then(() => {
-          console.timeEnd('Phase 2: Parallel Loading');
+          //console.timeEnd('Phase 2: Parallel Loading');
+          console.timeEnd('App Initialization');
+          console.log('✅ All data loaded - App is fully optimized and responsive');
           
           // PHASE 3: Load invoices (least critical)
-          console.time('Phase 3: Invoices');
-          promiseGet(api + "invoice/invoices").then(data => {
-            allInvoices = data || [];
-            console.timeEnd('Phase 3: Invoices');
-            console.timeEnd('App Initialization');
-            console.log('✅ All data loaded - App is fully optimized and responsive');
-          });
+          //console.time('Phase 3: Invoices');
+          // promiseGet(api + "invoice/invoices").then(data => {
+          //   allInvoices = data || [];
+          //   console.timeEnd('Phase 3: Invoices');
+          // });
         }).catch(err => console.error('Error loading parallel data:', err));
 
       } catch (err) {
@@ -361,8 +378,8 @@ if (auth == undefined) {
         $("#customer").append(customer);
       });
     }
-
-    // Helper function: Process product data
+        //optimized no need
+/*     // Helper function: Process product data
     function processProductData(data) {
       data.forEach((item) => { item.price = parseFloat(item.price).toFixed(2); });
       allProducts = [...data];
@@ -391,7 +408,7 @@ if (auth == undefined) {
           renderPosExpiredStock(`${expiredCount} products are expired. Please restock!`);
         });
       }
-    }
+    } */
 
     // Start the optimized initialization
     initializeApp();
@@ -555,15 +572,7 @@ if (auth == undefined) {
       }
     }
 
-/*     let _addedToastTimer;
-    function showPosAddedToast(productName) {
-      clearTimeout(_addedToastTimer);
-      $("#posAddedToastText").text(productName + " added");
-      $("#posAddedToast").stop(true).fadeIn(150);
-      _addedToastTimer = setTimeout(function () {
-        $("#posAddedToast").fadeOut(300);
-      }, 2000);
-    } */
+
 
     function updateHoldBadge(count) {
       if (count > 0) {
@@ -894,53 +903,53 @@ if (auth == undefined) {
       $("#inv_pay_rows").empty();
 
       // Load provider payments (if invoice has a provider)
-      if (inv.providerId) {
-        $.get(api + "payment/provider/" + inv.providerId, function (payData) {
-          const payments = payData.payments || [];
-          const totalInvoiced = parseFloat(payData.totalInvoiced || 0);
-          const totalPaid     = parseFloat(payData.totalPaid || 0);
-          const balance       = parseFloat(payData.balance || 0);
-          const balColor      = balance > 0 ? "var(--c-danger)" : "var(--c-success)";
+      // if (inv.providerId) {
+      //   $.get(api + "payment/provider/" + inv.providerId, function (payData) {
+      //     const payments = payData.payments || [];
+      //     const totalInvoiced = parseFloat(payData.totalInvoiced || 0);
+      //     const totalPaid     = parseFloat(payData.totalPaid || 0);
+      //     const balance       = parseFloat(payData.balance || 0);
+      //     const balColor      = balance > 0 ? "var(--c-danger)" : "var(--c-success)";
 
-          // 3 mini stat chips
-          const statsHtml =
-            '<div style="flex:1;min-width:90px;padding:8px 12px;background:var(--c-bg);border-radius:var(--radius-sm);border:1px solid var(--c-border);text-align:center;">' +
-              '<div style="font-size:10px;color:var(--c-muted);text-transform:uppercase;letter-spacing:.4px;">Total Invoiced</div>' +
-              '<div style="font-size:14px;font-weight:700;color:var(--c-text);">' + sym + totalInvoiced.toFixed(2) + '</div>' +
-            '</div>' +
-            '<div style="flex:1;min-width:90px;padding:8px 12px;background:var(--c-bg);border-radius:var(--radius-sm);border:1px solid var(--c-border);text-align:center;">' +
-              '<div style="font-size:10px;color:var(--c-muted);text-transform:uppercase;letter-spacing:.4px;">Payments Made</div>' +
-              '<div style="font-size:14px;font-weight:700;color:var(--c-success);">' + sym + totalPaid.toFixed(2) + '</div>' +
-            '</div>' +
-            '<div style="flex:1;min-width:90px;padding:8px 12px;background:var(--c-bg);border-radius:var(--radius-sm);border:1px solid var(--c-border);text-align:center;">' +
-              '<div style="font-size:10px;color:var(--c-muted);text-transform:uppercase;letter-spacing:.4px;">Balance Due</div>' +
-              '<div style="font-size:14px;font-weight:700;color:' + balColor + ';">' + sym + balance.toFixed(2) + '</div>' +
-            '</div>';
-          $("#inv_pay_stats").html(statsHtml);
+      //     // 3 mini stat chips
+      //     const statsHtml =
+      //       '<div style="flex:1;min-width:90px;padding:8px 12px;background:var(--c-bg);border-radius:var(--radius-sm);border:1px solid var(--c-border);text-align:center;">' +
+      //         '<div style="font-size:10px;color:var(--c-muted);text-transform:uppercase;letter-spacing:.4px;">Total Invoiced</div>' +
+      //         '<div style="font-size:14px;font-weight:700;color:var(--c-text);">' + sym + totalInvoiced.toFixed(2) + '</div>' +
+      //       '</div>' +
+      //       '<div style="flex:1;min-width:90px;padding:8px 12px;background:var(--c-bg);border-radius:var(--radius-sm);border:1px solid var(--c-border);text-align:center;">' +
+      //         '<div style="font-size:10px;color:var(--c-muted);text-transform:uppercase;letter-spacing:.4px;">Payments Made</div>' +
+      //         '<div style="font-size:14px;font-weight:700;color:var(--c-success);">' + sym + totalPaid.toFixed(2) + '</div>' +
+      //       '</div>' +
+      //       '<div style="flex:1;min-width:90px;padding:8px 12px;background:var(--c-bg);border-radius:var(--radius-sm);border:1px solid var(--c-border);text-align:center;">' +
+      //         '<div style="font-size:10px;color:var(--c-muted);text-transform:uppercase;letter-spacing:.4px;">Balance Due</div>' +
+      //         '<div style="font-size:14px;font-weight:700;color:' + balColor + ';">' + sym + balance.toFixed(2) + '</div>' +
+      //       '</div>';
+      //     $("#inv_pay_stats").html(statsHtml);
 
-          // Payment rows
-          const methodLabels = { cash: "Cash", bank_transfer: "Bank Transfer", check: "Check", other: "Other" };
-          let running = totalInvoiced;
-          let rowsHtml = "";
-          if (payments.length > 0) {
-            payments.forEach(function (p) {
-              running -= parseFloat(p.amount || 0);
-              const rc = running > 0 ? "var(--c-danger)" : "var(--c-success)";
-              rowsHtml +=
-                "<tr>" +
-                "<td>" + (p.paymentDate ? moment(p.paymentDate).format("DD MMM YYYY") : "—") + "</td>" +
-                "<td><strong>" + sym + parseFloat(p.amount || 0).toFixed(2) + "</strong></td>" +
-                "<td>" + (methodLabels[p.paymentMethod] || p.paymentMethod || "—") + "</td>" +
-                "<td style='color:" + rc + ";font-weight:600;'>" + sym + running.toFixed(2) + "</td>" +
-                "</tr>";
-            });
-          } else {
-            rowsHtml = '<tr><td colspan="4" class="text-center" style="color:var(--c-muted);">No payments recorded yet.</td></tr>';
-          }
-          $("#inv_pay_rows").html(rowsHtml);
-          $("#inv_pay_summary").show();
-        });
-      }
+      //     // Payment rows
+      //     const methodLabels = { cash: "Cash", bank_transfer: "Bank Transfer", check: "Check", other: "Other" };
+      //     let running = totalInvoiced;
+      //     let rowsHtml = "";
+      //     if (payments.length > 0) {
+      //       payments.forEach(function (p) {
+      //         running -= parseFloat(p.amount || 0);
+      //         const rc = running > 0 ? "var(--c-danger)" : "var(--c-success)";
+      //         rowsHtml +=
+      //           "<tr>" +
+      //           "<td>" + (p.paymentDate ? moment(p.paymentDate).format("DD MMM YYYY") : "—") + "</td>" +
+      //           "<td><strong>" + sym + parseFloat(p.amount || 0).toFixed(2) + "</strong></td>" +
+      //           "<td>" + (methodLabels[p.paymentMethod] || p.paymentMethod || "—") + "</td>" +
+      //           "<td style='color:" + rc + ";font-weight:600;'>" + sym + running.toFixed(2) + "</td>" +
+      //           "</tr>";
+      //       });
+      //     } else {
+      //       rowsHtml = '<tr><td colspan="4" class="text-center" style="color:var(--c-muted);">No payments recorded yet.</td></tr>';
+      //     }
+      //     $("#inv_pay_rows").html(rowsHtml);
+      //     $("#inv_pay_summary").show();
+      //   });
+      // }
 
       // Load linked products
       $.get(api + "invoice/invoice/" + invoiceId + "/products", function (products) {
@@ -1786,6 +1795,7 @@ if (auth == undefined) {
     }
 
     $.fn.submitDueOrder = function (status) {
+      const DOMPurify = require("dompurify");
       let items = "";
       let payment = 0.0;
       paymentType = $('.list-group-item.active').data('payment-type');
@@ -2049,187 +2059,114 @@ if (auth == undefined) {
       });
     };
 
-/*     $.fn.renderHoldOrders = function (data, renderLocation, orderType) {
-      $.each(data, function (index, order) {
-        $(this).calculatePrice(order);
-        renderLocation.append(
-          $("<div>", {
-            class:
-              orderType == 1 ? "col-md-3 order" : "col-md-4 customer-order",
-          }).append(
-            $("<a>").append(
-              $("<div>", { class: "card-box order-box" }).append(
-                $("<p>").append(
-                  
-                  $("<b>", { text: "Ref :" }),
-                  $("<span>", { text: order.ref_number || order.order, class: "ref_number" }),
-                  $("<br>"),
-                  $("<b>", { text: "Date: " }),
-                  $("<span>", { text: new Date(order.date).toLocaleDateString(), class: "ref_number" }),
-                  $("<br>"),
-                  $("<b>", { text: "Items :" }),
-                  $("<span>", { text: order.items.length }),
-                  $("<br>"),
-                  $("<b>", { text: "Total price :" }),
-                  $("<span>", {
-                    text: validator.unescape(settings.symbol) +  order.total,
-                    class: "label label-info",
-                    style: "font-size:14px;",
-                  }),
-                  $("<br>"),
-                  $("<b>", { text: "Customer :" }),
-                  $("<span>", {
-                    text:
-                      order.customer != 0
-                        ? order.customer.name
-                        : "Walk in customer",
-                    class: "customer_name",
-                  }),
-                  $("<br>"),
-                  $("<b>", { text: "Status :" }),
-                  $("<span>", {
-                    text:
-                    order.status == 0
-                      ? "On hold"
-                      : "Paid",
-                    class: order.status == 0 ? "label label-warning" : "label label-success",
-                    style: "font-size:14px;",
-                  }),
-                  
-                ),
-                $("<button>", {
-                  class: "btn btn-danger del",
-                  onclick:
-                    "$(this).deleteOrder(" + index + "," + orderType + ")",
-                }).append($("<i>", { class: "fa fa-trash" })),
-
-                $("<button>", {
-                  class: "btn btn-default",
-                  onclick:
-                    "$(this).orderDetails(" + index + "," + orderType + ")",
-                }).append($("<span>", { class: "fa fa-shopping-basket" })),
-              ),
-            ),
-          ),
-        );
-      });
-    }; */
 
     $.fn.renderHoldOrders = function (data, renderLocation, orderType) {
-  renderLocation.empty();
-
-  // Handle empty data
-  if (!data || data.length === 0) {
-    renderLocation.append(
-      $("<div>", {
-        class: "alert alert-info text-center",
-        text: "No data to show"
-      })
-    );
-    return;
-  }
-
-  const tableId = "holdOrdersTable_" + Math.floor(Math.random() * 10000);
-
-  const table = $("<table>", {
-    id: tableId,
-    class: "table table-bordered table-striped table-hover nowrap",
-    style: "width:100%"
-  });
-
-  const thead = $("<thead>").append(
-    $("<tr>").append(
-      $("<th>", { text: "Ref" }),
-      $("<th>", { text: "Date" }),
-      $("<th>", { text: "Items" }),
-      $("<th>", { text: "Total" }),
-      $("<th>", { text: "Customer" }),
-      $("<th>", { text: "Status" }),
-      $("<th>", { text: "Actions", orderable: false })
-    )
-  );
-
-  const tbody = $("<tbody>");
-
-  $.each(data, function (index, order) {
-    $(this).calculatePrice(order);
-
-    const row = $("<tr>", {
-      class: "custom-row",
-      style: "cursor:pointer"
-    }).append(
-      $("<td>", { text: order.ref_number || order.order }),
-      $("<td>", { text: new Date(order.date).toLocaleDateString() }),
-      $("<td>", { text: order.items.length }),
-      $("<td>").append(
-        $("<span>", {
-          text: validator.unescape(settings.symbol) + order.total,
-          class: "label label-info"
-        })
-      ),
-      $("<td>", {
-        text: order.customer != 0
-          ? order.customer.name
-          : "Walk in customer"
-      }),
-      $("<td>").append(
-        $("<span>", {
-          text: order.status == 0 ? "On hold" : "Paid",
-          class: order.status == 0
-            ? "label label-warning"
-            : "label label-success"
-        })
-      ),
-      $("<td>").append(
-        $("<button>", {
-          class: "btn btn-danger btn-sm del",
-          click: function (e) {
-            e.stopPropagation(); // prevent row click
-            $(this).deleteOrder(index, orderType);
-          }
-        }).append($("<i>", { class: "fa fa-trash" })),
-
-        " ",
-
-        $("<button>", {
-          class: "btn btn-default btn-sm",
-          click: function (e) {
-            e.stopPropagation(); // prevent row click
-            $(this).orderDetails(index, orderType);
-          }
-        }).append($("<span>", { class: "fa fa-shopping-basket" }))
-      )
-    );
-
-    // Row click (like card click)
-    row.on("click", function () {
-      $(this).orderDetails(index, orderType);
-    });
-
-    tbody.append(row);
-  });
-
-  table.append(thead).append(tbody);
-  renderLocation.append(table);
-
-  // Initialize DataTable
-  $("#" + tableId).DataTable({
-    responsive: true,
-    pageLength: 10,
-    lengthMenu: [5, 10, 25, 50],
-    language: {
-      emptyTable: "No data to show",
-      search: "Search:",
-      paginate: {
-        next: "Next",
-        previous: "Prev"
+    renderLocation.empty();
+      // Handle empty data
+      if (!data || data.length === 0) {
+        renderLocation.append(
+          $("<div>", {
+            class: "alert alert-info text-center",
+            text: "No data to show"
+          })
+        );
+        return;
       }
-    },
-    columnDefs: [
-      { orderable: false, targets: 6 } // disable sorting on Actions column
-    ]
-  });
-};
+      const tableId = "holdOrdersTable_" + Math.floor(Math.random() * 10000);
+      const table = $("<table>", {
+        id: tableId,
+        class: "table table-bordered table-striped table-hover nowrap",
+        style: "width:100%"
+      });
+      const thead = $("<thead>").append(
+        $("<tr>").append(
+          $("<th>", { text: "Ref" }),
+          $("<th>", { text: "Date" }),
+          $("<th>", { text: "Items" }),
+          $("<th>", { text: "Total" }),
+          $("<th>", { text: "Customer" }),
+          $("<th>", { text: "Status" }),
+          $("<th>", { text: "Actions", orderable: false })
+        )
+      );
+      const tbody = $("<tbody>");
+      $.each(data, function (index, order) {
+        $(this).calculatePrice(order);
+
+        const row = $("<tr>", {
+          class: "custom-row",
+          style: "cursor:pointer"
+        }).append(
+          $("<td>", { text: order.ref_number || order.order }),
+          $("<td>", { text: new Date(order.date).toLocaleDateString() }),
+          $("<td>", { text: order.items.length }),
+          $("<td>").append(
+            $("<span>", {
+              text: validator.unescape(settings.symbol) + order.total,
+              class: "label label-info"
+            })
+          ),
+          $("<td>", {
+            text: order.customer != 0
+              ? order.customer.name
+              : "Walk in customer"
+          }),
+          $("<td>").append(
+            $("<span>", {
+              text: order.status == 0 ? "On hold" : "Paid",
+              class: order.status == 0
+                ? "label label-warning"
+                : "label label-success"
+            })
+          ),
+          $("<td>").append(
+            $("<button>", {
+              class: "btn btn-danger btn-sm del",
+              click: function (e) {
+                e.stopPropagation(); // prevent row click
+                $(this).deleteOrder(index, orderType);
+              }
+            }).append($("<i>", { class: "fa fa-trash" })),
+
+            " ",
+
+            $("<button>", {
+              class: "btn btn-default btn-sm",
+              click: function (e) {
+                e.stopPropagation(); // prevent row click
+                $(this).orderDetails(index, orderType);
+              }
+            }).append($("<span>", { class: "fa fa-shopping-basket" }))
+          )
+        );
+
+        // Row click (like card click)
+        row.on("click", function () {
+          $(this).orderDetails(index, orderType);
+        });
+
+        tbody.append(row);
+      });
+      table.append(thead).append(tbody);
+      renderLocation.append(table);
+      // Initialize DataTable
+      $("#" + tableId).DataTable({
+        responsive: true,
+        pageLength: 10,
+        lengthMenu: [5, 10, 25, 50],
+        language: {
+          emptyTable: "No data to show",
+          search: "Search:",
+          paginate: {
+            next: "Next",
+            previous: "Prev"
+          }
+        },
+        columnDefs: [
+          { orderable: false, targets: 6 } // disable sorting on Actions column
+        ]
+      });
+    };
 
     $.fn.calculatePrice = function (data) {
       totalPrice = 0;
@@ -2746,6 +2683,13 @@ if (auth == undefined) {
       renderInvoiceItems();
     });
 
+    $("#inp_cost").on("change", function(){
+      console.log(parseFloat($("#inp_cost").val()))
+      price = parseFloat($("#inp_cost").val()) + (settings.defaultProfitMargin * parseFloat($("#inp_cost").val())/100.0 )
+      console.log(price.toFixed(2))
+      $("#inp_price").val(price.toFixed(2))
+    })
+
     // ── INVOICE ITEMS: add new product to list ────────────────────
     $("#invAddNewProdConfirm").on("click", function () {
       const name    = $("#inp_name").val().trim();
@@ -3228,12 +3172,18 @@ if (auth == undefined) {
           notiflix.Report.failure("Error", "Invoice not found.", "Ok");
           return;
         }
+        console.log(inv)
         // Populate provider select
         let provOpts = '<option value="">' + t('select_provider_hint') + '</option>';
         allProviders.forEach(function (p) {
           provOpts += '<option value="' + p._id + '">' + (p.name || p._id) + '</option>';
         });
         $("#inv_provider_id").html(provOpts).val(inv.providerId).prop("disabled", true);
+         let catOpts = '<option value="">— none —</option>';
+          allCategories.forEach(function (c) {
+            catOpts += '<option value="' + c._id + '">' + (c.name || c._id) + '</option>';
+          });
+      $("#inp_category").html(catOpts);
 
         // Populate form fields
         $("#inv_original_invoice_id").val(inv.invoiceId);
@@ -4438,7 +4388,7 @@ if (auth == undefined) {
       let mac_address;
 
       api = "http://" + host + ":" + port + "/api/";
-
+      const macaddress = require("macaddress");
       macaddress.one(function (err, mac) {
         mac_address = mac;
       });
@@ -4563,6 +4513,7 @@ if (auth == undefined) {
       ) {
         $("#net_settings_form").show(500);
         $("#settings_form").hide(500);
+        const macaddress = require("macaddress");
         macaddress.one(function (err, mac) {
           $("#mac").val(mac);
         });
@@ -4608,7 +4559,7 @@ if (auth == undefined) {
 
         $("#ip").val(platform.ip);
         $("#till").val(platform.till);
-
+        const macaddress = require("macaddress");
         macaddress.one(function (err, mac) {
           $("#mac").val(mac);
         });
@@ -4632,6 +4583,7 @@ if (auth == undefined) {
         $("#percentage").val(validator.unescape(settings.percentage));
         $("#footer").val(validator.unescape(settings.footer));
         $("#logo_img").val(validator.unescape(settings.img));
+        $('#defaultProfitMargin').val(validator.unescape(settings.defaultProfitMargin));
         if (settings.charge_tax) {
           $("#charge_tax").prop("checked", true);
         }
@@ -5216,6 +5168,7 @@ function tillFilter(tills) {
 }
 
 $.fn.viewTransaction = function (index) {
+  const DOMPurify = require("dompurify");
   transaction_index = index;
 
   let discount = allTransactions[index].discount;

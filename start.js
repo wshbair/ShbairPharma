@@ -102,7 +102,7 @@ ipcMain.on("open-csv-review", () => {
     
     require("@electron/remote/main").enable(csvReviewWindow.webContents);
     csvReviewWindow.loadURL(`file://${path.join(__dirname, "csv-review.html")}`);
-    csvReviewWindow.webContents.openDevTools();
+    //csvReviewWindow.webContents.openDevTools();
     
     csvReviewWindow.on("closed", () => {
         csvReviewWindow = null;

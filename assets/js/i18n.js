@@ -25,6 +25,7 @@ var translations = {
     sign_out: 'Sign Out',
     walk_in_customer: 'Walk in customer',
     select_category: 'Select',
+    refresh: 'Refresh',
     // POS – Cart
     new_btn: 'New',
     scan_barcode: 'Scan product barcode or enter SKU...',
@@ -312,7 +313,7 @@ var translations = {
     my_profile: 'ملفي الشخصي',
     sign_out: 'تسجيل الخروج',
     walk_in_customer: 'زبون عابر',
-
+    refresh: 'تحديث',
     // POS – Cart
     new_btn: 'جديد',
     scan_barcode: 'امسح الباركود أو أدخل الرمز...',
