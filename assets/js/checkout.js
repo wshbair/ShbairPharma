@@ -106,7 +106,7 @@ $(document).ready(function () {
   var $list = $(".list-group-item").on("click", function () {
     $list.removeClass("active");
     $(this).addClass("active");
-    if (this.id == "palpal") {
+    if (this.id == "palpay") {
       $("#cardInfo").show();
       $("#cardInfo .input-group-addon").text("Mobile Number");
       var price = $("#payablePrice").val().toString();

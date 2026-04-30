@@ -2066,8 +2066,18 @@ if (auth == undefined) {
           $("#viewTransaction").html(receipt);
           //@ts-expect-error
           $("#orderModal").modal("show");
-          //loadProducts();
-          //loadCustomers();
+          loadProducts(function() {
+            if (posActiveCategory) {
+              const filtered = allProducts.filter(function(p) { return p.category === posActiveCategory; });
+              renderPosProducts(filtered, false);
+            }
+            posRecentItems = posRecentItems.map(function(recent) {
+              const updated = allProducts.find(function(p) { return p._id === recent._id; });
+              return updated || recent;
+            });
+            renderPosRecent();
+          });
+          loadCustomers();
           $(".loading").hide();
            //@ts-expect-error
           $("#dueModal").modal("hide");
