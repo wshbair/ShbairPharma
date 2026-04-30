@@ -61,26 +61,26 @@
                 <div class="nav-sep"></div>
                
                 <!-- Left actions -->
-                <button id="pointofsale" type="button" class="btn btn-primary">
+                <button id="pointofsale" type="button" class="btn btn-success">
                     <i class="glyphicon glyphicon-shopping-cart"></i> <span data-i18n="point_of_sale">Point of Sale</span>
                 </button>
 
                 <div class="p_one btn-group" style="gap:5px;display:flex;">
-                    <button id="productModal" type="button" class="btn btn-success">
+                    <button id="productModal" type="button" class="btn btn-default">
                         <i class="glyphicon glyphicon-barcode"></i> <span data-i18n="products">Products</span>
                     </button>
                 </div>
 
                 <div class="p_two btn-group" style="gap:5px;display:flex;">
-                    <button id="providerModal" type="button" class="btn btn-success">
+                    <button id="providerModal" type="button" class="btn btn-default">
                         <i class="fa fa-truck"></i> <span data-i18n="providers">Providers</span>
                     </button>
-                    <button id="invoicesModal" type="button" class="btn btn-success">
+                    <button id="invoicesModal" type="button" class="btn btn-default">
                         <i class="fa fa-file-text-o"></i> <span data-i18n="invoices_nav_btn">Invoices</span>
                     </button>
                 </div>
                 
-                <button id="viewRefOrders" data-toggle="modal" data-target="#holdOrdersModal" type="button" class="btn btn-success ">
+                <button id="viewRefOrders" data-toggle="modal" data-target="#holdOrdersModal" type="button" class="btn btn-default ">
                     <i class="fa fa-shopping-basket"></i> <span data-i18n="hold_orders">Hold Orders</span>
                 </button>
                 
@@ -959,7 +959,8 @@
                                                             <th>Product</th>
                                                             <th>Barcode</th>
                                                             <th>Qty</th>
-                                                            <th>Cost/Unit</th>
+                                                            <th>Cost Price</th>
+                                                            <th>Sale Price</th>
                                                             <th>Subtotal</th>
                                                             <th>Expiry</th>
                                                             <th></th>
@@ -968,7 +969,7 @@
                                                     <tbody id="invItemsTbody"></tbody>
                                                     <tfoot>
                                                         <tr>
-                                                            <td colspan="5" class="text-right" style="font-weight:600; padding-right:10px;">Items Total</td>
+                                                            <td colspan="6" class="text-right" style="font-weight:600; padding-right:10px;">Items Total</td>
                                                             <td id="invItemsTotal" style="font-weight:700; color:var(--c-primary);">0.00</td>
                                                             <td colspan="2"></td>
                                                         </tr>
@@ -1578,6 +1579,10 @@
             </div>
         </div>
 
+        <div class="main-footer">
+            <span class="main-footer-name">ShbairPharma</span>
+            <span class="main-footer-version">v<span id="app_version_main"></span></span>
+        </div>
     </div><!-- /#main_app -->
 
     <script src="assets/dist/js/bundle.min.js"></script>

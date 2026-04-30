@@ -25,6 +25,8 @@ const { t } = require("./i18n");
 
 // Populate login footer with live version and current year
 $("#app_version").text(app.getVersion());
+$("#app_version_main").text(app.getVersion());
+
 $("#footer_year").text(new Date().getFullYear());
 
 let cart = [];
@@ -272,9 +274,7 @@ if (auth == undefined) {
     async function initializeApp() {
       try {
         // PHASE 1: Load categories (critical for POS display)
-        console.time('App Initialization');
-        console.time('Phase 1: Categories');
-        
+        console.time('App Initialization');        
         await promiseGet(api + "categories/all").then(data => {
           // Use requestAnimationFrame to prevent blocking renders
           requestAnimationFrame(() => {
@@ -290,18 +290,14 @@ if (auth == undefined) {
           });
           console.timeEnd('Phase 1: Categories');
         });
-
         // Immediately show the UI with categories loaded
         renderPosIdle();
-        
         // Hide loading indicator (UI is now interactive)
         requestAnimationFrame(() => {
           $(".loading").hide();
         });
 
-        // PHASE 2: Load non-critical data in parallel (won't block UI)
-        console.time('Phase 2: Parallel Loading');
-        
+        // PHASE 2: Load non-critical data in parallel (won't block UI)        
         Promise.all([
           promiseGet(api + "providers/all").then(data => {
             allProviders = data;
@@ -336,7 +332,7 @@ if (auth == undefined) {
         ]).then(() => {
           //console.timeEnd('Phase 2: Parallel Loading');
           console.timeEnd('App Initialization');
-          console.log('✅ All data loaded - App is fully optimized and responsive');
+          //console.log('✅ All data loaded - App is fully optimized and responsive');
           
           // PHASE 3: Load invoices (least critical)
           //console.time('Phase 3: Invoices');
@@ -510,11 +506,12 @@ if (auth == undefined) {
 
     // ── POS IDLE STATE ────────────────────────────────────────────
     function renderPosIdle() {
+      console.log("test")
       posActiveCategory = null;
       $(".pos-cat-pill").removeClass("active");
       $(".pos-cat-pill[data-cat='']").addClass("active");
-      renderPosLowStock();
-      renderPosRecent();
+      //renderPosLowStock();
+      //renderPosRecent();
       $("#parent").html(
         `<div class="pos-search-placeholder text-center text-muted">
            <i class="fa fa-search fa-3x"></i>
@@ -572,8 +569,6 @@ if (auth == undefined) {
       }
     }
 
-
-
     function updateHoldBadge(count) {
       if (count > 0) {
         $("#holdBadge").text(count).show();
@@ -602,25 +597,25 @@ if (auth == undefined) {
       $.get(api + "inventory/products", function (data) {
         data.forEach((item) => { item.price = parseFloat(item.price).toFixed(2); });
         allProducts = [...data];
-        let expiredCount = 0;
-        allProducts.forEach((product) => {
-          let expiryDate = moment(product.expirationDate, DATE_FORMAT);
-          if (!isExpired(expiryDate)) {
-            const diffDays = daysToExpire(expiryDate);
-            if (diffDays > 0 && diffDays <= 30) {
-              let days_noun = diffDays > 1 ? "days" : "day";
-              //notiflix.Notify.warning(`${product.name} has only ${diffDays} ${days_noun} left to expiry`);
-            }
-          } else {
-            expiredCount++;
-          }
-        });
-        if (expiredCount > 0) {
-          //notiflix.Notify.failure(`${expiredCount} products are expired. Please restock!`);
-          renderPosExpiredStock(`${expiredCount} products are expired. Please restock!`);
-        }
+        // let expiredCount = 0;
+        // allProducts.forEach((product) => {
+        //   let expiryDate = moment(product.expirationDate, DATE_FORMAT);
+        //   if (!isExpired(expiryDate)) {
+        //     const diffDays = daysToExpire(expiryDate);
+        //     if (diffDays > 0 && diffDays <= 30) {
+        //       let days_noun = diffDays > 1 ? "days" : "day";
+        //       //notiflix.Notify.warning(`${product.name} has only ${diffDays} ${days_noun} left to expiry`);
+        //     }
+        //   } else {
+        //     expiredCount++;
+        //   }
+        // });
+        // if (expiredCount > 0) {
+        //   //notiflix.Notify.failure(`${expiredCount} products are expired. Please restock!`);
+        //   renderPosExpiredStock(`${expiredCount} products are expired. Please restock!`);
+        // }
 
-        renderPosLowStock();
+        // //renderPosLowStock();
         
         if (typeof callback === "function") callback();
       });
@@ -1038,11 +1033,11 @@ if (auth == undefined) {
               ? `<button onclick="$(this).viewInvoiceFile('${inv.invoiceFile}')" class="btn btn-info btn-xs" title="View Bill"><i class="fa fa-file-image-o"></i> View</button> `
               : `<button class="btn btn-default btn-xs" disabled title="No file attached"><i class="fa fa-file-o"></i></button> `;
 
-            const markPaidBtn = inv.paymentStatus !== 'paid'
-              ? `<button onclick="$(this).markInvoicePaid('${inv.invoiceId}')" class="btn btn-success btn-xs" title="Mark as Paid"><i class="fa fa-check"></i></button> `
-              : '';
+            // const markPaidBtn = inv.paymentStatus !== 'paid'
+            //   ? `<button onclick="$(this).markInvoicePaid('${inv.invoiceId}')" class="btn btn-success btn-xs" title="Mark as Paid"><i class="fa fa-check"></i></button> `
+            //   : '';
 
-            const editBtn = `<button onclick="$(this).editInvoice('${inv.invoiceId}')" class="btn btn-warning btn-xs" title="Edit"><i class="fa fa-edit"></i></button> `;
+            //const editBtn = `<button onclick="$(this).editInvoice('${inv.invoiceId}')" class="btn btn-warning btn-xs" title="Edit"><i class="fa fa-edit"></i></button> `;
 
             html += `<tr>
               <td><strong>${inv.invoiceId}</strong></td>
@@ -1053,7 +1048,7 @@ if (auth == undefined) {
               <td>${statusBadge}</td>
               <td class="nobr">
                 <span class="btn-group">
-                  ${fileBtn}${editBtn}${markPaidBtn}<button onclick="$(this).deleteInvoice('${inv.invoiceId}')" class="btn btn-danger btn-xs" title="Delete"><i class="fa fa-trash"></i></button>
+                  ${fileBtn} <button onclick="$(this).deleteInvoice('${inv.invoiceId}')" class="btn btn-danger btn-xs" title="Delete"><i class="fa fa-trash"></i></button>
                 </span>
               </td>
             </tr>`;
@@ -1433,7 +1428,6 @@ if (auth == undefined) {
 
     function barcodeSearch(e) {
       e.preventDefault();
-      console.log($("#skuCode").val());
       let searchBarCodeIcon = $(".search-barcode-btn").html();
       $(".search-barcode-btn").empty();
       $(".search-barcode-btn").append(
@@ -2289,7 +2283,7 @@ if (auth == undefined) {
     };
 
     $.fn.getCustomerOrders = function () {
-      $.get(api + "customer-orders", function (data) {
+      $.get(api + "/customer-orders", function (data) {
         clearInterval(dotInterval);
         customerOrderList = data;
         customerOrderLocation.empty();
@@ -2514,19 +2508,23 @@ if (auth == undefined) {
       let html  = '';
 
       invoiceItems.forEach(function (item, idx) {
+        
         const subtotal = (parseFloat(item.qty) || 0) * (parseFloat(item.cost) || 0);
         total += subtotal;
         const badge = item.type === 'new'
           ? '<span class="inv-badge-new">NEW</span>'
+          : item.type === 'edit'
+          ? '<span class="inv-badge-edit">EDIT</span>'
           : '<span class="inv-badge-restock">RESTOCK</span>';
         html += '<tr>' +
           '<td>' + badge + '</td>' +
-          '<td>' + item.name + '</td>' +
-          '<td><small>' + (item.barcode || '—') + '</small></td>' +
+          '<td><input type="text" value="' + (item.name || '') + '" class="form-control inv-name-input" style="width:130px;" data-idx="' + idx + '"></td>' +
+          '<td><input type="text" value="' + (item.barcode || '') + '" class="form-control inv-barcode-input" style="width:90px;" data-idx="' + idx + '"></td>' +
           '<td><input type="number" min="1" value="' + item.qty + '" class="form-control inv-qty-input" style="width:70px;" data-idx="' + idx + '"></td>' +
           '<td><input type="number" step="0.01" min="0" value="' + item.cost + '" class="form-control inv-cost-input" style="width:80px;" data-idx="' + idx + '"></td>' +
-          '<td>' + sym + subtotal.toFixed(2) + '</td>' +
-          '<td style="font-size:12px;">' + (item.expiry || '—') + '</td>' +
+          '<td><input type="number" step="0.01" min="0" value="' + item.price + '" class="form-control inv-price-input" style="width:80px;" data-idx="' + idx + '"></td>' +
+          '<td><input type="number" step="0.01" min="0" value="' + subtotal.toFixed(2) + '" class="form-control inv-subtotal-input" style="width:90px;" data-idx="' + idx + '"></td>' +
+          '<td><input type="date" value="' + (item.expiry || '') + '" class="form-control inv-expiry-input" style="width:130px;" data-idx="' + idx + '"></td>' +
           '<td><button type="button" class="btn btn-danger btn-xs inv-remove-item" data-idx="' + idx + '"><i class="fa fa-times"></i></button></td>' +
           '</tr>';
       });
@@ -2576,7 +2574,9 @@ if (auth == undefined) {
           '<div class="inv-drop-meta">' +
             'Barcode: ' + (p.barcode || '—') +
             ' &nbsp;|&nbsp; Stock: <span style="' + stockColor + 'font-weight:600;">' + stockVal + '</span>' +
-            ' &nbsp;|&nbsp; Cost: ' + (p.costPrice || '—') +
+            ' &nbsp;|&nbsp; Cost Price: ' + ( validator.unescape(settings.symbol) + moneyFormat(parseFloat(p.costPrice).toFixed(2) ) || '—') +
+            ' &nbsp;|&nbsp; Sale Price: ' + ( validator.unescape(settings.symbol) + moneyFormat(parseFloat(p.price).toFixed(2)) || '—') +
+
           '</div>' +
           '</div>';
       });
@@ -2634,6 +2634,7 @@ if (auth == undefined) {
         barcode:   prod.barcode,
         qty:       1,
         cost:      parseFloat(prod.costPrice) || 0,
+        price:     parseFloat(prod.price) || 0,
         expiry:    prod.expirationDate || '',
       });
       renderInvoiceItems();
@@ -2642,13 +2643,7 @@ if (auth == undefined) {
     });
 
     // ── INVOICE ITEMS: inline qty/cost edits ─────────────────────
-    $(document).on("input", ".inv-qty-input", function () {
-      const idx = parseInt($(this).data("idx"));
-      invoiceItems[idx].qty = parseFloat($(this).val()) || 0;
-      const subtotal = invoiceItems[idx].qty * invoiceItems[idx].cost;
-      $(this).closest("tr").find("td:eq(5)").text(
-        ((settings && validator.unescape(settings.symbol)) || '') + subtotal.toFixed(2)
-      );
+    function recalcInvTotals() {
       let total = 0;
       invoiceItems.forEach(function (i) { total += (i.qty || 0) * (i.cost || 0); });
       const sym = (settings && validator.unescape(settings.symbol)) || '';
@@ -2657,23 +2652,60 @@ if (auth == undefined) {
       const tax = parseFloat($("#inv_tax_amount").val()) || 0;
       const disc = parseFloat($("#inv_discount_amount").val()) || 0;
       $("#inv_net_amount").val((total + tax - disc).toFixed(2));
+    }
+
+    $(document).on("input", ".inv-qty-input", function () {
+      const idx = parseInt($(this).data("idx"));
+      invoiceItems[idx].qty = parseFloat($(this).val()) || 0;
+      const subtotal = invoiceItems[idx].qty * invoiceItems[idx].cost;
+      $(this).closest("tr").find(".inv-subtotal-input").val(subtotal.toFixed(2));
+      recalcInvTotals();
     });
 
     $(document).on("input", ".inv-cost-input", function () {
       const idx = parseInt($(this).data("idx"));
       invoiceItems[idx].cost = parseFloat($(this).val()) || 0;
+      const salePrice = invoiceItems[idx].cost + (invoiceItems[idx].cost * settings.defaultProfitMargin/100);
+      $(this).closest("tr").find(".inv-price-input").val(salePrice.toFixed(2));
+      //recalcInvTotals();
+    });
+
+
+    $(document).on("input", ".inv-cost-input", function () {
+      const idx = parseInt($(this).data("idx"));
+      invoiceItems[idx].cost = parseFloat($(this).val()) || 0;
       const subtotal = invoiceItems[idx].qty * invoiceItems[idx].cost;
-      $(this).closest("tr").find("td:eq(5)").text(
-        ((settings && validator.unescape(settings.symbol)) || '') + subtotal.toFixed(2)
-      );
-      let total = 0;
-      invoiceItems.forEach(function (i) { total += (i.qty || 0) * (i.cost || 0); });
-      const sym = (settings && validator.unescape(settings.symbol)) || '';
-      $("#invItemsTotal").text(sym + total.toFixed(2));
-      $("#inv_total_amount").val(total.toFixed(2));
-      const tax = parseFloat($("#inv_tax_amount").val()) || 0;
-      const disc = parseFloat($("#inv_discount_amount").val()) || 0;
-      $("#inv_net_amount").val((total + tax - disc).toFixed(2));
+      $(this).closest("tr").find(".inv-subtotal-input").val(subtotal.toFixed(2));
+      recalcInvTotals();
+    });
+
+    $(document).on("input", ".inv-subtotal-input", function () {
+      const idx = parseInt($(this).data("idx"));
+      const subtotal = parseFloat($(this).val()) || 0;
+      const qty = invoiceItems[idx].qty || 1;
+      invoiceItems[idx].cost = subtotal / qty;
+      $(this).closest("tr").find(".inv-cost-input").val(invoiceItems[idx].cost.toFixed(2));
+      recalcInvTotals();
+    });
+
+    $(document).on("input", ".inv-name-input", function () {
+      const idx = parseInt($(this).data("idx"));
+      invoiceItems[idx].name = $(this).val();
+    });
+
+    $(document).on("input", ".inv-barcode-input", function () {
+      const idx = parseInt($(this).data("idx"));
+      invoiceItems[idx].barcode = $(this).val();
+    });
+
+    $(document).on("input", ".inv-price-input", function () {
+      const idx = parseInt($(this).data("idx"));
+      invoiceItems[idx].price = parseFloat($(this).val()) || 0;
+    });
+
+    $(document).on("change", ".inv-expiry-input", function () {
+      const idx = parseInt($(this).data("idx"));
+      invoiceItems[idx].expiry = $(this).val();
     });
 
     // ── INVOICE ITEMS: remove row ─────────────────────────────────
@@ -2684,9 +2716,7 @@ if (auth == undefined) {
     });
 
     $("#inp_cost").on("change", function(){
-      console.log(parseFloat($("#inp_cost").val()))
       price = parseFloat($("#inp_cost").val()) + (settings.defaultProfitMargin * parseFloat($("#inp_cost").val())/100.0 )
-      console.log(price.toFixed(2))
       $("#inp_price").val(price.toFixed(2))
     })
 
@@ -3004,12 +3034,93 @@ if (auth == undefined) {
           processData: false,
           contentType: false,
           success: function () {
-            $('#invViewTabs a[href="#invTabList"]').tab("show");
-            notiflix.Report.success("Invoice Updated", "Invoice updated successfully.", "Ok");
-            const providerId = $("#providerListFilter").val();
-            if (providerId) loadInvoiceList(providerId);
-            loadInvoicesForForm();
-            loadInvoicesView();
+            const itemsToProcess = invoiceItems.slice();
+            const invProviderId  = $("#inv_provider_id").val();
+            const invDate        = $("#inv_invoice_date").val();
+
+            function finishEdit(done, errors) {
+              $('#invViewTabs a[href="#invTabList"]').tab("show");
+              const msg = errors
+                ? "Invoice saved. " + errors + " item(s) had errors."
+                : done > 0
+                ? "Invoice and " + done + " item(s) updated successfully."
+                : "Invoice updated successfully.";
+              notiflix.Report.success("Done", msg, "Ok");
+              const providerId = $("#providerListFilter").val();
+              if (providerId) loadInvoiceList(providerId);
+              loadInvoicesForForm();
+              loadInvoicesView();
+              if (done > 0) loadProducts();
+            }
+
+            if (!itemsToProcess.length) {
+              finishEdit(0, 0);
+              return;
+            }
+
+            let done = 0, errors = 0;
+            function processEditItem(idx) {
+              if (idx >= itemsToProcess.length) {
+                finishEdit(done, errors);
+                return;
+              }
+              const item = itemsToProcess[idx];
+              if (item.type === 'edit') {
+                $.ajax({
+                  url: api + "inventory/product/" + item.productId + "/costs",
+                  type: "PATCH",
+                  contentType: "application/json",
+                  data: JSON.stringify({ name: item.name || '', quantity: item.qty, costPrice: String(item.cost), price: String(item.price || 0), barcode: String(item.barcode || ''), expirationDate: item.expiry || '' }),
+                  success: function () { done++; processEditItem(idx + 1); },
+                  error:   function () { errors++; processEditItem(idx + 1); },
+                });
+              } else if (item.type === 'restock') {
+                $.ajax({
+                  url: api + "inventory/restock/" + item.productId,
+                  type: "POST",
+                  contentType: "application/json",
+                  data: JSON.stringify({
+                    quantity:   item.qty,
+                    invoiceId:  originalId,
+                    providerId: invProviderId,
+                    costPrice:  item.cost,
+                    price:      item.price,
+                    entryDate:  invDate,
+                  }),
+                  success: function () { done++; processEditItem(idx + 1); },
+                  error:   function () { errors++; processEditItem(idx + 1); },
+                });
+              } else {
+                const pfd = new FormData();
+                pfd.append("id",             "");
+                pfd.append("name",           item.name);
+                pfd.append("barcode",        item.barcode);
+                pfd.append("quantity",       item.qty);
+                pfd.append("cost_price",     item.cost);
+                pfd.append("price",          item.price);
+                pfd.append("profit_margin",  item.price && item.cost
+                  ? (((item.price - item.cost) / item.cost) * 100).toFixed(2)
+                  : "0");
+                pfd.append("provider",       invProviderId);
+                pfd.append("invoice_id",     originalId);
+                pfd.append("category",       item.category || "");
+                pfd.append("expirationDate", item.expiry || "");
+                pfd.append("entryDate",      invDate);
+                pfd.append("minStock",       "1");
+                pfd.append("img",            "");
+                pfd.append("remove",         "");
+                $.ajax({
+                  url: api + "inventory/product",
+                  type: "POST",
+                  data: pfd,
+                  processData: false,
+                  contentType: false,
+                  success: function () { done++; processEditItem(idx + 1); },
+                  error:   function () { errors++; processEditItem(idx + 1); },
+                });
+              }
+            }
+            processEditItem(0);
           },
           error: function (err) {
             const msg = (err.responseJSON && err.responseJSON.message) || "Unknown error.";
@@ -3172,7 +3283,6 @@ if (auth == undefined) {
           notiflix.Report.failure("Error", "Invoice not found.", "Ok");
           return;
         }
-        console.log(inv)
         // Populate provider select
         let provOpts = '<option value="">' + t('select_provider_hint') + '</option>';
         allProviders.forEach(function (p) {
@@ -3211,9 +3321,28 @@ if (auth == undefined) {
           $("#inv_current_file_display").html('<span style="color:var(--c-muted);">No file attached</span>');
         }
 
-        // Switch to form tab in edit mode
+        // Switch to form tab in edit mode — load linked products
         invoiceItems = [];
-        renderInvoiceItems();
+        $.get(api + "invoice/invoice/" + inv.invoiceId + "/products", function (products) {
+          
+          (products || []).forEach(function (p) {
+            invoiceItems.push({
+              type:      'edit',
+              productId: p._id,
+              name:      validator.unescape(p.name || ''),
+              barcode:   p.barcode || '',
+              qty:       parseInt(p.quantity)    || 0,
+              cost:      parseFloat(p.costPrice) || 0,
+              price:     parseFloat(p.price)     || 0,
+              expiry:    p.expirationDate || '',
+              category:  p.category || '',
+              _original: p,
+            });
+          });
+          renderInvoiceItems();
+        }).fail(function () {
+          renderInvoiceItems();
+        });
         $("#invNewProdPanel").hide();
         $("#invProductSearch").val("");
         $("#invoiceFormIcon").attr("class", "fa fa-edit");

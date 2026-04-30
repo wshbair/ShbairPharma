@@ -486,6 +486,36 @@ app.post("/product/name", function (req, res) {
     );
 });
 /**
+ * PATCH /product/:id/costs
+ * Update only quantity and/or costPrice of a product without touching other fields.
+ */
+app.patch("/product/:id/costs", function (req, res) {
+    const id = parseInt(req.params.id);
+    if (!id) return res.status(400).json({ error: "Product ID required" });
+
+    const updates = {};
+    if (req.body.name           !== undefined) updates.name           = validator.escape(String(req.body.name));
+    if (req.body.quantity       !== undefined) updates.quantity       = validator.escape(String(req.body.quantity));
+    if (req.body.costPrice      !== undefined) updates.costPrice      = validator.escape(String(req.body.costPrice));
+    if (req.body.price          !== undefined) updates.price          = validator.escape(String(req.body.price));
+    if (req.body.barcode        !== undefined) updates.barcode        = validator.escape(String(req.body.barcode));
+    if (req.body.expirationDate !== undefined) updates.expirationDate = validator.escape(String(req.body.expirationDate));
+
+    if (!Object.keys(updates).length) {
+        return res.status(400).json({ error: "No fields to update" });
+    }
+
+    inventoryDB.update({ _id: id }, { $set: updates }, {}, function (err, n) {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ error: "Internal Server Error" });
+        }
+        if (!n) return res.status(404).json({ error: "Product not found" });
+        res.sendStatus(200);
+    });
+});
+
+/**
  * POST /restock/:productId
  * Add stock to an existing product, updating invoiceId, provider, costPrice,
  * and appending an entry to invoiceHistory.
