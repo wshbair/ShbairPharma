@@ -25,9 +25,7 @@ function syncInvoiceStatuses(providerId, callback) {
             if (invoices.length === 0) return callback(null);
 
             // Oldest invoice gets paid off first
-            invoices.sort(function (a, b) {
-                return new Date(a.invoiceDate) - new Date(b.invoiceDate);
-            });
+            invoices.sort((a, b) => new Date(a.invoiceDate).getTime() - new Date(b.invoiceDate).getTime());
 
             let remaining = totalPaid;
             let done = 0;
@@ -90,9 +88,7 @@ app.get("/provider/:providerId", function (req, res) {
             }, 0);
 
             // Sort payments newest-first
-            payments.sort(function (a, b) {
-                return new Date(b.paymentDate) - new Date(a.paymentDate);
-            });
+            payments.sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime());
 
             res.send({
                 payments:       payments,

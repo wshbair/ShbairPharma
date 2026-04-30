@@ -1,10 +1,12 @@
+// @ts-check
+
 const app = require("express")();
-const server = require("http").Server(app);
+//const server = new (require("http").Server)(app);
 const bodyParser = require("body-parser");
-const Datastore =  require('@seald-io/nedb');
-const path = require("path");
-const appName = process.env.APPNAME;
-const appData = process.env.APPDATA;
+// const Datastore =  require('@seald-io/nedb');
+// const path = require("path");
+// const appName = process.env.APPNAME;
+// const appData = process.env.APPDATA;
  
 
 app.use(bodyParser.json());

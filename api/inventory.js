@@ -1,5 +1,5 @@
 const app = require("express")();
-const server = require("http").Server(app);
+//const server = require("http").Server(app);
 const bodyParser = require("body-parser");
 const async = require("async");
 const sanitizeFilename = require('sanitize-filename');
@@ -34,6 +34,7 @@ const csvUpload = multer({
     if (allowedCsv.includes(file.mimetype)) {
       cb(null, true);
     } else {
+    //@ts-expect-error
       cb(new multer.MulterError("LIMIT_UNEXPECTED_FILE"), false);
     }
   },
@@ -571,6 +572,7 @@ app.post("/restock/:productId", function (req, res) {
  * @param {Array} products - List of products in the transaction.
  * @returns {void}
  */
+//@ts-expect-error
 app.decrementInventory = function (products) {
     async.eachSeries(products, function (transactionProduct, callback) {
         inventoryDB.findOne(

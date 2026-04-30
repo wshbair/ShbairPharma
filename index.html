@@ -1457,7 +1457,12 @@
                         <div class="container">
                             <div class="row">
                                 <div class="col-md-12">
-                                    <div class="form-group"><label data-i18n="app_mode">Application Mode</label><select name="app" id="app" class="form-control"><option value="Standalone Point of Sale" data-i18n="standalone_pos">Standalone Point of Sale</option><option value="Network Point of Sale Terminal" data-i18n="network_terminal">Network Point of Sale Terminal</option><option value="Network Point of Sale Server" data-i18n="network_server">Network Point of Sale Server</option></select></div>
+                                    <div class="form-group"><label data-i18n="app_mode">Application Mode</label>
+                                        <select name="app" id="app" class="form-control">
+                                            <option value="Standalone Point of Sale" data-i18n="standalone_pos">Standalone Point of Sale</option>
+                                            <!-- <option value="Network Point of Sale Terminal" data-i18n="network_terminal">Network Point of Sale Terminal</option>
+                                            <option value="Network Point of Sale Server" data-i18n="network_server">Network Point of Sale Server</option> -->
+                                        </select></div>
                                     <form id="net_settings_form">
                                         <div class="form-group"><label data-i18n="server_ip_lbl">Server IP Address*</label><input type="text" required placeholder="IP address of admin computer" name="ip" class="form-control" id="ip"></div>
                                         <div class="col-md-5"><div class="form-group"><label data-i18n="till_number_lbl">Till Number*</label><input type="text" required placeholder="Number" name="till" class="form-control" id="till"></div></div>
@@ -1480,7 +1485,7 @@
                                             <div class="form-group"><label data-i18n="footer_lbl">Receipt Footer</label><textarea name="footer" class="form-control" id="footer"></textarea></div>
                                         </div>
                                         <div class="col-md-6">
-                                            <div class="form-group"><label data-i18n="currency_lbl">Currency Symbol</label><input type="text" required name="symbol" class="form-control" id="symbol" minlength="1" maxlength="3" placeholder="USD"></div>
+                                            <div class="form-group"><label data-i18n="currency_lbl">Currency Symbol</label><input type="text" required name="symbol" value="₪" class="form-control" id="symbol" minlength="1" maxlength="3" placeholder="USD"></div>
                                             <div class="form-group"><label data-i18n="addr_line_2_lbl">Address Line 2</label><input type="text" required name="address_two" class="form-control" id="address_two" placeholder="City, Country"></div>
                                             <div class="form-group"><label data-i18n="vat_pct_lbl">VAT Percentage</label><div class="input-group"><input type="number" min="0" max="100" required name="percentage" class="form-control" id="percentage"><span class="input-group-addon">%</span></div></div>
                                             <div class="form-group"><label><input type="checkbox" name="charge_tax" id="charge_tax"> <span data-i18n="charge_vat_lbl">Charge VAT</span></label></div>
@@ -1498,10 +1503,17 @@
 
                     <div class="modal-footer" style="text-align:left">
                         <div class="row">
-                            <div class="col-md-12 card-box" style="background-color: #fed5da;">
-                                <h4 style="color: #dc3545;">Danger Zone</h4>
-                                <p style="color: #666; font-size: 14px;">This will permanently delete all data including products, invoices, payments, customers, and all other records.</p>
-                                <button id="reset_database" type="button" class="btn btn-danger " style="background-color: #dc3545;">Reset Application (Clear All Data)</button>
+                            <div class="col-md-12" style="border:1px solid #dc3545; border-left:4px solid #dc3545; border-radius:4px; padding:14px 16px; background:#fff8f8;">
+                                <h4 style="color:#dc3545; margin-top:0;">
+                                    <i class="fa fa-exclamation-triangle"></i> Danger Zone
+                                </h4>
+                                <p style="color:#555; font-size:13px; margin-bottom:10px;">
+                                    Permanently deletes <strong>all</strong> records: products, invoices, payments, customers, providers, transactions, and categories.<br>
+                                    <strong style="color:#dc3545;">This action cannot be undone.</strong>
+                                </p>
+                                <button id="reset_database" type="button" class="btn btn-danger btn-sm">
+                                    <i class="fa fa-trash"></i> Reset Application
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1530,7 +1542,6 @@
                 </div>
             </div>
         </div>
-
 
         <!-- Add / Edit Payment -->
         <div id="newPayment" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">

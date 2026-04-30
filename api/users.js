@@ -1,11 +1,11 @@
 const app = require("express")();
-const server = require("http").Server(app);
+//const server = require("http").Server(app);
 const bodyParser = require("body-parser");
-const Datastore = require("@seald-io/nedb");
+//const Datastore = require("@seald-io/nedb");
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
 const validator = require("validator");
-const path = require("path");
+//const path = require("path");
  
 app.use(bodyParser.json());
 module.exports = app;

@@ -1,11 +1,11 @@
 let app = require("express")();
-let server = require("http").Server(app);
+//let server = require("http").Server(app);
 let bodyParser = require("body-parser");
-let Datastore = require("@seald-io/nedb");
+//let Datastore = require("@seald-io/nedb");
 let Inventory = require("./inventory");
-const path = require("path");
-const appName = process.env.APPNAME;
-const appData = process.env.APPDATA;
+// const path = require("path");
+// const appName = process.env.APPNAME;
+// const appData = process.env.APPDATA;
  
 app.use(bodyParser.json());
 module.exports = app;
@@ -76,71 +76,105 @@ app.get("/customer-orders", function (req, res) {
  * @param {Object} res response object.
  * @returns {void}
  */
-app.get("/by-date", function (req, res) {
-  let startDate = new Date(req.query.start);
-  let endDate = new Date(req.query.end);
+// app.get("/by-date", function (req, res) {
+//   let startDate = new Date(req.query.start);
+//   let endDate = new Date(req.query.end);
 
-  if (req.query.user == 0 && req.query.till == 0) {
-    transactionsDB.find(
-      {
-        $and: [
-          { date: { $gte: startDate.toJSON(), $lte: endDate.toJSON() } },
-          { status: parseInt(req.query.status) },
-        ],
-      },
-      function (err, docs) {
-        if (docs) res.send(docs);
-      },
-    );
-  }
+//   if (req.query.user == 0 && req.query.till == 0) {
+//     transactionsDB.find(
+//       {
+//         $and: [
+//           { date: { $gte: startDate.toJSON(), $lte: endDate.toJSON() } },
+//           { status: parseInt(req.query.status) },
+//         ],
+//       },
+//       function (err, docs) {
+//         if (docs) res.send(docs);
+//       },
+//     );
+//   }
 
-  if (req.query.user != 0 && req.query.till == 0) {
-    transactionsDB.find(
-      {
-        $and: [
-          { date: { $gte: startDate.toJSON(), $lte: endDate.toJSON() } },
-          { status: parseInt(req.query.status) },
-          { user_id: parseInt(req.query.user) },
-        ],
-      },
-      function (err, docs) {
-        if (docs) res.send(docs);
-      },
-    );
-  }
+//   if (req.query.user != 0 && req.query.till == 0) {
+//     transactionsDB.find(
+//       {
+//         $and: [
+//           { date: { $gte: startDate.toJSON(), $lte: endDate.toJSON() } },
+//           { status: parseInt(req.query.status) },
+//           { user_id: parseInt(req.query.user) },
+//         ],
+//       },
+//       function (err, docs) {
+//         if (docs) res.send(docs);
+//       },
+//     );
+//   }
 
-  if (req.query.user == 0 && req.query.till != 0) {
-    transactionsDB.find(
-      {
-        $and: [
-          { date: { $gte: startDate.toJSON(), $lte: endDate.toJSON() } },
-          { status: parseInt(req.query.status) },
-          { till: parseInt(req.query.till) },
-        ],
-      },
-      function (err, docs) {
-        if (docs) res.send(docs);
-      },
-    );
-  }
+//   if (req.query.user == 0 && req.query.till != 0) {
+//     transactionsDB.find(
+//       {
+//         $and: [
+//           { date: { $gte: startDate.toJSON(), $lte: endDate.toJSON() } },
+//           { status: parseInt(req.query.status) },
+//           { till: parseInt(req.query.till) },
+//         ],
+//       },
+//       function (err, docs) {
+//         if (docs) res.send(docs);
+//       },
+//     );
+//   }
 
-  if (req.query.user != 0 && req.query.till != 0) {
-    transactionsDB.find(
-      {
-        $and: [
-          { date: { $gte: startDate.toJSON(), $lte: endDate.toJSON() } },
-          { status: parseInt(req.query.status) },
-          { till: parseInt(req.query.till) },
-          { user_id: parseInt(req.query.user) },
-        ],
+//   if (req.query.user != 0 && req.query.till != 0) {
+//     transactionsDB.find(
+//       {
+//         $and: [
+//           { date: { $gte: startDate.toJSON(), $lte: endDate.toJSON() } },
+//           { status: parseInt(req.query.status) },
+//           { till: parseInt(req.query.till) },
+//           { user_id: parseInt(req.query.user) },
+//         ],
+//       },
+//       function (err, docs) {
+//         if (docs) res.send(docs);
+//       },
+//     );
+//   }
+// });
+
+app.get("/by-date", async (req, res) => {
+  try {
+    const { start, end, user, till, status } = req.query;
+
+    const startDate = new Date(start.toString());
+    const endDate = new Date(end.toString());
+
+    const query = {
+      date: {
+        $gte: startDate.toISOString(),
+        $lte: endDate.toISOString(),
       },
-      function (err, docs) {
-        if (docs) res.send(docs);
-      },
-    );
+      status: Number(status),
+    };
+
+    // Add optional filters only if they are not 0
+    if (Number(user) !== 0) {
+      query.user_id = Number(user);
+    }
+
+    if (Number(till) !== 0) {
+      query.till = Number(till);
+    }
+
+    const docs = await transactionsDB.find(query);
+    return res.send(docs);
+
+  } catch (err) {
+    return res.status(500).send({
+      error: "Database error",
+      details: err.message,
+    });
   }
 });
-
 /**
  * POST endpoint: Create a new transaction.
  *
@@ -162,6 +196,7 @@ app.post("/new", function (req, res) {
       res.sendStatus(200);
 
       if (newTransaction.paid >= newTransaction.total) {
+        //@ts-expect-error 
         Inventory.decrementInventory(newTransaction.items);
       }
     }

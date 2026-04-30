@@ -1,3 +1,6 @@
+// @ts-check
+/// <reference types="jquery" />
+
 //const jsPDF = require("jspdf");
 //const html2canvas = require("html2canvas");
 //const JsBarcode = require("jsbarcode");
@@ -49,17 +52,17 @@ let item;
 let auth;
 let holdOrder = 0;
 let vat = 0;
-let perms = null;
+//let perms = null;
 let deleteId = 0;
 let paymentType = 0;
 let receipt = "";
 let totalVat = 0;
 let subTotal = 0;
 let method = "";
-let order_index = 0;
+//let order_index = 0;
 let user_index = 0;
-let product_index = 0;
-let transaction_index;
+//let product_index = 0;
+//let transaction_index;
 const appName = process.env.APPNAME;
 const appData = process.env.APPDATA;
 let host = "localhost";
@@ -67,7 +70,7 @@ let port = process.env.PORT;
 let img_path = path.join(appData, appName, "uploads", "/");
 let api = "http://" + host + ":" + port + "/api/";
 const bcrypt = require("bcrypt");
-let categories = [];
+//let categories = [];
 let holdOrderList = [];
 let customerOrderList = [];
 let ownUserEdit = null;
@@ -101,7 +104,7 @@ notiflix.Notify.init({
   cssAnimationDuration: 600,
   messageMaxLength: 150,
   clickToClose: true,
-  showCloseButton: true,  // Changed from 'closeButton' to 'showCloseButton'
+  closeButton: true,  // Changed from 'closeButton' to 'showCloseButton'
   timeout: 5000 
 });
 const {
@@ -125,6 +128,7 @@ $(function () {
     );
   }
 
+  //@ts-expect-error
   $("#reportrange").daterangepicker(
     {
       startDate: start,
@@ -150,7 +154,6 @@ $(function () {
           moment().endOf("day"),
         ],
         "This Month": [moment().startOf("month"), moment().endOf("month")],
-        "This Month": [moment().startOf("month"), moment()],
         "Last Month": [
           moment().subtract(1, "month").startOf("month"),
           moment().subtract(1, "month").endOf("month"),
@@ -182,6 +185,7 @@ $(function () {
 });
 
 //Allow only numbers in input field
+//@ts-expect-error
 $.fn.allowOnlyNumbers = function() {
   return this.on('keydown', function(e) {
   // Allow: backspace, delete, tab, escape, enter, ., ctrl/cmd+A, ctrl/cmd+C, ctrl/cmd+X, ctrl/cmd+V, end, home, left, right, down, up
@@ -196,9 +200,12 @@ $.fn.allowOnlyNumbers = function() {
   }
 });
 };
+
+//@ts-expect-error
 $('.number-input').allowOnlyNumbers();
 
 //Serialize Object
+//@ts-expect-error
 $.fn.serializeObject = function () {
   var o = {};
   var a = this.serializeArray();
@@ -229,8 +236,11 @@ if (auth == undefined) {
   platform = storage.get("settings");
 
   if (platform != undefined) {
+    //@ts-expect-error
     if (platform.app == "Network Point of Sale Terminal") {
+      //@ts-expect-error
       api = "http://" + platform.ip + ":" + port + "/api/";
+      //@ts-expect-error
       perms = true;
     }
   }
@@ -302,7 +312,7 @@ if (auth == undefined) {
           promiseGet(api + "providers/all").then(data => {
             allProviders = data;
             requestAnimationFrame(() => {
-              updateProviderSelects();
+              loadProviders();
             });
           }),
           promiseGet(api + "customers/all").then(customers => {
@@ -410,6 +420,7 @@ if (auth == undefined) {
     initializeApp();
 
     $("#paymentText").on("input", function () {
+      //@ts-expect-error
      $(this).paymentChange()
       } );
 
@@ -419,6 +430,7 @@ if (auth == undefined) {
 
     setTimeout(function () {
       if (settings == undefined && auth != undefined) {
+        //@ts-expect-error
         $("#settingsModal").modal("show");
       } else {
         vat = parseFloat(validator.unescape(settings.percentage));
@@ -429,6 +441,7 @@ if (auth == undefined) {
     $("#settingsModal").on("hide.bs.modal", function () {
       setTimeout(function () {
         if (settings == undefined && auth != undefined) {
+          //@ts-expect-error
           $("#settingsModal").modal("show");
         }
       }, 1000);
@@ -506,12 +519,11 @@ if (auth == undefined) {
 
     // ── POS IDLE STATE ────────────────────────────────────────────
     function renderPosIdle() {
-      console.log("test")
       posActiveCategory = null;
       $(".pos-cat-pill").removeClass("active");
       $(".pos-cat-pill[data-cat='']").addClass("active");
       //renderPosLowStock();
-      //renderPosRecent();
+      renderPosRecent();
       $("#parent").html(
         `<div class="pos-search-placeholder text-center text-muted">
            <i class="fa fa-search fa-3x"></i>
@@ -528,22 +540,22 @@ if (auth == undefined) {
       $("#posCategoryPills").html(html);
     }
 
-    function renderPosLowStock() {
-      const low = allProducts.filter(function (p) {
-        return p.stock == 1 && parseInt(p.quantity) <= parseInt(p.minStock || 1);
-      });
-      if (!low.length) { $("#posLowStockStrip").hide(); return; }
-      const names = low.slice(0, 4).map(function (p) {
-        return `Low Stock Alert: <strong>${p.name}</strong> (${p.quantity})`;
-      }).join(", ") + (low.length > 4 ? ` +${low.length - 4} more` : "");
-      $("#posLowStockText").html(names);
-      $("#posLowStockStrip").show();
-    }
+    // function renderPosLowStock() {
+    //   const low = allProducts.filter(function (p) {
+    //     return p.stock == 1 && parseInt(p.quantity) <= parseInt(p.minStock || 1);
+    //   });
+    //   if (!low.length) { $("#posLowStockStrip").hide(); return; }
+    //   const names = low.slice(0, 4).map(function (p) {
+    //     return `Low Stock Alert: <strong>${p.name}</strong> (${p.quantity})`;
+    //   }).join(", ") + (low.length > 4 ? ` +${low.length - 4} more` : "");
+    //   $("#posLowStockText").html(names);
+    //   $("#posLowStockStrip").show();
+    // }
 
-    function renderPosExpiredStock(msg) {
-      $("#posExpiredStockText").html(msg);
-      $("#posExpiredStockStrip").show();
-    }
+    // function renderPosExpiredStock(msg) {
+    //   $("#posExpiredStockText").html(msg);
+    //   $("#posExpiredStockStrip").show();
+    // }
 
     function renderPosRecent() {
       if (!posRecentItems.length) { $("#posRecentStrip").hide(); return; }
@@ -564,7 +576,7 @@ if (auth == undefined) {
       posRecentItems = posRecentItems.filter(function (p) { return p._id !== product._id; });
       posRecentItems.unshift(product);
       if (posRecentItems.length > 8) posRecentItems = posRecentItems.slice(0, 8);
-      if ($("#search").val().trim().length < 2 && !posActiveCategory) {
+      if ($("#search").val().toString().trim().length < 2 && !posActiveCategory) {
         renderPosRecent();
       }
     }
@@ -639,13 +651,15 @@ if (auth == undefined) {
 
     // Wire search input
     $("#search").on("input", function () {
-      posSearchProducts($(this).val().trim());
+      posSearchProducts($(this).val().toString().trim());
     });
 
     //load providers in dropdown
     function loadProviders() {
+      
       $.get(api + "providers/all", function (data) {
         allProviders = data;
+         
         // Update product form provider select
         $("#provider").html(`<option value="">Select</option>`);
         allProviders.forEach((provider) => {
@@ -741,13 +755,13 @@ if (auth == undefined) {
     }
 
     function applyInvoiceFilter() {
-      const id      = $("#inv_search_id").val().trim().toLowerCase();
+      const id      = $("#inv_search_id").val().toString().trim().toLowerCase();
       const provider = $("#inv_filter_provider").val();
-      const dateFrom = $("#inv_filter_date_from").val();
+      const dateFrom = $("#inv_filter_date_from").val().toString();
       const dateTo   = $("#inv_filter_date_to").val();
       const status   = $("#inv_filter_status").val();
-      const amtMin   = parseFloat($("#inv_filter_amt_min").val()) || 0;
-      const amtMaxRaw = $("#inv_filter_amt_max").val();
+      const amtMin   = parseFloat($("#inv_filter_amt_min").val().toString()) || 0;
+      const amtMaxRaw = $("#inv_filter_amt_max").val().toString();
       const amtMax   = amtMaxRaw !== "" ? parseFloat(amtMaxRaw) : Infinity;
       const now      = new Date();
 
@@ -833,9 +847,10 @@ if (auth == undefined) {
       $("#inv_detail_panel").hide();
       $("#inv_detail_placeholder").show();
 
-      if (typeof applyLanguage === "function") applyLanguage(currentLang);
+      //if (typeof applyLanguage === "function") applyLanguage(currentLang);
     }
 
+    //@ts-expect-error
     $.fn.showInvoiceDetail = function (invoiceId) {
       const sym = (settings && validator.unescape(settings.symbol)) || "";
       const now = new Date();
@@ -964,6 +979,7 @@ if (auth == undefined) {
           prodHtml = '<tr><td colspan="6" class="text-center" style="color:var(--c-muted);" data-i18n="inv_no_linked_products">No linked products for this invoice.</td></tr>';
         }
         $("#inv_detail_products_body").html(prodHtml);
+        //@ts-expect-error
         if (typeof applyLanguage === "function") applyLanguage(currentLang);
       }).fail(function () {
         $("#inv_detail_products_body").html('<tr><td colspan="6" class="text-center text-danger">Failed to load products.</td></tr>');
@@ -1061,6 +1077,7 @@ if (auth == undefined) {
         $("#invoice_list_placeholder").hide();
         $("#providerInvoiceTable").show();
         // Re-apply translations to dynamically created elements
+        //@ts-expect-error
         if (typeof applyLanguage === 'function') applyLanguage(currentLang);
       }).fail(function () {
         currentProviderInvoiceData = null;
@@ -1127,6 +1144,7 @@ if (auth == undefined) {
         }
         $("#payment_list").html(html);
         $("#pay_list_count").text(currentProviderPayments.length);
+        //@ts-expect-error
         if (typeof applyLanguage === 'function') applyLanguage(currentLang);
       }).fail(function () {
         notiflix.Report.failure("Error", "Failed to load payments.", "Ok");
@@ -1136,6 +1154,7 @@ if (auth == undefined) {
     // ── ADD PAYMENT BUTTON ───────────────────────────────────────────────────
     $("#addPaymentBtn").on("click", function () {
       const today = new Date().toISOString().split('T')[0];
+       //@ts-expect-error
       $("#savePayment")[0].reset();
       $("#pay_original_id").val("");
       $("#pay_provider_id").val(currentProvider ? currentProvider._id : "");
@@ -1146,13 +1165,14 @@ if (auth == undefined) {
       }
       $("#paymentFormIcon").attr("class", "fa fa-plus-circle");
       $("#paymentFormTitle").text(t('add_payment_title'));
+       //@ts-expect-error
       $("#newPayment").modal("show");
     });
 
     // ── SAVE PAYMENT FORM ────────────────────────────────────────────────────
     $("#savePayment").submit(function (e) {
       e.preventDefault();
-      const amount = parseFloat($("#pay_amount").val());
+      const amount = parseFloat($("#pay_amount").val().toString());
       if (!amount || amount <= 0) {
         notiflix.Report.warning("Validation", "Please enter a valid amount.", "Ok");
         return;
@@ -1179,6 +1199,7 @@ if (auth == undefined) {
           contentType: "application/json",
           data: JSON.stringify(payload),
           success: function () {
+            //@ts-expect-error
             $("#newPayment").modal("hide");
             notiflix.Report.success("Updated", "Payment updated.", "Ok");
             if (currentProvider) { loadPaymentList(currentProvider._id); loadInvoiceList(currentProvider._id); }
@@ -1196,6 +1217,7 @@ if (auth == undefined) {
           contentType: "application/json",
           data: JSON.stringify(payload),
           success: function () {
+            //@ts-expect-error
             $("#newPayment").modal("hide");
             notiflix.Report.success("Saved", "Payment recorded.", "Ok");
             if (currentProvider) { loadPaymentList(currentProvider._id); loadInvoiceList(currentProvider._id); }
@@ -1209,6 +1231,7 @@ if (auth == undefined) {
     });
 
     // ── EDIT PAYMENT ─────────────────────────────────────────────────────────
+     //@ts-expect-error
     $.fn.editPayment = function (paymentId) {
       const p = currentProviderPayments.find(function (x) { return x.paymentId === paymentId; });
       if (!p) return;
@@ -1221,10 +1244,12 @@ if (auth == undefined) {
       $("#pay_notes").val(p.notes || '');
       $("#paymentFormIcon").attr("class", "fa fa-edit");
       $("#paymentFormTitle").text(t('edit_payment_title'));
+      //@ts-expect-error
       $("#newPayment").modal("show");
     };
 
     // ── DELETE PAYMENT ───────────────────────────────────────────────────────
+    //@ts-expect-error
     $.fn.deletePayment = function (paymentId) {
       notiflix.Confirm.show(
         "Delete Payment?",
@@ -1390,7 +1415,7 @@ if (auth == undefined) {
           }
         ]
       };
-
+      //@ts-expect-error
       pdfMake.fonts = {
         Tahoma: {
           normal:     "Tahoma.ttf",
@@ -1399,9 +1424,12 @@ if (auth == undefined) {
           bolditalics:"Tahoma.ttf",
         }
       };
+
+      //@ts-expect-error
       pdfMake.createPdf(docDef).download("payments_" + (prov.name || "provider").replace(/\s+/g, "_") + "_" + moment().format("YYYYMMDD") + ".pdf");
     });
 
+    //@ts-expect-error
     $.fn.addToCart = function (id, count, stock) {
       $.get(api + "inventory/product/" + id, function (product) {
         if (isExpired(product.expirationDate)) {
@@ -1412,6 +1440,7 @@ if (auth == undefined) {
           );
         } else {
           if (count > 0) {
+            //@ts-expect-error
             $(this).addProductToCart(product);
           } else {
             if (stock == 1) {
@@ -1449,7 +1478,9 @@ if (auth == undefined) {
           $(".search-barcode-btn").html(searchBarCodeIcon);
           const expired = isExpired(product.expirationDate);
           if (product._id != undefined && product.quantity >= 1 && !expired) {
+            //@ts-expect-error
             $(this).addProductToCart(product);
+            //@ts-expect-error
             $("#searchBarCode").get(0).reset();
             $("#basic-addon2").empty();
             $("#basic-addon2").append(
@@ -1483,7 +1514,7 @@ if (auth == undefined) {
               "<b>" + $("#skuCode").val() + "</b> is not a valid barcode!",
               "Ok",
             );
-
+            //@ts-expect-error
             $("#searchBarCode").get(0).reset();
             $("#basic-addon2").empty();
             $("#basic-addon2").append(
@@ -1493,6 +1524,7 @@ if (auth == undefined) {
         },
         error: function (err) {
           if (err.status === 422) {
+            //@ts-expect-error
             $(this).showValidationError(data);
             $("#basic-addon2").append(
               $("<i>", { class: "glyphicon glyphicon-remove" }),
@@ -1503,12 +1535,14 @@ if (auth == undefined) {
               $("<i>", { class: "glyphicon glyphicon-remove" }),
             );
           } else {
+            //@ts-expect-error
             $(this).showServerError();
             $("#basic-addon2").empty();
             $("#basic-addon2").append(
               $("<i>", { class: "glyphicon glyphicon-warning-sign" }),
             );
           }
+          //@ts-expect-error
           $("#searchBarCode").get(0).reset();
           $("#skuCode").trigger("focus");
         },
@@ -1528,7 +1562,7 @@ if (auth == undefined) {
         barcodeSearch(e);
       }
     });
-
+    //@ts-expect-error
     $.fn.addProductToCart = function (data) {
       item = {
         id: data._id,
@@ -1538,32 +1572,36 @@ if (auth == undefined) {
         profit_margin: parseFloat(data.profitMargin) || 0,
         quantity: 1,
       };
-
+      //@ts-expect-error
       if ($(this).isExist(item)) {
+        //@ts-expect-error
         $(this).qtIncrement(index);
       } else {
         cart.push(item);
+        //@ts-expect-error
         $(this).renderTable(cart);
       }
       addToPosRecent(data);
       //showPosAddedToast(data.name);
     };
-
+    //@ts-expect-error
     $.fn.isExist = function (data) {
       let toReturn = false;
       $.each(cart, function (index, value) {
         if (value.id == data.id) {
+          //@ts-expect-error
           $(this).setIndex(index);
           toReturn = true;
         }
       });
       return toReturn;
     };
-
+    //@ts-expect-error
     $.fn.setIndex = function (value) {
       index = value;
     };
 
+    //@ts-expect-error
     $.fn.calculateCart = function () {
       let total = 0;
       let totalCost = 0;
@@ -1576,12 +1614,12 @@ if (auth == undefined) {
         total_items += parseFloat(data.quantity);
       });
       $("#total").text(total_items);
-      total = total - $("#inputDiscount").val();
+      total = (total) - Number($("#inputDiscount").val().toString()) ;
       $("#price").text(validator.unescape(settings.symbol) + moneyFormat(total.toFixed(2)));
 
       subTotal = total;
 
-      if ($("#inputDiscount").val() >= total) {
+      if (Number($("#inputDiscount").val().toString()) >= total) {
         $("#inputDiscount").val(0);
       }
 
@@ -1592,7 +1630,7 @@ if (auth == undefined) {
         grossTotal = total;
       }
 
-      orderTotal = grossTotal.toFixed(2);
+      orderTotal = grossTotal;
 
       $("#gross_price").text(validator.unescape(settings.symbol) + moneyFormat(orderTotal));
       $("#payablePrice").val(moneyFormat(grossTotal));
@@ -1605,20 +1643,22 @@ if (auth == undefined) {
         .toggleClass("text-danger", profit < 0);
     };
 
+    //@ts-expect-error
     $.fn.renderTable = function (cartList) {
       $("#cartTable .card-body").empty();
+      //@ts-expect-error
       $(this).calculateCart();
       $.each(cartList, function (index, data) {
         $("#cartTable .card-body").append(
           $("<div>", { class: "row m-t-10" }).append(
-            $("<div>", { class: "col-md-1", text: index + 1 }),
+            $("<div>", { class: "col-md-1", text: Number(index) + 1 }),
             $("<div>", { class: "col-md-3", text: data.product_name }),
             $("<div>", { class: "col-md-3" }).append(
               $("<div>", { class: "input-group" }).append(
                 $("<span>", { class: "input-group-btn" }).append(
                   $("<button>", {
                     class: "btn btn-light",
-                    onclick: "$(this).qtDecrement(" + index + ")",
+                    onclick: "$(this).qtDecrement(" + Number(index) + ")",
                   }).append($("<i>", { class: "fa fa-minus" })),
                 ),
                 $("<input>", {
@@ -1626,12 +1666,12 @@ if (auth == undefined) {
                   type: "text",
                   value: data.quantity,
                   min: "1",
-                  onchange: "$(this).qtInput(" + index + ")",
+                  onchange: "$(this).qtInput(" + Number(index) + ")",
                 }),
                 $("<span>", { class: "input-group-btn" }).append(
                   $("<button>", {
                     class: "btn btn-light",
-                    onclick: "$(this).qtIncrement(" + index + ")",
+                    onclick: "$(this).qtIncrement(" + Number(index) + ")",
                   }).append($("<i>", { class: "fa fa-plus" })),
                 ),
               ),
@@ -1645,19 +1685,21 @@ if (auth == undefined) {
             $("<div>", { class: "col-md-1" }).append(
               $("<button>", {
                 class: "btn btn-light btn-xs",
-                onclick: "$(this).deleteFromCart(" + index + ")",
+                onclick: "$(this).deleteFromCart(" + Number(index) + ")",
               }).append($("<i>", { class: "fa fa-times" })),
             ),
           ),
         );
       });
     };
-
+    //@ts-expect-error
     $.fn.deleteFromCart = function (index) {
       cart.splice(index, 1);
+      //@ts-expect-error
       $(this).renderTable(cart);
     };
 
+    //@ts-expect-error
     $.fn.qtIncrement = function (i) {
       item = cart[i];
       let product = allProducts.filter(function (selected) {
@@ -1667,6 +1709,7 @@ if (auth == undefined) {
       if (product[0].stock == 1) {
         if (item.quantity < product[0].quantity) {
           item.quantity = parseFloat(item.quantity) + 0.5;
+          //@ts-expect-error
           $(this).renderTable(cart);
         } else {
           notiflix.Report.info(
@@ -1677,30 +1720,35 @@ if (auth == undefined) {
         }
       } else {
         item.quantity = parseFloat(item.quantity) + 0.5;
+        //@ts-expect-error
         $(this).renderTable(cart);
       }
     };
 
+    //@ts-expect-error
     $.fn.qtDecrement = function (i) {
       if (item.quantity > 0.1) {
         item = cart[i];
-        
         item.quantity = Number((parseFloat(item.quantity) - 0.1).toFixed(2)) ;
-         
+        //@ts-expect-error
         $(this).renderTable(cart);
       }
     };
 
+    //@ts-expect-error
     $.fn.qtInput = function (i) {
       item = cart[i];
       // item.quantity = $(this).val();
       // $(this).renderTable(cart);
       item.quantity = $(this).val();
+      
       let product = allProducts.filter(function (selected) {
         return selected._id == parseInt(item.id);
       });
+      console.log(product)
       if (product[0].stock == 1) {
         if (parseFloat(item.quantity) < parseFloat(product[0].quantity)) {
+          //@ts-expect-error
           $(this).renderTable(cart);
         } else {
           notiflix.Report.info(
@@ -1711,12 +1759,14 @@ if (auth == undefined) {
         }
       } else {
         item.quantity = $(this).val();
+        //@ts-expect-error
         $(this).renderTable(cart);
       }
       
     };
 
 
+    //@ts-expect-error
     $.fn.cancelOrder = function () {
       if (cart.length > 0) {
         const diagOptions = {
@@ -1739,6 +1789,7 @@ if (auth == undefined) {
           diagOptions.cancelButtonText,
           () => {
             cart = [];
+            //@ts-expect-error
             $(this).renderTable(cart);
             holdOrder = 0;
             notiflix.Report.success(
@@ -1747,7 +1798,7 @@ if (auth == undefined) {
               "Ok",
             );
           },
-          "",
+          null,
           diagOptions.options,
         );
       }
@@ -1755,6 +1806,7 @@ if (auth == undefined) {
 
     $("#payButton").on("click", function () {
       if (cart.length != 0) {
+        //@ts-expect-error
         $("#paymentModel").modal("toggle");
       } else {
         notiflix.Report.warning("Oops!", "There is nothing to pay!", "Ok");
@@ -1769,6 +1821,7 @@ if (auth == undefined) {
       }
       const type = $(this).data("pay-type");
       $("#paymentText").val("");
+      //@ts-expect-error
       $("#paymentModel").modal("show");
       // Pre-select the matching payment method after modal is shown
       $("#paymentModel").one("shown.bs.modal", function () {
@@ -1778,6 +1831,7 @@ if (auth == undefined) {
 
     $("#hold").on("click", function () {
       if (cart.length != 0) {
+        //@ts-expect-error
         $("#dueModal").modal("toggle");
       } else {
         notiflix.Report.warning("Oops!", "There is nothing to hold!", "Ok");
@@ -1788,10 +1842,12 @@ if (auth == undefined) {
       notiflix.Report.success("Done", "print job complete", "Ok");
     }
 
+    //@ts-expect-error
     $.fn.submitDueOrder = function (status) {
       const DOMPurify = require("dompurify");
       let items = "";
       let payment = 0.0;
+      let paymentRow =""
       paymentType = $('.list-group-item.active').data('payment-type');
       cart.forEach((item) => {
     items += `<tr><td>${DOMPurify.sanitize(item.product_name)}</td><td>${
@@ -1801,18 +1857,18 @@ if (auth == undefined) {
     )} </td></tr>`;
 });
 
-      let currentTime = new Date(moment());
-      let discount = $("#inputDiscount").val();
-      let customer = JSON.parse($("#customer").val());
+      let currentTime = moment();
+      let discount = parseFloat($("#inputDiscount").val().toString());
+      let customer = JSON.parse($("#customer").val().toString());
       let date = moment(currentTime).format("YYYY-MM-DD HH:mm:ss");
-      let paymentAmount = $("#payment").val().replace(",", "");
+      let paymentAmount = $("#payment").val().toString().replace(",", "");
       let changeAmount = $("#change").text().replace(",", "");
       let mobileNumber = $("#paymentInfo").val();
       let paid =
-        $("#payment").val() == "" ? "" : parseFloat(paymentAmount).toFixed(2);
+        $("#payment").val() == "" ? 0 : parseFloat(paymentAmount);
       let change =
-        $("#change").text() == "" ? "" : parseFloat(changeAmount).toFixed(2);
-      let refNumber = $("#refNumber").val();
+        $("#change").text() == "" ? 0 : parseFloat(changeAmount);
+      let refNumber = $("#refNumber").val().toString()
       let orderNumber = holdOrder;
       let type = "";
       let tax_row = "";
@@ -1825,8 +1881,8 @@ if (auth == undefined) {
           break;
       }
 
-      if (paid != "") {
-        payment = `<tr>
+      if (paid != 0) {
+        paymentRow = `<tr>
                         <td>Paid</td>
                         <td>:</td>
                         <td class="text-right">${validator.unescape(settings.symbol)} ${moneyFormat(
@@ -1852,7 +1908,7 @@ if (auth == undefined) {
                     <td>VAT(${validator.unescape(settings.percentage)})% </td>
                     <td>:</td>
                     <td class="text-right">${validator.unescape(settings.symbol)} ${moneyFormat(
-                      parseFloat(totalVat).toFixed(2),
+                      totalVat.toFixed(2),
                     )}</td>
                 </tr>`;
       }
@@ -1878,7 +1934,7 @@ if (auth == undefined) {
         method = "POST";
       }
 
-      logo = path.join(img_path, validator.unescape(settings.img));
+      const logo = path.join(img_path, validator.unescape(settings.img));
 
       receipt = `<div style="font-size: 10px; font-family: 'Courier New', Courier, monospace; color: #000;">                            
         <p style="text-align: center;">
@@ -1933,7 +1989,7 @@ if (auth == undefined) {
                 <td class="text-right">${
                   discount > 0
                     ? validator.unescape(settings.symbol) +
-                      moneyFormat(parseFloat(discount).toFixed(2))
+                      moneyFormat(discount.toFixed(2))
                     : ""
                 }</td>
             </tr>
@@ -1943,11 +1999,11 @@ if (auth == undefined) {
                 <td><h5>:</h5></td>
                 <td class="text-right">
                     <h5>${validator.unescape(settings.symbol)} ${moneyFormat(
-                      parseFloat(orderTotal).toFixed(2),
+                      orderTotal.toFixed(2),
                     )}</h3>
                 </td>
             </tr>
-            ${payment == 0 ? "" : payment}
+            ${payment == 0 ? "" : paymentRow}
             ${mobileNumber ? `<tr><td>Mobile Number</td><td>:</td><td class="text-right">${mobileNumber}</td></tr>` : ""}
             </tbody>
             </table>
@@ -1961,6 +2017,7 @@ if (auth == undefined) {
 
       if (status == 3) {
         if (cart.length > 0) {
+          //@ts-expect-error
           printJS({ printable: receipt, type: "raw-html" });
 
           $(".loading").hide();
@@ -1977,7 +2034,7 @@ if (auth == undefined) {
         discount: discount,
         customer: customer,
         status: status,
-        subtotal: parseFloat(subTotal).toFixed(2),
+        subtotal: subTotal.toFixed(2),
         tax: totalVat,
         order_type: 1,
         items: cart,
@@ -2007,19 +2064,26 @@ if (auth == undefined) {
           receipt = DOMPurify.sanitize(receipt,{ ALLOW_UNKNOWN_PROTOCOLS: true });
           $("#viewTransaction").html("");
           $("#viewTransaction").html(receipt);
+          //@ts-expect-error
           $("#orderModal").modal("show");
           //loadProducts();
           //loadCustomers();
           $(".loading").hide();
+           //@ts-expect-error
           $("#dueModal").modal("hide");
+           //@ts-expect-error
           $("#paymentModel").modal("hide");
+           //@ts-expect-error
           $(this).getHoldOrders();
+           //@ts-expect-error
           $(this).getCustomerOrders();
+           //@ts-expect-error
           $(this).renderTable(cart);
         },
 
         error: function (data) {
           $(".loading").hide();
+           //@ts-expect-error
           $("#dueModal").modal("toggle");
           notiflix.Report.failure(
             "Something went wrong!",
@@ -2034,26 +2098,30 @@ if (auth == undefined) {
       $("#payment,#paymentText").val("");
       $("#paymentText").val("");
       playNotificationSound();
-    };
+      
+};
 
     $.get(api + "on-hold", function (data) {
       holdOrderList = data;
       holdOrderlocation.empty();
       updateHoldBadge(data.length);
+       //@ts-expect-error
       $(this).renderHoldOrders(holdOrderList, holdOrderlocation, 1);
     });
 
+     //@ts-expect-error
     $.fn.getHoldOrders = function () {
       $.get(api + "on-hold", function (data) {
         holdOrderList = data;
         clearInterval(dotInterval);
         holdOrderlocation.empty();
         updateHoldBadge(data.length);
+         //@ts-expect-error
         $(this).renderHoldOrders(holdOrderList, holdOrderlocation, 1);
       });
     };
 
-
+     //@ts-expect-error
     $.fn.renderHoldOrders = function (data, renderLocation, orderType) {
     renderLocation.empty();
       // Handle empty data
@@ -2085,6 +2153,7 @@ if (auth == undefined) {
       );
       const tbody = $("<tbody>");
       $.each(data, function (index, order) {
+         //@ts-expect-error
         $(this).calculatePrice(order);
 
         const row = $("<tr>", {
@@ -2118,6 +2187,7 @@ if (auth == undefined) {
               class: "btn btn-danger btn-sm del",
               click: function (e) {
                 e.stopPropagation(); // prevent row click
+                 //@ts-expect-error
                 $(this).deleteOrder(index, orderType);
               }
             }).append($("<i>", { class: "fa fa-trash" })),
@@ -2128,6 +2198,7 @@ if (auth == undefined) {
               class: "btn btn-default btn-sm",
               click: function (e) {
                 e.stopPropagation(); // prevent row click
+                 //@ts-expect-error
                 $(this).orderDetails(index, orderType);
               }
             }).append($("<span>", { class: "fa fa-shopping-basket" }))
@@ -2136,6 +2207,7 @@ if (auth == undefined) {
 
         // Row click (like card click)
         row.on("click", function () {
+           //@ts-expect-error
           $(this).orderDetails(index, orderType);
         });
 
@@ -2144,6 +2216,7 @@ if (auth == undefined) {
       table.append(thead).append(tbody);
       renderLocation.append(table);
       // Initialize DataTable
+       //@ts-expect-error
       $("#" + tableId).DataTable({
         responsive: true,
         pageLength: 10,
@@ -2162,26 +2235,23 @@ if (auth == undefined) {
       });
     };
 
+     //@ts-expect-error
     $.fn.calculatePrice = function (data) {
       totalPrice = 0;
       $.each(data.products, function (index, product) {
         totalPrice += product.price * product.quantity;
       });
-
       let vat = (totalPrice * data.vat) / 100;
-      totalPrice = (totalPrice + vat - data.discount).toFixed(0);
-
-      return totalPrice;
+      totalPrice = (totalPrice + vat - data.discount);
+      return totalPrice.toFixed(2);
     };
 
+    //@ts-expect-error
     $.fn.orderDetails = function (index, orderType) {
       $("#refNumber").val("");
-
       if (orderType == 1) {
         $("#refNumber").val(holdOrderList[index].ref_number);
-
         $("#customer option:selected").removeAttr("selected");
-
         $("#customer option")
           .filter(function () {
             return $(this).text() == "Walk in customer";
@@ -2224,11 +2294,15 @@ if (auth == undefined) {
           cart.push(item);
         });
       }
+      //@ts-expect-error
       $(this).renderTable(cart);
+      //@ts-expect-error
       $("#holdOrdersModal").modal("hide");
+      //@ts-expect-error
       $("#customerModal").modal("hide");
     };
 
+    //@ts-expect-error
     $.fn.deleteOrder = function (index, type) {
       switch (type) {
         case 1:
@@ -2265,7 +2339,9 @@ if (auth == undefined) {
             contentType: "application/json; charset=utf-8",
             cache: false,
             success: function (data) {
+              //@ts-expect-error
               $(this).getHoldOrders();
+              //@ts-expect-error
               $(this).getCustomerOrders();
 
               notiflix.Report.success(
@@ -2282,11 +2358,13 @@ if (auth == undefined) {
       );
     };
 
+    //@ts-expect-error
     $.fn.getCustomerOrders = function () {
       $.get(api + "/customer-orders", function (data) {
         clearInterval(dotInterval);
         customerOrderList = data;
         customerOrderLocation.empty();
+        //@ts-expect-error
         $(this).renderHoldOrders(customerOrderList, customerOrderLocation, 2);
       });
     };
@@ -2310,6 +2388,7 @@ if (auth == undefined) {
         cache: false,
         processData: false,
         success: function (data) {
+          //@ts-expect-error
           $("#newCustomer").modal("hide");
           notiflix.Report.success(
             "Customer added!",
@@ -2330,6 +2409,7 @@ if (auth == undefined) {
             .trigger("chosen:updated");
         },
         error: function (data) {
+          //@ts-expect-error
           $("#newCustomer").modal("hide");
           notiflix.Report.failure(
             "Error",
@@ -2343,6 +2423,7 @@ if (auth == undefined) {
     $("#confirmPayment").hide();
     $("#cardInfo").hide();
     $("#payment").on("input", function () {
+      //@ts-expect-error
       $(this).calculateChange();
     });
     $("#confirmPayment").on("click", function () {
@@ -2353,6 +2434,7 @@ if (auth == undefined) {
           "Ok",
         );
       } else {
+        //@ts-expect-error
         $(this).submitDueOrder(1);
       }
     });
@@ -2396,6 +2478,7 @@ if (auth == undefined) {
 
     // ── NEW PRODUCT TAB: reset form when tab link is clicked ────
     function resetProductFormForNew() {
+      //@ts-expect-error
       $("#saveProduct").get(0).reset();
       $("#current_img").text("");
       $("#invoice_id").val("");
@@ -2411,6 +2494,7 @@ if (auth == undefined) {
     $("#prodTabAddLink").on("click", resetProductFormForNew);
 
     $("#prodCancelBtn").on("click", function () {
+      //@ts-expect-error
       $('#prodViewTabs a[href="#prodTabList"]').tab("show");
     });
 
@@ -2432,6 +2516,7 @@ if (auth == undefined) {
       $(this).attr("action", api + "inventory/product");
       $(this).attr("method", "POST");
 
+      //@ts-expect-error
       $(this).ajaxSubmit({
         contentType: "application/json",
         success: function (response) {
@@ -2446,6 +2531,7 @@ if (auth == undefined) {
               resetProductFormForNew();
             },
             function () {
+              //@ts-expect-error
               $('#prodViewTabs a[href="#prodTabList"]').tab("show");
             },
           );
@@ -2465,6 +2551,7 @@ if (auth == undefined) {
     // ── NEW INVOICE TAB: reset form when user clicks the tab ────
     function resetInvoiceFormForNew() {
       const today = new Date().toISOString().split('T')[0];
+      //@ts-expect-error
       $("#saveInvoice")[0].reset();
       $("#inv_original_invoice_id").val("");
       $("#inv_invoice_id").prop("readonly", false);
@@ -2498,6 +2585,7 @@ if (auth == undefined) {
 
     // Cancel button → go back to list tab
     $("#invCancelFormBtn").on("click", function () {
+      //@ts-expect-error
       $('#invViewTabs a[href="#invTabList"]').tab("show");
     });
 
@@ -2543,15 +2631,15 @@ if (auth == undefined) {
       // Auto-fill total amount from items subtotal sum
       if (invoiceItems.length > 0) {
         $("#inv_total_amount").val(total.toFixed(2));
-        const tax      = parseFloat($("#inv_tax_amount").val())      || 0;
-        const discount = parseFloat($("#inv_discount_amount").val()) || 0;
+        const tax      = parseFloat($("#inv_tax_amount").val().toString())      || 0;
+        const discount = parseFloat($("#inv_discount_amount").val().toString()) || 0;
         $("#inv_net_amount").val((total + tax - discount).toFixed(2));
       }
     }
 
     // ── INVOICE ITEMS: smart product search ─────────────────────
     $("#invProductSearch").on("input", function () {
-      const q = $(this).val().trim();
+      const q = $(this).val().toString().trim();
       const ql = q.toLowerCase();
 
       if (!q) { $("#invProductDropdown").hide(); return; }
@@ -2606,7 +2694,7 @@ if (auth == undefined) {
 
       if (isCreate) {
         // Pre-fill new product form with the current search text
-        const searchText = $("#invProductSearch").val().trim();
+        const searchText = $("#invProductSearch").val().toString().trim();
         $("#inp_name").val(searchText);
         $("#inp_barcode, #inp_qty, #inp_cost, #inp_price, #inp_expiry").val("");
         $("#inp_category").val("");
@@ -2649,8 +2737,8 @@ if (auth == undefined) {
       const sym = (settings && validator.unescape(settings.symbol)) || '';
       $("#invItemsTotal").text(sym + total.toFixed(2));
       $("#inv_total_amount").val(total.toFixed(2));
-      const tax = parseFloat($("#inv_tax_amount").val()) || 0;
-      const disc = parseFloat($("#inv_discount_amount").val()) || 0;
+      const tax = parseFloat($("#inv_tax_amount").val().toString()) || 0;
+      const disc = parseFloat($("#inv_discount_amount").val().toString()) || 0;
       $("#inv_net_amount").val((total + tax - disc).toFixed(2));
     }
 
@@ -2716,17 +2804,17 @@ if (auth == undefined) {
     });
 
     $("#inp_cost").on("change", function(){
-      price = parseFloat($("#inp_cost").val()) + (settings.defaultProfitMargin * parseFloat($("#inp_cost").val())/100.0 )
+      price = parseFloat($("#inp_cost").val().toString()) + (settings.defaultProfitMargin * parseFloat($("#inp_cost").val().toString())/100.0 )
       $("#inp_price").val(price.toFixed(2))
     })
 
     // ── INVOICE ITEMS: add new product to list ────────────────────
     $("#invAddNewProdConfirm").on("click", function () {
-      const name    = $("#inp_name").val().trim();
-      const barcode = $("#inp_barcode").val().trim();
-      const qty     = parseFloat($("#inp_qty").val());
-      const cost    = parseFloat($("#inp_cost").val());
-      const price   = parseFloat($("#inp_price").val());
+      const name    = $("#inp_name").val().toString().trim();
+      const barcode = $("#inp_barcode").val().toString().trim();
+      const qty     = parseFloat($("#inp_qty").val().toString());
+      const cost    = parseFloat($("#inp_cost").val().toString());
+      const price   = parseFloat($("#inp_price").val().toString());
 
       if (!name)            { notiflix.Report.warning("Validation", "Product name is required.", "Ok"); return; }
       if (!barcode)         { notiflix.Report.warning("Validation", "Barcode is required.", "Ok"); return; }
@@ -2832,15 +2920,22 @@ if (auth == undefined) {
 
     $("#exportInvoicePdfBtn").on("click", function () {
       const { sym, data, invoices, prov } = providerExportBase();
-
+      //@ts-expect-error
       if (!pdfMake.vfs["Tahoma.ttf"]) {
         const appRoot = app.getAppPath();
+        //@ts-expect-error
         pdfMake.vfs["Tahoma.ttf"]           = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma.ttf")).toString("base64");
+        //@ts-expect-error
         pdfMake.vfs["Tahoma-Bold.ttf"]      = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma-Bold.ttf")).toString("base64");
+        //@ts-expect-error
         pdfMake.vfs["Roboto-Regular.ttf"]   = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-Regular.ttf")).toString("base64");
+        //@ts-expect-error
         pdfMake.vfs["Roboto-Medium.ttf"]    = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-Medium.ttf")).toString("base64");
+        //@ts-expect-error
         pdfMake.vfs["Roboto-Italic.ttf"]    = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-Italic.ttf")).toString("base64");
+        //@ts-expect-error
         pdfMake.vfs["Roboto-MediumItalic.ttf"] = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-MediumItalic.ttf")).toString("base64");
+        //@ts-expect-error
         pdfMake.fonts = {
           Roboto: { normal: "Roboto-Regular.ttf", bold: "Roboto-Medium.ttf", italics: "Roboto-Italic.ttf", bolditalics: "Roboto-MediumItalic.ttf" },
           Tahoma: { normal: "Tahoma.ttf", bold: "Tahoma-Bold.ttf", italics: "Tahoma.ttf", bolditalics: "Tahoma-Bold.ttf" },
@@ -2982,7 +3077,7 @@ if (auth == undefined) {
           tableHeader:  { fillColor: "#2d4154", color: "white", fontSize: 7, bold: true, alignment: "center", margin: [0, 3, 0, 3] },
         },
       };
-
+      //@ts-expect-error
       pdfMake
         .createPdf(docDefinition)
         .download(
@@ -2993,9 +3088,9 @@ if (auth == undefined) {
 
     // Auto-calculate net amount in invoice form
     $("#inv_total_amount, #inv_tax_amount, #inv_discount_amount").on("input", function () {
-      const total    = parseFloat($("#inv_total_amount").val())    || 0;
-      const tax      = parseFloat($("#inv_tax_amount").val())      || 0;
-      const discount = parseFloat($("#inv_discount_amount").val()) || 0;
+      const total    = parseFloat($("#inv_total_amount").val().toString())    || 0;
+      const tax      = parseFloat($("#inv_tax_amount").val().toString())      || 0;
+      const discount = parseFloat($("#inv_discount_amount").val().toString()) || 0;
       $("#inv_net_amount").val((total + tax - discount).toFixed(2));
     });
 
@@ -3007,24 +3102,26 @@ if (auth == undefined) {
         return;
       }
 
-      const originalId = $("#inv_original_invoice_id").val();
+      const originalId = $("#inv_original_invoice_id").val().toString();
       const isEdit = originalId !== "";
 
       if (isEdit) {
         // PUT: send as FormData so a replacement file can be included
         const fd = new FormData();
-        fd.append("invoiceDate",    $("#inv_invoice_date").val());
-        fd.append("dueDate",        $("#inv_due_date").val());
-        fd.append("totalAmount",    parseFloat($("#inv_total_amount").val()) || 0);
-        fd.append("taxAmount",      parseFloat($("#inv_tax_amount").val()) || 0);
-        fd.append("discountAmount", parseFloat($("#inv_discount_amount").val()) || 0);
-        fd.append("netAmount",      parseFloat($("#inv_net_amount").val()) || 0);
-        fd.append("paymentStatus",  $("#inv_payment_status").val());
-        fd.append("paymentMethod",  $("#inv_payment_method").val() || "");
-        fd.append("notes",          $("#inv_notes").val() || "");
+        fd.append("invoiceDate",    $("#inv_invoice_date").val().toString());
+        fd.append("dueDate",        $("#inv_due_date").val().toString());
+        fd.append("totalAmount",    $("#inv_total_amount").val().toString());
+        fd.append("taxAmount",      $("#inv_tax_amount").val().toString()); 
+        fd.append("discountAmount", ($("#inv_discount_amount").val()).toString());
+        fd.append("netAmount",      ($("#inv_net_amount").val()).toString());
+        fd.append("paymentStatus",  $("#inv_payment_status").val().toString());
+        fd.append("paymentMethod",  $("#inv_payment_method").val().toString() || "");
+        fd.append("notes",          $("#inv_notes").val().toString() || "");
         fd.append("status",         "active");
         const editFileEl = $("#inv_edit_file")[0];
+        //@ts-expect-error
         if (editFileEl && editFileEl.files && editFileEl.files.length > 0) {
+          //@ts-expect-error
           fd.append("invoiceFile", editFileEl.files[0]);
         }
         $.ajax({
@@ -3035,10 +3132,11 @@ if (auth == undefined) {
           contentType: false,
           success: function () {
             const itemsToProcess = invoiceItems.slice();
-            const invProviderId  = $("#inv_provider_id").val();
-            const invDate        = $("#inv_invoice_date").val();
+            const invProviderId  = $("#inv_provider_id").val().toString();
+            const invDate        = $("#inv_invoice_date").val().toString();
 
             function finishEdit(done, errors) {
+              //@ts-expect-error
               $('#invViewTabs a[href="#invTabList"]').tab("show");
               const msg = errors
                 ? "Invoice saved. " + errors + " item(s) had errors."
@@ -3129,10 +3227,11 @@ if (auth == undefined) {
         });
       } else {
         // POST: send FormData (supports file upload)
+        //@ts-expect-error
         const fd = new FormData(this);
         const itemsSnapshot = invoiceItems.slice();
-        const invProviderId = $("#inv_provider_id").val();
-        const invDate       = $("#inv_invoice_date").val();
+        const invProviderId = $("#inv_provider_id").val().toString();
+        const invDate       = $("#inv_invoice_date").val().toString();
 
         $.ajax({
           url: api + "invoice/invoice",
@@ -3144,6 +3243,7 @@ if (auth == undefined) {
             const newInvoiceId = newInvoice.invoiceId;
 
             if (!itemsSnapshot.length) {
+              //@ts-expect-error
               $('#invViewTabs a[href="#invTabList"]').tab("show");
               notiflix.Report.success("Invoice Saved", "Invoice added successfully.", "Ok");
               const providerId = $("#providerListFilter").val();
@@ -3159,6 +3259,7 @@ if (auth == undefined) {
 
             function processNext(idx) {
               if (idx >= itemsSnapshot.length) {
+                //@ts-expect-error
                 $('#invViewTabs a[href="#invTabList"]').tab("show");
                 const msg = errors
                   ? "Invoice saved. " + errors + " item(s) had errors — check the product list."
@@ -3234,6 +3335,7 @@ if (auth == undefined) {
     });
 
     // ── INVOICE ACTIONS ──────────────────────────────────────
+    //@ts-expect-error
     $.fn.deleteInvoice = function (invoiceId) {
       notiflix.Confirm.show(
         "Are you sure?",
@@ -3260,6 +3362,7 @@ if (auth == undefined) {
       );
     };
 
+    //@ts-expect-error  
     $.fn.markInvoicePaid = function (invoiceId) {
       $.ajax({
         url: api + "invoice/invoice/" + invoiceId,
@@ -3277,6 +3380,7 @@ if (auth == undefined) {
       });
     };
 
+    //@ts-expect-error
     $.fn.editInvoice = function (invoiceId) {
       $.get(api + "invoice/invoice/" + invoiceId, function (inv) {
         if (!inv) {
@@ -3348,12 +3452,14 @@ if (auth == undefined) {
         $("#invoiceFormIcon").attr("class", "fa fa-edit");
         $("#invoiceFormTitle").text(t('edit_invoice_title'));
         $("#invoiceFormSubmitBtn").text(t('save_invoice_btn') || 'Update Invoice');
+        //@ts-expect-error
         $('#invViewTabs a[href="#invTabAdd"]').tab("show");
       }).fail(function () {
         notiflix.Report.failure("Error", "Failed to load invoice details.", "Ok");
       });
     };
 
+    //@ts-expect-error
     $.fn.viewInvoiceFile = function (filename) {
       if (!filename) return;
       const filePath = path.join(appData, appName, "uploads", filename);
@@ -3406,7 +3512,7 @@ if (auth == undefined) {
            </div>`
         );
       }
-
+      //@ts-expect-error
       $("#invoicePreviewModal").modal("show");
     };
 
@@ -3425,6 +3531,7 @@ if (auth == undefined) {
         url: api + "categories/category",
         data: $(this).serialize(),
         success: function () {
+          //@ts-expect-error
           $("#saveCategoryModal")[0].reset();
           $("#category_id_modal").val("");
           $("#catFormIcon").attr("class", "fa fa-plus-circle");
@@ -3439,6 +3546,7 @@ if (auth == undefined) {
     });
 
     $("#cancelCategoryEdit").on("click", function () {
+      //@ts-expect-error
       $("#saveCategoryModal")[0].reset();
       $("#category_id_modal").val("");
       $("#catFormIcon").attr("class", "fa fa-plus-circle");
@@ -3449,6 +3557,7 @@ if (auth == undefined) {
 
     // ── NEW PROVIDER TAB: reset form when tab link is clicked ────
     function resetProviderFormForNew() {
+      //@ts-expect-error
       $("#saveProvider").get(0).reset();
       $("#provider_id").val("");
       $("#providerFormIcon").attr("class", "fa fa-plus-circle");
@@ -3456,8 +3565,8 @@ if (auth == undefined) {
     }
 
     $("#provTabAddLink").on("click", resetProviderFormForNew);
-
     $("#provCancelBtn").on("click", function () {
+      //@ts-expect-error
       $('#provViewTabs a[href="#provTabList"]').tab("show");
     });
 
@@ -3480,6 +3589,7 @@ if (auth == undefined) {
               resetProviderFormForNew();
             },
             function () {
+              //@ts-expect-error
               $('#provViewTabs a[href="#provTabList"]').tab("show");
             },
           );
@@ -3505,11 +3615,7 @@ if (auth == undefined) {
           contentType: "application/json",
           success: function (resp) {
             loadCategories();
-            notiflix.Report.success(
-            "Categories Uploaded Successfully",
-            "",
-            "Ok"
-          );
+            
                 
           },
           error: function (jqXHR) {
@@ -3519,14 +3625,16 @@ if (auth == undefined) {
           }
         });
       };
+      //@ts-expect-error
       reader.readAsText(input.files[0]);
   
-      
+      //@ts-expect-error
       if (!input || !input.files || input.files.length === 0) {
         notiflix.Report.warning("No file selected", "Please choose a CSV file to upload.", "Ok");
         return;
       }
       var fd = new FormData();
+      //@ts-expect-error
       fd.append("csvfile", input.files[0]);
       $btn.prop("disabled", true).text("Uploading...");
 
@@ -3540,10 +3648,8 @@ if (auth == undefined) {
           $btn.prop("disabled", false).text("Upload Products");
           $("#productsFile").val("");
           loadProducts();
-          
-          //loadCategories();
           notiflix.Report.success(
-            "Products Uploaded",
+            "Products Uploaded Successfully",
             "Inserted: " + resp.inserted + ", Updated: " + resp.updated,
             "Ok"
           );
@@ -3559,7 +3665,8 @@ if (auth == undefined) {
        
     
     });
-        
+      
+    //@ts-expect-error
     $.fn.editProduct = function (index) {
       // Show products view and switch to form tab
       $("#products_view").show();
@@ -3603,7 +3710,7 @@ if (auth == undefined) {
       if (allProducts[index].stock == 0) {
         $("#stock").prop("checked", true);
       }
-
+      //@ts-expect-error
       $('#prodViewTabs a[href="#prodTabAdd"]').tab("show");
     };
 
@@ -3611,20 +3718,19 @@ if (auth == undefined) {
       $(".perms").hide();
     });
 
+    //@ts-expect-error
     $.fn.editUser = function (index) {
       user_index = index;
-
+      //@ts-expect-error
       $("#Users").modal("hide");
-
       $(".perms").show();
-
       $("#user_id").val(allUsers[index]._id);
       $("#fullname").val(allUsers[index].fullname);
       $("#username").val(validator.unescape(allUsers[index].username));
       $("#password").attr("placeholder", "New Password");
     
 
-      for (perm of permissions) {
+      for (let perm of permissions) {
         var el = "#" + perm;
         if (allUsers[index][perm] == 1) {
           $(el).prop("checked", true);
@@ -3632,10 +3738,11 @@ if (auth == undefined) {
           $(el).prop("checked", false);
         }
       }
-
+      //@ts-expect-error
       $("#userModal").modal("show");
     };
 
+    //@ts-expect-error
     $.fn.editCategory = function (index) {
       $("#categoryNameModal").val(allCategories[index].name);
       $("#category_id_modal").val(allCategories[index]._id);
@@ -3646,8 +3753,9 @@ if (auth == undefined) {
       $("#categoryNameModal").focus();
     };
 
+    //@ts-expect-error
     $.fn.deleteProduct = function (id) {
-      diagOptions = {
+      const diagOptions = {
         title: "Are you sure?",
         text: "You are about to delete this product.",
         okButtonText: "Yes, delete it!",
@@ -3673,6 +3781,7 @@ if (auth == undefined) {
     };
 
     // ── RESTOCK PRODUCT ──────────────────────────────────────────────────────
+    //@ts-expect-error
     $.fn.restockProduct = function (productId) {
       const product = allProducts.find(function (p) { return p._id === productId; });
       if (!product) return;
@@ -3713,20 +3822,21 @@ if (auth == undefined) {
       });
 
       $("#restock_invoice_id").val(product.invoiceId || "");
+      //@ts-expect-error
       $("#restockModal").modal("show");
     };
 
     $("#saveRestock").submit(function (e) {
       e.preventDefault();
       const productId = $("#restock_product_id").val();
-      const qty = parseInt($("#restock_quantity").val());
+      const qty = parseInt($("#restock_quantity").val().toString());
       if (!qty || qty <= 0) {
         notiflix.Report.warning("Validation", "Please enter a quantity greater than 0.", "Ok");
         return;
       }
       const payload = {
         quantity:   qty,
-        invoiceId:  $("#restock_invoice_id").val().trim(),
+        invoiceId:  $("#restock_invoice_id").val().toString().trim(),
         providerId: $("#restock_provider").val(),
         costPrice:  $("#restock_cost_price").val(),
         entryDate:  $("#restock_entry_date").val(),
@@ -3737,6 +3847,7 @@ if (auth == undefined) {
         contentType: "application/json",
         data: JSON.stringify(payload),
         success: function () {
+          //@ts-expect-error
           $("#restockModal").modal("hide");
           notiflix.Report.success("Restocked", "Stock updated successfully.", "Ok");
           loadProducts();
@@ -3748,8 +3859,9 @@ if (auth == undefined) {
       });
     });
 
+    //@ts-expect-error
     $.fn.deleteUser = function (id) {
-      diagOptions = {
+      const diagOptions = {
         title: "Are you sure?",
         text: "You are about to delete this user.",
         cancelButtonColor: "#d33",
@@ -3774,8 +3886,9 @@ if (auth == undefined) {
       );
     };
 
+    //@ts-expect-error
     $.fn.deleteCategory = function (id) {
-      diagOptions = {
+      const diagOptions = {
         title: "Are you sure?",
         text: "You are about to delete this category.",
         okButtonText: "Yes, delete it!",
@@ -3799,7 +3912,9 @@ if (auth == undefined) {
       );
     };
 
+    //@ts-expect-error
     $.fn.editProvider = function (index) {
+      //@ts-expect-error
       $("#Providers").modal("hide");
       $("#providerName").val(allProviders[index].name);
       $("#providerPhone").val(allProviders[index].phone || "");
@@ -3813,11 +3928,13 @@ if (auth == undefined) {
       $("#products_view").hide();
       $("#invoices_view").hide();
       $("#providers_view").show();
+      //@ts-expect-error
       $('#provViewTabs a[href="#provTabAdd"]').tab("show");
     };
 
+    //@ts-expect-error
     $.fn.deleteProvider = function (id) {
-      diagOptions = {
+      const diagOptions = {
         title: "Are you sure?",
         text: "You are about to delete this provider.",
         okButtonText: "Yes, delete it!",
@@ -3871,7 +3988,6 @@ if (auth == undefined) {
 
     $("#providerModal").on("click", function () {
       loadProviders();
-
       $("#pos_view").hide();
       $("#transactions_view").hide();
       $("#products_view").hide();
@@ -3893,7 +4009,6 @@ if (auth == undefined) {
 
     $("#invoicesModal").on("click", function () {
       loadInvoicesView();
-      loadProviders();
       $("#pos_view").hide();
       $("#transactions_view").hide();
       $("#products_view").hide();
@@ -3960,6 +4075,7 @@ if (auth == undefined) {
     }
 
     $("#providerListFilter").on("change", function () {
+      //@ts-expect-error
       selectProvider(this.value);
     });
 
@@ -3970,18 +4086,21 @@ if (auth == undefined) {
     $("#categoryModal").on("click", function () {
       loadCategories();
       loadCategoryList()
+      //@ts-expect-error
       $('#prodViewTabs a[href="#prodTabCat"]').tab("show");
     });
 
     $("#prodTabCatLink").on("click", function () {
       loadCategories();
       loadCategoryList()
+      //@ts-expect-error
       $('#prodViewTabs a[href="#prodTabCat"]').tab("show");
     });
 
     $("#prodTabListLink").on("click", function () {
       loadProducts();
       loadProductList();
+      //@ts-expect-error
       $('#prodViewTabs a[href="#prodTabList"]').tab("show");
     });
 
@@ -4008,24 +4127,24 @@ if (auth == undefined) {
     //     csvReviewWindow = null;
     //   });
     // });
-        var price = parseFloat($("#cost_price").val()) || 0;
-        var margin = parseFloat($("#profit_margin").val()) || 0;
+        var price = parseFloat($("#cost_price").val().toString()) || 0;
+        var margin = parseFloat($("#profit_margin").val().toString()) || 0;
         var salePrice = price + (price * margin / 100);
         //var salePrice = price + margin;
         $("#product_price").val(salePrice.toFixed(2));
       });
 
       $("#profit_margin").off("input change").on("input change", function () {
-        var price = parseFloat($("#cost_price").val()) || 0;
-        var margin = parseFloat($("#profit_margin").val()) || 0;
+        var price = parseFloat($("#cost_price").val().toString()) || 0;
+        var margin = parseFloat($("#profit_margin").val().toString()) || 0;
         var salePrice = price + (price * margin / 100);
         //var salePrice = price + margin;
         $("#product_price").val(salePrice.toFixed(2));
       });
 
       $("#cost_price").off("input change").on("input change", function () {
-        var price = parseFloat($("#cost_price").val()) || 0;
-        var margin = parseFloat($("#profit_margin").val()) || 0;
+        var price = parseFloat($("#cost_price").val().toString()) || 0;
+        var margin = parseFloat($("#profit_margin").val().toString()) || 0;
         var salePrice = price + (price * margin / 100);
         //var salePrice = price + margin;
         $("#product_price").val(salePrice.toFixed(2));
@@ -4034,7 +4153,10 @@ if (auth == undefined) {
     function loadUserList() {
       let counter = 0;
       let user_list = "";
+      let login_status;
+      let login_time;
       $("#user_list").empty();
+      //@ts-expect-error
       $("#userList").DataTable().destroy();
 
       $.get(api + "users/all", function (users) {
@@ -4048,8 +4170,8 @@ if (auth == undefined) {
             state = user.status.split("_");
             login_status = state[0];
             login_time = state[1];
-
-            switch (login) {
+ 
+            switch (login_status) {
               case "Logged In":
                 class_name = "btn-default";
 
@@ -4080,6 +4202,7 @@ if (auth == undefined) {
           if (counter == users.length) {
             $("#user_list").html(user_list);
 
+            //@ts-expect-error
             $("#userList").DataTable({
               order: [[1, "desc"]],
               autoWidth: false,
@@ -4095,19 +4218,22 @@ if (auth == undefined) {
 
     function loadProductList() {
       const selectedProvider = $("#productProviderFilter").val();
+      let product_img
       let products = selectedProvider
         ? allProducts.filter((p) => p.provider === selectedProvider)
         : [...allProducts];
       let product_list = "";
       let counter = 0;
+      let icon
       $("#product_list").empty();
+      //@ts-expect-error
       $("#productList").DataTable().destroy();
 
       products.forEach((product, index) => {
         counter++;
-        let category = allCategories.filter(function (category) {
-          return category.name == product.category;
-        });
+        // let category = allCategories.filter(function (category) {
+        //   return category.name == product.category;
+        // });
 
         product.stockAlert = "";
         const todayDate = moment();
@@ -4192,6 +4318,7 @@ if (auth == undefined) {
         }
       });
 
+      //@ts-expect-error
       $("#productList").DataTable({
         dom: "lfrtBip",
         pageLength: 5,
@@ -4282,15 +4409,22 @@ if (auth == undefined) {
             text: '<i class="fa fa-file-pdf-o"></i> PDF',
             className: "btn btn-danger",
             action: function () {
+              //@ts-expect-error
               if (!pdfMake.vfs["Tahoma.ttf"]) {
                 const appRoot = app.getAppPath();
+                //@ts-expect-error
                 pdfMake.vfs["Tahoma.ttf"]      = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma.ttf")).toString("base64");
-                pdfMake.vfs["Tahoma-Bold.ttf"] = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma-Bold.ttf")).toString("base64");                
+                //@ts-expect-error
+                pdfMake.vfs["Tahoma-Bold.ttf"] = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma-Bold.ttf")).toString("base64");
+                //@ts-expect-error                
                 pdfMake.vfs["Roboto-Regular.ttf"]   = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-Regular.ttf")).toString("base64");
+                //@ts-expect-error
                 pdfMake.vfs["Roboto-Medium.ttf"]    = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-Medium.ttf")).toString("base64");
+                //@ts-expect-error
                 pdfMake.vfs["Roboto-Italic.ttf"]    = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-Italic.ttf")).toString("base64");
+                //@ts-expect-error
                 pdfMake.vfs["Roboto-MediumItalic.ttf"] = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-MediumItalic.ttf")).toString("base64");
-                  
+                //@ts-expect-error  
                 pdfMake.fonts = {
                   Roboto: { normal: "Roboto-Regular.ttf", bold: "Roboto-Medium.ttf", italics: "Roboto-Italic.ttf", bolditalics: "Roboto-MediumItalic.ttf" },
                   Tahoma: { normal: "Tahoma.ttf", bold: "Tahoma-Bold.ttf", italics: "Tahoma.ttf", bolditalics: "Tahoma-Bold.ttf" },
@@ -4450,7 +4584,7 @@ if (auth == undefined) {
                   tableHeader:  { fillColor: "#2d4154", color: "white", fontSize: 7, bold: true, alignment: "center", margin: [0, 3, 0, 3] },
                 },
               };
-
+              //@ts-expect-error
               pdfMake
                 .createPdf(docDefinition)
                 .download("product_list_" + moment().format("YYYY-MM-DD") + ".pdf");
@@ -4464,6 +4598,7 @@ if (auth == undefined) {
       let category_list = "";
       let counter = 0;
       $("#category_list").empty();
+      //@ts-expect-error
       $("#categoryList").DataTable().destroy();
 
       allCategories.forEach((category, index) => {
@@ -4475,6 +4610,7 @@ if (auth == undefined) {
 
       if (counter == allCategories.length) {
         $("#category_list").html(category_list);
+        //@ts-expect-error
         $("#categoryList").DataTable({
           autoWidth: false,
           info: true,
@@ -4513,6 +4649,7 @@ if (auth == undefined) {
 
     $("#settings_form").on("submit", function (e) {
       e.preventDefault();
+      //@ts-expect-error
       let formData = $(this).serializeObject();
       let mac_address;
 
@@ -4550,7 +4687,7 @@ if (auth == undefined) {
 
         $(this).attr("action", api + "settings/post");
         $(this).attr("method", "POST");
-
+        //@ts-expect-error
         $(this).ajaxSubmit({
           contentType: "application/json",
           success: function () {
@@ -4570,6 +4707,7 @@ if (auth == undefined) {
 
     $("#net_settings_form").on("submit", function (e) {
       e.preventDefault();
+      //@ts-expect-error
       let formData = $(this).serializeObject();
 
       if (formData.till == 0 || formData.till == 1) {
@@ -4579,7 +4717,7 @@ if (auth == undefined) {
           "Ok",
         );
       } else {
-        if (isNumeric(formData.till)) {
+        if (_.isNumber(formData.till)) {
           formData["app"] = $("#app").find("option:selected").text();
           storage.set("settings", formData);
           ipcRenderer.send("app-reload", "");
@@ -4595,6 +4733,7 @@ if (auth == undefined) {
 
     $("#saveUser").on("submit", function (e) {
       e.preventDefault();
+      //@ts-expect-error
       let formData = $(this).serializeObject();
 
       if (formData.password != formData.pass) {
@@ -4616,10 +4755,11 @@ if (auth == undefined) {
             if (ownUserEdit) {
               ipcRenderer.send("app-reload", "");
             } else {
+              //@ts-expect-error
               $("#userModal").modal("hide");
 
               loadUserList();
-
+              //@ts-expect-error
               $("#Users").modal("show");
               notiflix.Report.success("Great!", "User details saved!", "Ok");
             }
@@ -4654,15 +4794,14 @@ if (auth == undefined) {
 
     $("#cashier").on("click", function () {
       ownUserEdit = true;
-
+      //@ts-expect-error
       $("#userModal").modal("show");
-
       $("#user_id").val(user._id);
       $("#fullname").val(user.fullname);
       $("#username").val(user.username);
       $("#password").attr("placeholder", "New Password");
 
-      for (perm of permissions) {
+      for (const perm of permissions) {
         var el = "#" + perm;
         if (allUsers[index][perm] == 1) {
           $(el).prop("checked", true);
@@ -4676,13 +4815,14 @@ if (auth == undefined) {
       if (platform.app != "Network Point of Sale Terminal") {
         $(".perms").show();
       }
-
+      //@ts-expect-error
       $("#saveUser").get(0).reset();
+      //@ts-expect-error
       $("#userModal").modal("show");
     });
 
     $("#settings").on("click", function () {
-      if (platform.app == "Network Point of Sale Terminal") {
+      if ( platform && platform.app == "Network Point of Sale Terminal") {
         $("#net_settings_form").show(500);
         $("#settings_form").hide(500);
 
@@ -4699,6 +4839,7 @@ if (auth == undefined) {
           })
           .prop("selected", true);
       } else {
+        console.log("Hello")
         $("#net_settings_form").hide(500);
         $("#settings_form").show(500);
 
@@ -4751,54 +4892,44 @@ if (auth == undefined) {
   $("#reset_database").on("click", function () {
     notiflix.Confirm.show(
       "Reset Application",
-      "This will PERMANENTLY delete all data including:\n\n• All Products\n• All Invoices\n• All Payments\n• All Customers\n• All Transactions\n\nThis action CANNOT be undone. Are you sure?",
-      "Yes, Reset",
+      "This will permanently delete ALL data: products, invoices, payments, customers, providers, and transactions",
+      "Confirm",
       "Cancel",
       () => {
-        // User confirmed - show loading
         notiflix.Loading.standard("Resetting application...");
-        
-        $.post(api + "settings/reset", function (response) {
+        $.post(api + "settings/reset", function () {
           notiflix.Loading.remove();
-          notiflix.Report.success(
-            "Success",
-            "All data has been cleared successfully.\n\nThe application will now restart.",
-            "Ok",
-            () => {
-              ipcRenderer.send("app-reload", "");
-            }
+          notiflix.Report.warning(
+            "Done",
+            "All data has been cleared. The application will now exit. Restart!",
+            "Confirm",
+            () => { ipcRenderer.send("restart-app", ""); }
           );
+          storage.clear();
         }).fail(function (jqXHR) {
           notiflix.Loading.remove();
-          let errorMsg = "Failed to reset the application";
-          if (jqXHR.responseJSON && jqXHR.responseJSON.message) {
-            errorMsg = jqXHR.responseJSON.message;
-          }
-          notiflix.Report.failure(
-            "Error",
-            errorMsg,
-            "Ok"
-          );
+          const msg = (jqXHR.responseJSON && jqXHR.responseJSON.message)
+            ? jqXHR.responseJSON.message
+            : "Failed to reset the application.";
+          notiflix.Report.failure("Error", msg, "Ok");
         });
-      },
-      () => {
-        // User cancelled
       }
     );
   });
 }
 
-$.fn.print = function () {
-  printJS({ printable: receipt, type: "raw-html" });
-};
+  //@ts-expect-error
+  $.fn.print = function () {
+    //@ts-expect-error
+    printJS({ printable: receipt, type: "raw-html" });
+  };
 
 function loadTransactions() {
   let tills = [];
   let users = [];
   let sales = 0;
   let transact = 0;
-  let unique = 0;
-
+  
   sold_items = [];
   sold = [];
 
@@ -4810,14 +4941,12 @@ function loadTransactions() {
     
     if (transactions.length > 0) {
       $("#transaction_list").empty();
+      //@ts-expect-error
       $("#transactionList").DataTable().destroy();
-      
       allTransactions = [...transactions];
-
       transactions.forEach((trans, index) => {
         sales += parseFloat(trans.total);
         transact++;
-
         trans.items.forEach((item) => {
           sold_items.push(item);
         });
@@ -4871,7 +5000,7 @@ function loadTransactions() {
 
         if (counter == transactions.length) {
           $("#total_sales #counter").text(
-            validator.unescape(settings.symbol) + moneyFormat(parseFloat(sales).toFixed(2)),
+            validator.unescape(settings.symbol) + moneyFormat((sales).toFixed(2)),
           );
           $("#total_transactions #counter").text(transact);
 
@@ -4909,6 +5038,7 @@ function loadTransactions() {
           }
 
           $("#transaction_list").html(transaction_list);
+          //@ts-expect-error
           $("#transactionList").DataTable({
             order: [[1, "desc"]],
             autoWidth: false,
@@ -4966,9 +5096,9 @@ function loadTransactions() {
                   // ── Section 2: Summary ──────────────────────────────────
                   rows.push(["SUMMARY"]);
                   rows.push(["Total Transactions",  allTransactions.length]);
-                  rows.push(["Total Revenue",       sym + parseFloat(totalRevenue).toFixed(2)]);
-                  rows.push(["Total Tax",           sym + parseFloat(totalTax).toFixed(2)]);
-                  rows.push(["Total Discount",      sym + parseFloat(totalDiscount).toFixed(2)]);
+                  rows.push(["Total Revenue",       sym + (totalRevenue).toFixed(2)]);
+                  rows.push(["Total Tax",           sym + (totalTax).toFixed(2)]);
+                  rows.push(["Total Discount",      sym + (totalDiscount).toFixed(2)]);
                   rows.push(["Avg per Transaction", sym + avg]);
                   rows.push(["Total Items Sold",    totalItemsCount]);
                   rows.push([]);
@@ -5021,15 +5151,22 @@ function loadTransactions() {
                 text: '<i class="fa fa-file-pdf-o"></i> PDF',
                 className: "btn btn-danger",
                 action: function () {
+                  //@ts-expect-error
                   if (!pdfMake.vfs["Tahoma.ttf"]) {
                     const appRoot = app.getAppPath();
+                    //@ts-expect-error
                     pdfMake.vfs["Tahoma.ttf"]      = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma.ttf")).toString("base64");
+                    //@ts-expect-error
                     pdfMake.vfs["Tahoma-Bold.ttf"] = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma-Bold.ttf")).toString("base64");
-                    
+                    //@ts-expect-error
                     pdfMake.vfs["Roboto-Regular.ttf"]   = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-Regular.ttf")).toString("base64");
+                    //@ts-expect-error
                     pdfMake.vfs["Roboto-Medium.ttf"]    = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-Medium.ttf")).toString("base64");
+                    //@ts-expect-error
                     pdfMake.vfs["Roboto-Italic.ttf"]    = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-Italic.ttf")).toString("base64");
+                    //@ts-expect-error
                     pdfMake.vfs["Roboto-MediumItalic.ttf"] = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-MediumItalic.ttf")).toString("base64");
+                    //@ts-expect-error
                     pdfMake.fonts = {
                       Roboto: { normal: "Roboto-Regular.ttf", bold: "Roboto-Medium.ttf", italics: "Roboto-Italic.ttf", bolditalics: "Roboto-MediumItalic.ttf" },
                       Tahoma: { normal: "Tahoma.ttf", bold: "Tahoma-Bold.ttf", italics: "Tahoma.ttf", bolditalics: "Tahoma-Bold.ttf" },
@@ -5070,7 +5207,7 @@ function loadTransactions() {
                       { text: "Transactions",       style: "summaryLabel" },
                       { text: String(allTransactions.length),                style: "summaryValue" },
                       { text: "Total Revenue",       style: "summaryLabel" },
-                      { text: sym + parseFloat(totalRevenue).toFixed(2),     style: "summaryValue" },
+                      { text: sym + (totalRevenue).toFixed(2),     style: "summaryValue" },
                       { text: "Avg / Transaction",   style: "summaryLabel" },
                       { text: sym + avg,                                      style: "summaryValue" },
                     ],
@@ -5078,9 +5215,9 @@ function loadTransactions() {
                       { text: "Items Sold",          style: "summaryLabel" },
                       { text: String(totalItemsCount),                        style: "summaryValue" },
                       { text: "Total Tax",           style: "summaryLabel" },
-                      { text: sym + parseFloat(totalTax).toFixed(2),         style: "summaryValue" },
+                      { text: sym + (totalTax).toFixed(2),         style: "summaryValue" },
                       { text: "Total Discount",      style: "summaryLabel" },
-                      { text: sym + parseFloat(totalDiscount).toFixed(2),    style: "summaryValue" },
+                      { text: sym + (totalDiscount).toFixed(2),    style: "summaryValue" },
                     ],
                   ];
 
@@ -5199,7 +5336,7 @@ function loadTransactions() {
                       tableHeader:  { fillColor: "#2d4154", color: "white", fontSize: 7, bold: true, alignment: "center", margin: [0, 3, 0, 3] },
                     },
                   };
-
+                  //@ts-expect-error
                   pdfMake
                     .createPdf(docDefinition)
                     .download(
@@ -5234,7 +5371,6 @@ function sortDesc(a, b) {
 
 function loadSoldProducts() {
   sold.sort(sortDesc);
-
   let counter = 0;
   let sold_list = "";
   let items = 0;
@@ -5296,15 +5432,16 @@ function tillFilter(tills) {
   });
 }
 
+//@ts-expect-error
 $.fn.viewTransaction = function (index) {
   const DOMPurify = require("dompurify");
-  transaction_index = index;
+  //let transaction_index = index;
 
   let discount = allTransactions[index].discount;
-  let customer =
-    allTransactions[index].customer == 0
-      ? "Walk in Customer"
-      : allTransactions[index].customer.username;
+  // let customer =
+  //   allTransactions[index].customer == 0
+  //     ? "Walk in Customer"
+  //     : allTransactions[index].customer.username;
   let refNumber =
     allTransactions[index].ref_number != ""
       ? allTransactions[index].ref_number
@@ -5314,7 +5451,7 @@ $.fn.viewTransaction = function (index) {
   let tax_row = "";
   let items = "";
   let products = allTransactions[index].items;
-
+  let paymnetRow =""
   products.forEach((item) => {
     items += `<tr><td>${item.product_name}</td><td>${
       item.quantity
@@ -5324,10 +5461,11 @@ $.fn.viewTransaction = function (index) {
   });
 
   paymentMethod = allTransactions[index].payment_type;
+  let payment = allTransactions[index].payment;
  
 
   if (allTransactions[index].paid != "") {
-    payment = `<tr>
+    paymnetRow = `<tr>
                     <td>Paid</td>
                     <td>:</td>
                     <td class="text-right">${validator.unescape(settings.symbol)} ${moneyFormat(
@@ -5358,7 +5496,7 @@ $.fn.viewTransaction = function (index) {
             </tr>`;
   }
 
-    logo = path.join(img_path, validator.unescape(settings.img));
+    const logo = path.join(img_path, validator.unescape(settings.img));
       
       receipt = `<div style="font-size: 10px">                            
         <p style="text-align: center;">
@@ -5435,7 +5573,7 @@ $.fn.viewTransaction = function (index) {
                 )}</h5>
             </td>
         </tr>
-        ${payment == 0 ? "" : payment}
+        ${payment == 0 ? "" : paymnetRow}
         </tbody>
         </table>
         <br>
@@ -5451,10 +5589,11 @@ $.fn.viewTransaction = function (index) {
 
   $("#viewTransaction").html("");
   $("#viewTransaction").html(receipt);
-
+  //@ts-expect-error
   $("#orderModal").modal("show");
 };
 
+//@ts-expect-error
 $.fn.deleteTransaction = function (index) {
   const transaction = allTransactions[index];
   if (!transaction) return;
@@ -5472,6 +5611,7 @@ $.fn.deleteTransaction = function (index) {
         data: JSON.stringify({ orderId: transaction._id }),
         success: function () {
           $("#transaction_list").empty();
+          //@ts-expect-error
           $("#transactionList").DataTable().destroy();
           $("#product_sales").empty();
           loadTransactions();
@@ -5488,17 +5628,17 @@ $.fn.deleteTransaction = function (index) {
 };
 
 $("#status").on("change", function () {
-  by_status = $(this).find("option:selected").val();
+  by_status = parseInt($(this).find("option:selected").val().toString());
   loadTransactions();
 });
 
 $("#tills").on("change", function () {
-  by_till = $(this).find("option:selected").val();
+  by_till = parseInt($(this).find("option:selected").val().toString());
   loadTransactions();
 });
 
 $("#users").on("change", function () {
-  by_user = $(this).find("option:selected").val();
+  by_user = parseInt($(this).find("option:selected").val().toString());
   loadTransactions();
 });
 
@@ -5517,16 +5657,17 @@ function authenticate() {
   $("body").attr("class", "login-page");
   $("#login").show();
   let savedUsername = storage.get("remember_me_username");
-  let savePassword = storage.get("remember_me_password");
+  let savePassword = storage.get("remember_me_password") || "";
   if (savedUsername) {
-    $("input[name='username']").val(savedUsername);
-    $("input[name='password']").val(savePassword);
+    $("input[name='username']").val(savedUsername.toString());
+    $("input[name='password']").val(savePassword.toString());
     $("#remember_me").prop("checked", true);
   }
 }
 
 $("body").on("submit", "#account", function (e) {
   e.preventDefault();
+  //@ts-expect-error
   let formData = $(this).serializeObject();
 
   if (formData.username == "" || formData.password == "") {

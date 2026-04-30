@@ -73,8 +73,9 @@ function checkForUpdates() {
     const message = `Current version: ${pkg.version}\nNew Version: ${info.version}`;
     dialogOpts.message = message;
     dialogOpts.detail =
-      process.platform === "win32" ? releaseNotes : releaseName;
+      process.platform === "win32" ? "releaseNotes" : "releaseName";
 
+    //@ts-expect-error
     dialog.showMessageBox(dialogOpts).then((returnValue) => {
       if (returnValue.response === 0) {
         autoUpdater.downloadUpdate();
@@ -87,6 +88,7 @@ function checkForUpdates() {
     dialogOpts.buttons = ["OK"];
     dialogOpts.title = "No Updates Available";
     dialogOpts.message = `You are using the latest version: ${info.version}`;
+    //@ts-expect-error
     dialog.showMessageBox(dialogOpts);
   };
 
@@ -95,6 +97,7 @@ function checkForUpdates() {
     dialogOpts.buttons = ["Install now", "Later"];
     dialogOpts.title = "Ready to Install Update";
     dialogOpts.message = `The update for version ${info.version} is downloaded.\nClick 'Install now' to restart the app and apply the update.`;
+    //@ts-expect-error
     dialog.showMessageBox(dialogOpts).then((returnValue) => {
       if (returnValue.response === 0) {
         autoUpdater.quitAndInstall();
@@ -114,7 +117,7 @@ const handleError = async (err) => {
       detail: err,
       buttons: ["Retry", "Cancel"]
     };
-
+    //@ts-expect-error
     const returnValue = await dialog.showMessageBox(dialogOpts);
 
     if (returnValue.response === 0) {

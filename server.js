@@ -8,6 +8,7 @@ const {app} = require('electron');
 process.env.APPDATA = app.getPath('appData');
 process.env.APPNAME = pkg.name;
 const PORT = process.env.PORT || 0;
+//@ts-expect-error
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 1000, // 1000 requests per window
@@ -52,6 +53,7 @@ express.use("/api/settings",  require("./api/settings"));
 
 
 server.listen(PORT, () => {
+    //@ts-expect-error
     process.env.PORT = server.address().port;
     console.log("Listening on PORT", process.env.PORT);
 });

@@ -1,6 +1,6 @@
-const { ipcRenderer } = require("electron");
+//const { ipcRenderer } = require("electron");
 const notiflix = require("notiflix");
-const path = require("path");
+//const path = require("path");
 
 const extractCategories = (text) => {
   const rows = text.split(/\r?\n/).filter(r => r.trim().length);
@@ -32,6 +32,7 @@ $(document).ready(function() {
 
     // File input change handler
     $('#csvFile').on('change', function() {
+        //@ts-expect-error
         const file = this.files[0];
         console.log("Selected file:", file);
         if (file) {
@@ -43,6 +44,7 @@ $(document).ready(function() {
 
     // Parse CSV button click
     $('#parseBtn').on('click', function() {
+        //@ts-expect-error
         const file = $('#csvFile')[0].files[0];
         if (!file) return;
 
@@ -137,8 +139,9 @@ $(document).ready(function() {
     }
 
     $('#selectAll').on('change', function () {
-    $('.row-check').prop('checked', this.checked);
-    });
+        //@ts-expect-error
+        $('.row-check').prop('checked', this.checked);
+        });
 
     $('#bulkDeleteBtn').on('click', () => {
     const rows = [];
@@ -160,7 +163,6 @@ $(document).ready(function() {
     parsedProducts = parsedProducts.filter(p => !rows.includes(p));
 
     displayProductsTable();
-    showUndo();
     });
 
 
@@ -192,7 +194,6 @@ $(document).ready(function() {
                     lastDeleted = [product];
                     parsedProducts = parsedProducts.filter(p => p !== product);
                     displayProductsTable();
-                    showUndo();
                 });
 
                 row.append($('<td>').append(deleteBtn));
@@ -311,11 +312,12 @@ $(document).ready(function() {
         const blob = new Blob([csvContent], { type: 'text/csv' });
         const formData = new FormData();
         var input = $("#csvFile")[0];
+        //@ts-expect-error
         formData.append('csvfile', blob, input.files[0]);
 
         // Show loading state
         $('#uploadBtn').prop('disabled', true).text('Uploading...');
-         
+        let productInsertResponse;
         // Upload to API
         $.ajax({
             url: api + 'inventory/products/csv',
@@ -324,6 +326,7 @@ $(document).ready(function() {
             processData: false,
             contentType: false,
             success: function(response) {
+                productInsertResponse= response
                 //showMessage(`Upload successful! Inserted: ${response.inserted}, Updated: ${response.updated}`, 'success');
                 $('#uploadBtn').prop('disabled', true).text('Uploaded to Database');
             },
@@ -351,7 +354,8 @@ $(document).ready(function() {
             contentType: "application/json",
             success: function (resp) {
             notiflix.Report.success(
-            "Categories Uploaded Successfully",
+            "Products and Categories Uploaded Successfully",
+            //`Inserted products: ${productInsertResponse.inserted}, Updated products: ${productInsertResponse.updated}`,
             "",
             "Ok"
             );
@@ -364,23 +368,25 @@ $(document).ready(function() {
             }
         });
         };
+        //@ts-expect-error
         reader.readAsText(input.files[0]);
     }
 
     function showMessage(message, type) {
         const alertClass = `alert alert-${type}`;
-        const alert = $(`<div class="${alertClass} alert-dismissible fade show" role="alert">
+        const alert = `<div class="${alertClass} alert-dismissible fade show" role="alert">
             ${message}
             <button type="button" class="close" data-dismiss="alert">
                 <span>&times;</span>
             </button>
-        </div>`);
+        </div>`;
 
         $('#statusMessages').html(alert);
 
         // Auto-hide success messages after 5 seconds
         if (type === 'success') {
             setTimeout(() => {
+                //@ts-expect-error
                 alert.alert('close');
             }, 5000);
         }

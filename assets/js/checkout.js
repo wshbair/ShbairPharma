@@ -1,20 +1,21 @@
+// @ts-check
+/// <reference types="jquery" />
+
 const utils = require("./utils");
 
 /** CheckOut Functions **/
 $(document).ready(function () {
-  /**
-   * handle keypad button pressed.
-   * @param {string} value - The keypad value to be processed.
-   * @param {boolean} isDueInput - Indicates whether the input is for due payment.
-   */
 
+  //@ts-expect-error
   $.fn.paymentChange = function () {
     let paymentAmount = $("#paymentText").val();
     $("#paymentText").val(utils.moneyFormat(paymentAmount));
     $("#payment").val(paymentAmount);
+    //@ts-expect-error
     $(this).calculateChange();
   }
 
+  //@ts-expect-error
   $.fn.keypadBtnPressed = function (value, isDueInput) {
     let paymentAmount = $("#payment").val();
     if (isDueInput) {
@@ -23,6 +24,7 @@ $(document).ready(function () {
       paymentAmount = paymentAmount + "" + value;
       $("#paymentText").val(utils.moneyFormat(paymentAmount));
       $("#payment").val(paymentAmount);
+      //@ts-expect-error
       $(this).calculateChange();
     }
   };
@@ -30,22 +32,25 @@ $(document).ready(function () {
   /**
    * Format payment amount with commas when a point is pressed
    */
+  //@ts-expect-error
   $.fn.digits = function () {
-    let paymentAmount = $("#payment").val();
+    let paymentAmount = $("#payment").val().toString();
     $("#paymentText").val(parseFloat(paymentAmount).toFixed(2));
     $("#payment").val(paymentAmount + ".");
+    //@ts-expect-error
     $(this).calculateChange();
   };
 
   /**
    * Calculate and display the balance due.
    */
+  //@ts-expect-error
   $.fn.calculateChange = function () {
-    var payablePrice = $("#payablePrice").val().replace(",", "");
-    var payment = $("#payment").val().replace(",", "");
-    var change = payablePrice - payment;
+    const payablePrice = $("#payablePrice").val().toString().replace(",", "");
+    const payment = $("#payment").val().toString().replace(",", "");
+    const change = parseFloat(payablePrice) - parseFloat(payment);
     if (change <= 0) {
-      $("#change").text(utils.moneyFormat(Math.abs(change.toFixed(2))));
+      $("#change").text(utils.moneyFormat(Math.abs(change)));
       $("#confirmPayment").show();
     } else {
       $("#change").text("0");
@@ -69,6 +74,7 @@ $(document).ready(function () {
       //re-format displayed amount after deletion 
       $("#paymentText").val((i, val) => utils.moneyFormat($("#payment").val()));
       }
+      //@ts-expect-error
       $(this).calculateChange()
     }; break;
 
@@ -80,15 +86,18 @@ $(document).ready(function () {
       else
       {
         $('#payment,#paymentText').val('');
+        //@ts-expect-error
         $(this).calculateChange();
       }
        
     };break;
 
     case "point": {
+      //@ts-expect-error
       $(this).digits()
       };break;
 
+  //@ts-expect-error
    default: $(this).keypadBtnPressed(key, isdue); break;
   }
 });
@@ -100,7 +109,7 @@ $(document).ready(function () {
     if (this.id == "palpal") {
       $("#cardInfo").show();
       $("#cardInfo .input-group-addon").text("Mobile Number");
-      var price = $("#payablePrice").val();
+      var price = $("#payablePrice").val().toString();
       $("#payment").val(price.replace(/,/g, ""));
       $("#paymentText").val(price);
       $("#changeDisplay").hide();

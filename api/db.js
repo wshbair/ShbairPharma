@@ -8,7 +8,7 @@
  *   ENOENT: no such file or directory, rename '...db~' → '...db'
  */
 
-const Datastore = require("@seald-io/nedb");
+const Datastore = /** @type {typeof import("@seald-io/nedb").default} */ (/** @type {unknown} */ (require("@seald-io/nedb")));
 const path = require("path");
 
 const appName = process.env.APPNAME;

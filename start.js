@@ -2,6 +2,7 @@ require("@electron/remote/main").initialize();
 require("electron-store").initRenderer();
 const setupEvents = require("./installers/setupEvents");
 if (setupEvents.handleSquirrelEvent()) {
+    //@ts-expect-error
     return;
 }
 
@@ -12,6 +13,7 @@ const contextMenu = require("electron-context-menu");
 let { Menu, template } = require("./assets/js/native_menu/menu");
 const menuController = require('./assets/js/native_menu/menuController.js');
 const isPackaged = app.isPackaged;
+//@ts-expect-error
 const menu = Menu.buildFromTemplate(template);
 Menu.setApplicationMenu(menu);
 let mainWindow;
@@ -29,6 +31,7 @@ function createWindow() {
         frame: true,
         webPreferences: {
             nodeIntegration: true,
+            //@ts-expect-error
             enableRemoteModule: false,
             contextIsolation: false,
         },
@@ -83,7 +86,9 @@ ipcMain.on("app-reload", (event, arg) => {
 });
 
 ipcMain.on("restart-app", () => {
-    autoUpdater.quitAndInstall();
+    //autoUpdater.quitAndInstall();
+    app.quit()
+    
 });
 
 ipcMain.on("open-csv-review", () => {
@@ -93,6 +98,7 @@ ipcMain.on("open-csv-review", () => {
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
+            //@ts-expect-error
             enableRemoteModule: false,
         },
         title: 'CSV Product Review & Upload',
@@ -122,10 +128,10 @@ contextMenu({
 });
 
 //Live reload during development
-if (!isPackaged) {
-    try {
-        require("electron-reloader")(module);
-    } catch (_) {}
-}
+// if (!isPackaged) {
+//     try {
+//         require("electron-reloader")(module);
+//     } catch (_) {}
+// }
 
 

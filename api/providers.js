@@ -1,12 +1,11 @@
 const app = require("express")();
-const server = require("http").Server(app);
+//const server = require("http").Server(app);
 const bodyParser = require("body-parser");
-const Datastore = require('@seald-io/nedb');
-const path = require("path");
+//const Datastore = require('@seald-io/nedb');
+//const path = require("path");
 const validator = require("validator");
-const e = require("express");
-const appName = process.env.APPNAME;
-const appData = process.env.APPDATA;
+//const appName = process.env.APPNAME;
+//const appData = process.env.APPDATA;
 
 
 app.use(bodyParser.json());

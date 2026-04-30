@@ -74,6 +74,7 @@ const getFileHash = (filePath) => {
 
 const filterFile = (req, file, callback) => {
     try {
+      //@ts-expect-error
       const isValidFile = checkFileType(file.mimetype, validFileTypes);
       if (isValidFile) {
         return callback(null, true);
@@ -136,5 +137,6 @@ module.exports = {
   checkFileType,
   setContentSecurityPolicy,
   extractUniqueCategories,
-  playNotificationSound
+  playNotificationSound,
+  filterFile
 };

@@ -203,7 +203,6 @@ var translations = {
     provider_name_lbl: 'Name',
     provider_phone_lbl: 'Phone',
     provider_email_lbl: 'Email',
-    provider_name_placeholder: 'Provider name',
     provider_balance_lbl: 'Outstanding',
     invoice_list: 'Invoice List',
 
@@ -277,7 +276,7 @@ var translations = {
     edit_category_lbl: 'Edit Category',
     add_category_lbl: 'Add New Category',
     pdf_open_hint: 'Click "Open in Viewer" to view this PDF.',
-
+    remember_me: "Remember me",
     // Invoice stats cards
     stat_total_invoices: 'Total Invoices',
     stat_total_amount: 'Total Amount',
@@ -359,7 +358,6 @@ var translations = {
     till_col: 'الصراف',
     cashier_col: 'الكاشير',
     view_col: 'عرض',
-    products: 'المنتجات',
 
     // Hold Order Modal
     hold_order: 'تعليق الطلب',
@@ -488,13 +486,13 @@ var translations = {
     logo_note: 'الحد الأقصى 2 ميجابايت · jpeg، jpg، png، webp',
     upload_products_h4: 'رفع ملف المنتجات',
     upload_btn: 'رفع المنتجات',
+    remember_me: 'تذكر الحساب',
 
     //Providers
     provider_info: 'معلومات المورد',
     provider_name_lbl: 'اسم المورد',
     provider_phone_lbl: 'الهاتف',
     provider_email_lbl: 'البريد الإلكتروني',
-    provider_name_placeholder: 'اسم المورد',
     provider_balance_lbl: 'المبالغ المعلقة',
     invoice_list: 'قائمة الفواتير',
 
@@ -600,12 +598,15 @@ function applyLanguage(lang) {
     el.textContent = t(el.getAttribute('data-i18n'));
   });
   document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
+    //@ts-expect-error
     el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
   });
   document.querySelectorAll('[data-i18n-value]').forEach(function(el) {
+    //@ts-expect-error
     el.value = t(el.getAttribute('data-i18n-value'));
   });
   document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
+    //@ts-expect-error
     el.title = t(el.getAttribute('data-i18n-title'));
   });
 

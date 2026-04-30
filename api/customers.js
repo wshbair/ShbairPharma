@@ -1,12 +1,15 @@
+// @ts-check
+/// <reference types="jquery" />
+
 const app = require("express")();
-const server = require("http").Server(app);
+//const server = require("http").Server(app);
 const bodyParser = require("body-parser");
-const Datastore = require("@seald-io/nedb");
+//const Datastore = require("@seald-io/nedb");
 const async = require("async");
 const path = require("path");
 const validator = require("validator");
-const appName = process.env.APPNAME;
-const appData = process.env.APPDATA;
+//const appName = process.env.APPNAME;
+//const appData = process.env.APPDATA;
  
 
 app.use(bodyParser.json());

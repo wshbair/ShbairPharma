@@ -25,6 +25,7 @@ const invoiceUpload = multer({
         if (allowed.includes(file.mimetype)) {
             cb(null, true);
         } else {
+            //@ts-expect-error
             cb(new multer.MulterError("LIMIT_UNEXPECTED_FILE"), false);
         }
     },

@@ -1,7 +1,7 @@
 const app = require("express")();
-const server = require("http").Server(app);
+//const server = require("http").Server(app);
 const bodyParser = require("body-parser");
-const Datastore = require("@seald-io/nedb");
+const Datastore = /** @type {typeof import("@seald-io/nedb").default} */ (/** @type {unknown} */ (require("@seald-io/nedb")));
 const multer = require("multer");
 const sanitizeFilename = require('sanitize-filename');
 const fs = require("fs");
@@ -9,11 +9,12 @@ const path = require("path");
 const validator = require("validator");
 const appName = process.env.APPNAME;
 const appData = process.env.APPDATA;
-const validFileTypes = [
-    "image/jpg",
-    "image/jpeg",
-    "image/png",
-    "image/webp"];
+// const validFileTypes = [
+//     "image/jpg",
+//     "image/jpeg",
+//     "image/png",
+//     "image/webp"];
+
 const maxFileSize = 2097152 //2MB = 2*1024*1024
 const defaultLogoName = "logo";
 const {filterFile} = require('../assets/js/utils');
@@ -233,6 +234,7 @@ app.post("/reset", function (req, res) {
             }
             
             // Create a new empty database without autoload to avoid issues
+            //@ts-expect-error
             const db = new Datastore({ filename: dbPath, autoload: false });
             db.ensureIndex({ fieldName: "_id", unique: true }, (err) => {
                 if (err) {

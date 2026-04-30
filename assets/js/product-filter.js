@@ -10,20 +10,24 @@ $(document).ready(function () {
   });
 
   $("#search").on("input", function () {
+    //@ts-expect-error
     if (typeof window.posSearchProducts === "function") {
+      //@ts-expect-error
       window.posSearchProducts($(this).val());
     }
   });
 
   // Listen for clicks on virtual keyboard buttons inside #jq-keyboard
   $("body").on("click", "#jq-keyboard button", function (e) {
+    //@ts-expect-error
     if ($("#search").is(":focus") && typeof window.posSearchProducts === "function") {
+      //@ts-expect-error
       window.posSearchProducts($("#search").val());
     }
   });
 
   function searchOpenOrders() {
-    var matcher = new RegExp($("#holdOrderInput").val(), "gi");
+    var matcher = new RegExp($("#holdOrderInput").val().toString(), "gi");
     $(".order")
       .show()
       .not(function () {
@@ -43,7 +47,7 @@ $(document).ready(function () {
   });
 
   function searchCustomerOrders() {
-    var matcher = new RegExp($("#holdCustomerOrderInput").val(), "gi");
+    var matcher = new RegExp($("#holdCustomerOrderInput").val().toString(), "gi");
     $(".customer-order")
       .show()
       .not(function () {
