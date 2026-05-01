@@ -170,21 +170,21 @@ $(document).ready(function() {
     function displayProductsTable() {
         const tbody = $('#productsTableBody');
         tbody.empty();
-            parsedProducts.forEach((product) => {
+            parsedProducts.forEach((product, index) => {
                 const row = $('<tr>');
                 // ✅ Checkbox
                 const checkbox = $(`<input type="checkbox" class="row-check">`);
                 row.append($('<td>').append(checkbox));
-                row.append(createEditableCell(product.id || '', 'id'));
-                row.append(createEditableCell(product.name || '', 'name'));
-                row.append(createEditableCell(product.barcode || '', 'barcode'));
-                row.append(createEditableCell(product.price || 0, 'price'));
-                row.append(createEditableCell(product.costprice || 0, 'costPrice'));
-                row.append(createEditableCell(product.quantity || 0, 'quantity'));
-                row.append(createEditableCell(product.category || '', 'category'));
-                row.append(createEditableCell(product.minstock || 1, 'minStock'));
-                row.append(createEditableCell(product.expirationdate || product.expirationDate || '', 'expirationDate'));
-                row.append(createEditableCell(product.profitmargin || product.profitMargin || '', 'profitMargin'));
+                row.append(createEditableCell(product.id || '', 'id', index));
+                row.append(createEditableCell(product.name || '', 'name', index));
+                row.append(createEditableCell(product.barcode || '', 'barcode', index));
+                row.append(createEditableCell(product.price || 0, 'price', index));
+                row.append(createEditableCell(product.costprice || 0, 'costPrice', index));
+                row.append(createEditableCell(product.quantity || 0, 'quantity', index));
+                row.append(createEditableCell(product.category || '', 'category', index));
+                row.append(createEditableCell(product.minstock || 1, 'minStock', index));
+                row.append(createEditableCell(product.expirationdate || product.expirationDate || '', 'expirationDate', index));
+                row.append(createEditableCell(product.profitmargin || product.profitMargin || '', 'profitMargin', index));
 
                 // ✅ Single delete
                 const deleteBtn = $(`<button class="btn btn-sm btn-danger"><i class="fa fa-trash"></i></button>`);
@@ -254,15 +254,18 @@ $(document).ready(function() {
         const input = $('<input>', {
             type: 'text',
             class: 'edit-input form-control form-control-sm',
-            value: currentValue
+            value: currentValue,
+            'data-field': field,
+            'data-row': rowIndex
         });
 
         span.replaceWith(input);
         input.focus();
 
         input.on('blur keypress', function(e) {
-            if (e.type === 'blur' || e.keyCode === 13) {
+            if (e.type === 'blur') {
                 const newValue = $(this).val();
+                console.log(newValue)
                 parsedProducts[rowIndex][field] = newValue;
 
                 const newSpan = $('<span>', {
@@ -329,6 +332,12 @@ $(document).ready(function() {
                 productInsertResponse= response
                 //showMessage(`Upload successful! Inserted: ${response.inserted}, Updated: ${response.updated}`, 'success');
                 $('#uploadBtn').prop('disabled', true).text('Uploaded to Database');
+                notiflix.Report.success(
+                "Products Uploaded Successfully",
+                //`Inserted products: ${productInsertResponse.inserted}, Updated products: ${productInsertResponse.updated}`,
+                "",
+                "Ok"
+                );
             },
             error: function(xhr) {
                 let errorMsg = 'Upload failed';
@@ -354,7 +363,7 @@ $(document).ready(function() {
             contentType: "application/json",
             success: function (resp) {
             notiflix.Report.success(
-            "Products and Categories Uploaded Successfully",
+            "Categories Uploaded Successfully",
             //`Inserted products: ${productInsertResponse.inserted}, Updated products: ${productInsertResponse.updated}`,
             "",
             "Ok"

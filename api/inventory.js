@@ -41,6 +41,16 @@ const csvUpload = multer({
 }).single("csvfile");
 
 
+function parseDate(str) {
+    if(str == "")
+        return new Date().toISOString().split("T")[0];
+    try {
+        return new Date(str).toISOString().split("T")[0];
+    } catch (error) {
+        console.log(error)
+    }
+}
+
 app.use(bodyParser.json());
 module.exports = app;
 
@@ -106,14 +116,14 @@ app.get("/stock-check", function(req, res){
         
         // expire check 
         const expired = docs.filter(function (p) {
-           let expiryDate = moment(p.expirationDate, "DD-MMM-YYYY"); 
+           let expiryDate = moment(p.expirationDate, "YYYY-MM-DD");
             return moment().isSameOrAfter(expiryDate);
         });
         
         const expiredProducts = expired.slice(0, 4).map(function (p) {
             return `<strong>${p.name}</strong>`;
         }).join(", ") + (expired.length > 4 ? ` +${expired.length - 4} more` : "");
-
+        console.log(expiredProducts)
 
         res.send({
             "lowStockMsg": low.length > 0 ? `Inventory Alert: <strong>${low.length}</strong> products are at or below minimum stock levels, including ${lowStockProducts}` : "",
@@ -186,7 +196,7 @@ app.post("/product", function (req, res) {
     let Product = {
         _id: parseInt(validator.escape(req.body.id)),
         barcode: parseInt(validator.escape(req.body.barcode)),
-        expirationDate: validator.escape(req.body.expirationDate),
+        expirationDate: parseDate(validator.escape(req.body.expirationDate)) ,
         price: validator.escape(req.body.price),
         category: validator.escape(req.body.category),
         quantity: validator.escape(req.body.quantity),
@@ -197,7 +207,7 @@ app.post("/product", function (req, res) {
         costPrice: validator.escape(req.body.cost_price),
         profitMargin: validator.escape(req.body.profit_margin),
         provider: validator.escape(req.body.provider || ""),
-        entryDate: validator.escape(req.body.entryDate),
+        entryDate: parseDate(validator.escape(req.body.entryDate)) ,
         invoiceId: validator.escape(req.body.invoice_id),
     };
 
@@ -314,7 +324,7 @@ app.post("/products/csv", function (req, res) {
                 let p = {
                     _id: validator.escape(row.id) === "" ? Math.floor(Date.now() / 1000) : parseInt(validator.escape(row.id)),
                     barcode: validator.escape(row.barcode) === "" ? 0 : parseInt(validator.escape(row.barcode)),
-                    expirationDate: validator.escape(row.expirationDate),
+                    expirationDate: parseDate(validator.escape(row.expirationDate)),
                     price: validator.escape(row.price),
                     category: validator.escape(row.category),
                     quantity: validator.escape(row.quantity) === "" ? 0 : parseFloat(row.quantity),
@@ -324,6 +334,7 @@ app.post("/products/csv", function (req, res) {
                     img: image,
                     profitMargin: validator.escape(row.profitMargin),
                     costPrice: validator.escape(row.costPrice),
+                    entryDate:  new Date().toISOString().split("T")[0]
                 };
                 products.push(p);
             }
@@ -500,7 +511,7 @@ app.patch("/product/:id/costs", function (req, res) {
     if (req.body.costPrice      !== undefined) updates.costPrice      = validator.escape(String(req.body.costPrice));
     if (req.body.price          !== undefined) updates.price          = validator.escape(String(req.body.price));
     if (req.body.barcode        !== undefined) updates.barcode        = validator.escape(String(req.body.barcode));
-    if (req.body.expirationDate !== undefined) updates.expirationDate = validator.escape(String(req.body.expirationDate));
+    if (req.body.expirationDate !== undefined) updates.expirationDate = parseDate(validator.escape(String(req.body.expirationDate)));
 
     if (!Object.keys(updates).length) {
         return res.status(400).json({ error: "No fields to update" });
@@ -527,7 +538,9 @@ app.post("/restock/:productId", function (req, res) {
     const invoiceId  = validator.escape(req.body.invoiceId   || "");
     const providerId = validator.escape(req.body.providerId  || "");
     const costPrice  = validator.escape(String(req.body.costPrice || ""));
+    const price  = validator.escape(String(req.body.price || ""));
     const entryDate  = validator.escape(req.body.entryDate   || new Date().toISOString().split("T")[0]);
+    const expireDate = parseDate(validator.escape(String(req.body.expirationDate)));
 
     if (!productId || addQty <= 0) {
         return res.status(400).json({ error: "Bad Request", message: "Valid product ID and quantity required." });
@@ -551,6 +564,8 @@ app.post("/restock/:productId", function (req, res) {
                     invoiceId: invoiceId  || product.invoiceId,
                     provider:  providerId || product.provider,
                     costPrice: costPrice  || product.costPrice,
+                    price:     price      || product.price,
+                    expireDate: expireDate || product.expireDate
                 },
                 $push: { invoiceHistory: historyEntry },
             },

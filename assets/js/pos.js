@@ -165,23 +165,7 @@ $(function () {
 
   cb(start, end);
 
-  // $("#expirationDate").daterangepicker({
-  //   singleDatePicker: true,
-  //   locale: {
-  //     format: DATE_FORMAT,
-  //   },
-  // });
 
-  // $("#entryDate").daterangepicker({
-  //   singleDatePicker: true,
-  //   defaultDate: moment(),
-  //   locale: {
-  //     format: DATE_FORMAT,
-  //   },
-  // });
-
-
-  
 });
 
 //Allow only numbers in input field
@@ -2765,7 +2749,7 @@ if (auth == undefined) {
       invoiceItems[idx].cost = parseFloat($(this).val()) || 0;
       const salePrice = invoiceItems[idx].cost + (invoiceItems[idx].cost * settings.defaultProfitMargin/100);
       $(this).closest("tr").find(".inv-price-input").val(salePrice.toFixed(2));
-      //recalcInvTotals();
+      invoiceItems[idx].price = salePrice.toFixed(2);
     });
 
 
@@ -4114,6 +4098,10 @@ if (auth == undefined) {
       $('#prodViewTabs a[href="#prodTabList"]').tab("show");
     });
 
+    $("#refresh").on("click", function () {
+      loadProducts(loadProductList);
+    });
+
     // $("#openCsvReviewBtn").on("click", function () {
     //   // Open the CSV review page in a new window
     //   const { BrowserWindow } = require('@electron/remote');
@@ -4849,7 +4837,6 @@ if (auth == undefined) {
           })
           .prop("selected", true);
       } else {
-        console.log("Hello")
         $("#net_settings_form").hide(500);
         $("#settings_form").show(500);
 

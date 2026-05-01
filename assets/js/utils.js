@@ -1,7 +1,7 @@
 let fs = require("fs");
 const crypto = require("crypto");
 let moment = require("moment");
-const DATE_FORMAT = "DD-MMM-YYYY";
+const DATE_FORMAT = "YYYY-MM-DD";
 const PORT = process.env.PORT;
 let path = require("path");
 const moneyFormat = (amount, locale = "en-US") => {

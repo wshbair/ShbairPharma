@@ -83,6 +83,7 @@ app.post("/category", function (req, res) {
 
 app.post("/category/batch", function (req, res) {
     let categories = req.body;
+
     if (!Array.isArray(categories) || categories.length === 0) {
         return res.status(400).json({
             error: "Bad Request",
@@ -90,24 +91,49 @@ app.post("/category/batch", function (req, res) {
         });
     }
 
-    categories = categories.map(function (cat, i) {
-        let c = {
-            id: Math.floor(Date.now() / 1000) + i, 
-            _id: Math.floor(Date.now() / 1000) + i,
-            name: cat};
-        return c;
-    });
+    // Get all names from request
+    const names = categories;
 
-    categoriesDB.insert(categories, function (err, newDocs) {
+    // Find existing categories
+    categoriesDB.find({ name: { $in: names } }, function (err, existingDocs) {
         if (err) {
-            console.error(err);
-            res.status(500).json({
+            return res.status(500).json({
                 error: "Internal Server Error",
-                message: "An unexpected error occurred.",
+                message: "Database lookup failed.",
             });
-        } else {
-            res.sendStatus(200);
         }
+
+        const existingNames = new Set(existingDocs.map(doc => doc.name));
+
+        // Filter out duplicates
+        const newCategories = categories
+            .filter(name => !existingNames.has(name))
+            .map((cat, i) => ({
+                id: Math.floor(Date.now() / 1000) + i,
+                _id: Math.floor(Date.now() / 1000) + i,
+                name: cat
+            }));
+
+        if (newCategories.length === 0) {
+            return res.status(200).json({
+                message: "All categories already exist. Nothing inserted."
+            });
+        }
+
+        categoriesDB.insert(newCategories, function (err) {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({
+                    error: "Internal Server Error",
+                    message: "Insert failed.",
+                });
+            }
+
+            res.status(200).json({
+                message: "Categories inserted successfully.",
+                inserted: newCategories.length
+            });
+        });
     });
 });
 

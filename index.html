@@ -275,7 +275,7 @@
                                                 <div class="form-group"><label data-i18n="provider_lbl">Provider</label><select name="provider" class="form-control" id="provider"></select></div>
                                                 <div class="form-group"><label data-i18n="barcode_lbl">Barcode</label><input type="text" required name="barcode" placeholder="Product barcode" class="form-control number-input" id="barcode"></div>
                                                 <div class="form-group"><label data-i18n="cost_price_lbl">Cost Price</label><input type="text" required name="cost_price" placeholder="Cost Price" class="form-control number-input" id="cost_price"></div>
-                                                <div class="form-group"><label data-i18n="expiry_date_lbl">Expiry Date</label><input type="date" name="expirationDate" placeholder="dd/mm/yyyy" class="form-control" id="expirationDate"></div>
+                                                <div class="form-group"><label data-i18n="expiry_date_lbl">Expiry Date</label><input type="date" name="expirationDate" class="form-control" id="expirationDate"></div>
                                                 <div class="form-group"><label data-i18n="min_stock_lbl">Minimum Stock</label><input type="number" name="minStock" placeholder="Min stock" class="form-control" id="minStock" value="1"></div>
                                                 <div class="form-group"><label><input type="checkbox" name="stock" id="stock">&nbsp; <span data-i18n="disable_stock_lbl">Disable stock check</span></label></div>
                                             </div>
@@ -285,7 +285,7 @@
                                                 <div class="form-group"><label data-i18n="sale_price_lbl">Sale Price</label><input type="text" required name="price" placeholder="Sale Price" class="form-control number-input" id="product_price"></div>
                                                 <div class="form-group"><label data-i18n="quantity_lbl">Quantity</label><input type="text" name="quantity" placeholder="Available quantity" class="form-control" id="quantity" min="0"></div>
                                                 <div class="form-group"><label data-i18n="invoice_id_lbl">Invoice ID</label><input type="text" name="invoice_id" placeholder="Invoice ID" class="form-control" id="invoice_id" list="invoiceIdList" autocomplete="off"><datalist id="invoiceIdList"></datalist></div>
-                                                <div class="form-group"><label data-i18n="entry_date_lbl">Entry Date</label><input type="date" name="entryDate" placeholder="dd/mm/yyyy" class="form-control" id="entryDate"></div>
+                                                <div class="form-group"><label data-i18n="entry_date_lbl">Entry Date</label><input type="date" name="entryDate"  class="form-control" id="entryDate"></div>
 
                                                 <div class="form-group"><label><span id="rmv_img" class="btn btn-xs btn-warning" data-i18n="remove_lbl">Remove</span> <span data-i18n="picture_lbl">Picture</span></label><div id="current_img"></div><input type="file" name="imagename" id="imagename"></div>
                                             </div>
@@ -1588,11 +1588,6 @@
                     </div>
                 </div>
             </div>
-        </div>
-
-        <div class="main-footer">
-            <span class="main-footer-name">ShbairPharma</span>
-            <span class="main-footer-version">v<span id="app_version_main"></span></span>
         </div>
     </div><!-- /#main_app -->
 
