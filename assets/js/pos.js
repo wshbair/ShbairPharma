@@ -345,23 +345,23 @@ if (auth == undefined) {
     }
 
     // Helper function: Update provider selects
-    function updateProviderSelects() {
-      $("#provider").html(`<option value="">Select</option>`);
-      allProviders.forEach((provider) => {
-        $("#provider").append(`<option value="${provider._id}">${provider.name}</option>`);
-        $("#inv_filter_provider").append(`<option value="${provider._id}">${provider.name}</option>`);
-      });
-      let filterOpts = `<option value="">All Providers</option>`;
-      allProviders.forEach((p) => {
-        filterOpts += `<option value="${p._id}">${p.name}</option>`;
-      });
-      $("#providerListFilter, #productProviderFilter").html(filterOpts);
-    }
+    // function updateProviderSelects() {
+    //   $("#provider").html(`<option value="">Select</option>`);
+    //   allProviders.forEach((provider) => {
+    //     $("#provider").append(`<option value="${provider._id}">${provider.name}</option>`);
+    //     $("#inv_filter_provider").append(`<option value="${provider._id}">${provider.name}</option>`);
+    //   });
+    //   let filterOpts = `<option value="">${t('all_providers_opt')}</option>`;
+    //   allProviders.forEach((p) => {
+    //     filterOpts += `<option value="${p._id}">${p.name}</option>`;
+    //   });
+    //   $("#providerListFilter, #productProviderFilter").html(filterOpts);
+    // }
 
     // Helper function: Update customer select
     function updateCustomerSelect(customers) {
       $("#customer").html(
-        `<option value="0" selected="selected" data-i18n="walk_in_customer">Walk in customer</option>`
+        `<option value="0" selected="selected" data-i18n="walk_in_customer">${t('walk_in_customer')}</option>`
       );
       customers.forEach((cust) => {
         let customer = `<option value='{"id": ${cust._id}, "name": "${cust.name}"}'>${cust.name}</option>`;
@@ -653,7 +653,7 @@ if (auth == undefined) {
           $("#inv_filter_provider").append(`<option value="${provider._id}">${provider.name}</option>`);
         });
         // Rebuild provider filter dropdowns (providers view + products view)
-        let filterOpts = `<option value="">All Providers</option>`;
+        let filterOpts = `<option value="">${t('all_providers_opt')}</option>`;
         allProviders.forEach((p) => {
           filterOpts += `<option value="${p._id}">${p.name}</option>`;
         });
@@ -680,7 +680,7 @@ if (auth == undefined) {
         </tr>`;
       });
       if (!rows) {
-        rows = `<tr><td colspan="4" class="text-center text-muted">No providers found.</td></tr>`;
+        rows = `<tr><td colspan="4" class="text-center text-muted">${t('nothing_to_display')}</td></tr>`;
       }
       $("#provider_list").html(rows);
     }
@@ -704,7 +704,7 @@ if (auth == undefined) {
     function loadCustomers() {
       $.get(api + "customers/all", function (customers) {
         $("#customer").html(
-          `<option value="0" selected="selected" data-i18n="walk_in_customer">Walk in customer</option>`, 
+          `<option value="0" selected="selected" data-i18n="walk_in_customer">${t('walk_in_customer')}</option>`, 
         );
 
         customers.forEach((cust) => {
@@ -747,7 +747,7 @@ if (auth == undefined) {
         const providerMap = {};
         allProviders.forEach(function (p) { providerMap[p._id] = p.name; });
         const seenIds = [];
-        let opts = '<option value="" data-i18n="inv_all_providers">All Providers</option>';
+        let opts = `<option value="" data-i18n="inv_all_providers">${t('all_providers_opt')}</option>`;
         allInvoices.forEach(function (inv) {
           if (inv.providerId && !seenIds.includes(inv.providerId)) {
             seenIds.push(inv.providerId);
@@ -1817,14 +1817,14 @@ if (auth == undefined) {
         //@ts-expect-error
         $("#paymentModel").modal("toggle");
       } else {
-        notiflix.Report.warning("Oops!", "There is nothing to pay!", "Ok");
+        notiflix.Report.warning(t('oops'), t('nothing_to_pay'), "Ok");
       }
     });
 
     // Quick-pay shortcut buttons: open modal + pre-select payment type
     $(document).on("click", ".pos-pay-btn", function () {
       if (cart.length === 0) {
-        notiflix.Report.warning("Oops!", "There is nothing to pay!", "Ok");
+        notiflix.Report.warning(t('oops'), t('nothing_to_pay'), "Ok");
         return;
       }
       const type = $(this).data("pay-type");
@@ -1965,7 +1965,7 @@ if (auth == undefined) {
             Order No : ${orderNumber} <br>
             Ref No : ${refNumber == "" ? orderNumber : _.escape(refNumber)} <br>
             Customer : ${
-              customer == 0 ? "Walk in customer" : _.escape(customer.name)
+              customer == 0 ? t('walk_in_customer') : _.escape(customer.name)
             } <br>
             Cashier : ${user.fullname} <br>
             Date : ${date}<br>
@@ -2190,7 +2190,7 @@ if (auth == undefined) {
           $("<td>", {
             text: order.customer != 0
               ? order.customer.name
-              : "Walk in customer"
+              : t('walk_in_customer')
           }),
           $("<td>").append(
             $("<span>", {
@@ -2272,7 +2272,7 @@ if (auth == undefined) {
         $("#customer option:selected").removeAttr("selected");
         $("#customer option")
           .filter(function () {
-            return $(this).text() == "Walk in customer";
+            return $(this).text() == t('walk_in_customer');
           })
           .prop("selected", true);
 
@@ -3978,7 +3978,7 @@ if (auth == undefined) {
 
     $("#productModal").on("click", function () {
       // Rebuild provider filter options
-      $("#productProviderFilter").html(`<option value="">All Providers</option>`);
+      $("#productProviderFilter").html(`<option value="">${t('all_providers_opt')}</option>`);
       allProviders.forEach((prov) => {
         $("#productProviderFilter").append(
           `<option value="${prov._id}">${prov.name}</option>`
@@ -5438,7 +5438,7 @@ function loadSoldProducts() {
 
 function userFilter(users) {
   $("#users").empty();
-  $("#users").append(`<option value="0">All</option>`);
+  $("#users").append(`<option value="0">${t('all')}</option>`);
 
   users.forEach((user) => {
     let u = allUsers.filter(function (usr) {
@@ -5451,7 +5451,7 @@ function userFilter(users) {
 
 function tillFilter(tills) {
   $("#tills").empty();
-  $("#tills").append(`<option value="0">All</option>`);
+  $("#tills").append(`<option value="0">${t('all')}</option>`);
   tills.forEach((till) => {
     $("#tills").append(`<option value="${till}">${till}</option>`);
   });
@@ -5545,7 +5545,7 @@ $.fn.viewTransaction = function (index) {
         Ref No : ${refNumber} <br>
         Customer : ${
           allTransactions[index].customer == 0
-            ? "Walk in Customer"
+            ? t('walk_in_customer')
             : allTransactions[index].customer.name
         } <br>
         Cashier : ${allTransactions[index].user} <br>

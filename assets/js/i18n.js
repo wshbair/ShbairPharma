@@ -289,6 +289,10 @@ var translations = {
     select_provider_hint: 'Select a provider above to add an invoice',
 
     expiry_status_col: 'Expiry Status',
+    nothing_to_pay:"There is nothing to pay!",
+    oops: "Oops!",
+    all: "All",
+    nothing_to_display: 'Nothing to Display!'
   },
 
   ar: {
@@ -579,6 +583,10 @@ var translations = {
     no_invoices_msg: 'لا توجد فواتير لهذا المورد.',
     select_provider_hint: 'اختر موردًا أعلاه لعرض الفواتير',
     expiry_status_col: 'حالة الانتهاء',
+    nothing_to_pay: 'سلة المشتريات فارغة',
+    oops: 'عذرا',
+    all: 'عرض الجميع',
+    nothing_to_display: 'لا توجد معلومات للعرض'
   }
 };
 

@@ -951,9 +951,9 @@ html[dir="rtl"] th {
 }
 
 /* ── Navbar ─────────────────────────────────── */
-html[dir="rtl"] .pos-navbar {
+/* html[dir="rtl"] .pos-navbar {
     flex-direction: row-reverse;
-}
+} */
 html[dir="rtl"] .nav-logo {
     margin-right: 0;
     margin-left: 10px;
