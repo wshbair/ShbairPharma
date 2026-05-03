@@ -292,7 +292,17 @@ var translations = {
     nothing_to_pay:"There is nothing to pay!",
     oops: "Oops!",
     all: "All",
-    nothing_to_display: 'Nothing to Display!'
+    nothing_to_display: 'Nothing to Display!',
+
+    // Receipt labels
+    receipt_order_no: 'Order No',
+    receipt_invoice: 'Invoice',
+    receipt_ref_no: 'Ref No',
+    receipt_customer: 'Customer',
+    receipt_tel: 'Tel',
+    receipt_vat_no: 'Vat No',
+    receipt_vat_label: 'VAT',
+    receipt_mobile: 'Mobile Number'
   },
 
   ar: {
@@ -310,7 +320,7 @@ var translations = {
     providers: 'الموردون',
     hold_orders: 'الطلبات المعلقة',
     orders: 'الطلبات',
-    transactions: 'المعاملات',
+    transactions: 'العمليات',
     point_of_sale: 'نقطة البيع',
     users: 'المستخدمون',
     settings: 'الإعدادات',
@@ -339,7 +349,7 @@ var translations = {
 
     // Transactions view
     sales: 'المبيعات',
-    total_transactions: 'المعاملات',
+    total_transactions: 'العمليات',
     items_sold: 'عناصر مباعة',
     total_products: 'المنتجات',
     till: 'الصراف',
@@ -353,7 +363,7 @@ var translations = {
     sold_col: 'مباع',
     available_col: 'متاح',
     sales_col: 'المبيعات',
-    trans_details: 'تفاصيل المعاملات',
+    trans_details: 'تفاصيل العمليات',
     invoice_col: 'الفاتورة',
     date_col: 'التاريخ',
     total_col: 'الإجمالي',
@@ -453,7 +463,7 @@ var translations = {
     permissions: 'الصلاحيات',
     perm_products: 'إدارة المنتجات والمخزون',
     perm_categories: 'إدارة الموردين ,المشتريات',
-    perm_transactions: 'عرض المعاملات',
+    perm_transactions: 'عرض العمليات',
     perm_users: 'إدارة المستخدمين والصلاحيات',
     perm_settings: 'إدارة الإعدادات',
 
@@ -586,7 +596,17 @@ var translations = {
     nothing_to_pay: 'سلة المشتريات فارغة',
     oops: 'عذرا',
     all: 'عرض الجميع',
-    nothing_to_display: 'لا توجد معلومات للعرض'
+    nothing_to_display: 'لا توجد معلومات للعرض',
+
+    // Receipt labels
+    receipt_order_no: 'رقم الطلب',
+    receipt_invoice: 'رقم الفاتورة',
+    receipt_ref_no: 'الرقم المرجعي',
+    receipt_customer: 'العميل',
+    receipt_tel: 'هاتف',
+    receipt_vat_no: 'رقم ض.ق.م',
+    receipt_vat_label: 'ض.ق.م',
+    receipt_mobile: 'رقم الجوال'
   }
 };
 
@@ -622,6 +642,9 @@ function applyLanguage(lang) {
 
   var btn = document.getElementById('langToggle');
   if (btn) btn.textContent = isRtl ? 'EN' : 'عربي';
+
+  var cartTable = document.getElementById('cartTable');
+  if (cartTable) cartTable.setAttribute('dir', isRtl ? 'rtl' : 'ltr');
 
   if (typeof localStorage !== 'undefined') {
     localStorage.setItem('pharma_lang', lang);

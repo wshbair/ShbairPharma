@@ -312,6 +312,20 @@ body {
     padding: 4px 8px !important;
 }
 
+/* RTL support for cart table — Bootstrap 3 hardcodes float:left, so override it */
+#cartTable[dir="rtl"] [class*="col-"] {
+    float: right !important;
+    text-align: right;
+}
+#cartTable[dir="ltr"] [class*="col-"] {
+    float: left !important;
+    text-align: left;
+}
+/* Keep quantity +/- buttons in LTR order so minus stays left, plus stays right */
+#cartTable .input-group {
+    direction: ltr;
+}
+
 /* Cart summary strip */
 .cart-summary {
     background: #f8fafc;

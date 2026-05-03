@@ -24,7 +24,7 @@ const remote = require("@electron/remote");
 const app = remote.app;
 
 const utils = require("./utils");
-const { t } = require("./i18n");
+const { t, getCurrentLang } = require("./i18n");
 
 // Populate login footer with live version and current year
 $("#app_version").text(app.getVersion());
@@ -1853,6 +1853,11 @@ if (auth == undefined) {
     //@ts-expect-error
     $.fn.submitDueOrder = function (status) {
       const DOMPurify = require("dompurify");
+      const isRtlReceipt = getCurrentLang() === 'ar';
+      const rcptDir = isRtlReceipt ? 'rtl' : 'ltr';
+      const rcptFont = isRtlReceipt ? 'Tahoma, Arial, sans-serif' : "'Courier New', Courier, monospace";
+      const rcptPriceAlign = isRtlReceipt ? 'left' : 'right';
+      const rcptDetailsAlign = isRtlReceipt ? 'right' : 'left';
       let items = "";
       let payment = 0.0;
       let paymentRow =""
@@ -1860,7 +1865,7 @@ if (auth == undefined) {
       cart.forEach((item) => {
     items += `<tr><td>${DOMPurify.sanitize(item.product_name)}</td><td>${
       DOMPurify.sanitize(item.quantity)
-    } </td><td class="text-right"> ${DOMPurify.sanitize(validator.unescape(settings.symbol))} ${moneyFormat(
+    } </td><td style="text-align: ${rcptPriceAlign}"> ${DOMPurify.sanitize(validator.unescape(settings.symbol))} ${moneyFormat(
       DOMPurify.sanitize(Math.abs(item.price).toFixed(2)),
     )} </td></tr>`;
 });
@@ -1891,31 +1896,31 @@ if (auth == undefined) {
 
       if (paid != 0) {
         paymentRow = `<tr>
-                        <td>Paid</td>
+                        <td>${t('paid')}</td>
                         <td>:</td>
-                        <td class="text-right">${validator.unescape(settings.symbol)} ${moneyFormat(
+                        <td style="text-align: ${rcptPriceAlign}">${validator.unescape(settings.symbol)} ${moneyFormat(
                           Math.abs(paid).toFixed(2),
                         )}</td>
                     </tr>
                     <tr>
-                        <td>Change</td>
+                        <td>${t('change')}</td>
                         <td>:</td>
-                        <td class="text-right">${validator.unescape(settings.symbol)} ${moneyFormat(
+                        <td style="text-align: ${rcptPriceAlign}">${validator.unescape(settings.symbol)} ${moneyFormat(
                           Math.abs(change).toFixed(2),
                         )}</td>
                     </tr>
                     <tr>
-                        <td>Method</td>
+                        <td>${t('method_col')}</td>
                         <td>:</td>
-                        <td class="text-right">${type}</td>
+                        <td style="text-align: ${rcptPriceAlign}">${type}</td>
                     </tr>`;
       }
 
       if (settings.charge_tax) {
         tax_row = `<tr>
-                    <td>VAT(${validator.unescape(settings.percentage)})% </td>
+                    <td>${t('receipt_vat_label')}(${validator.unescape(settings.percentage)})%</td>
                     <td>:</td>
-                    <td class="text-right">${validator.unescape(settings.symbol)} ${moneyFormat(
+                    <td style="text-align: ${rcptPriceAlign}">${validator.unescape(settings.symbol)} ${moneyFormat(
                       totalVat.toFixed(2),
                     )}</td>
                 </tr>`;
@@ -1944,7 +1949,7 @@ if (auth == undefined) {
 
       const logo = path.join(img_path, validator.unescape(settings.img));
 
-      receipt = `<div style="font-size: 10px; font-family: 'Courier New', Courier, monospace; color: #000;">                            
+      receipt = `<div dir="${rcptDir}" style="font-size: 10px; font-family: ${rcptFont}; color: #000;">
         <p style="text-align: center;">
         ${
           checkFileExists(logo)
@@ -1955,46 +1960,45 @@ if (auth == undefined) {
             ${validator.unescape(settings.address_one)} <br>
             ${validator.unescape(settings.address_two)} <br>
             ${
-              validator.unescape(settings.contact) != "" ? "Tel: " + validator.unescape(settings.contact) + "<br>" : ""
-            } 
-            ${validator.unescape(settings.tax) != "" ? "Vat No: " + validator.unescape(settings.tax) + "<br>" : ""} 
+              validator.unescape(settings.contact) != "" ? t('receipt_tel') + ": " + validator.unescape(settings.contact) + "<br>" : ""
+            }
+            ${validator.unescape(settings.tax) != "" ? t('receipt_vat_no') + ": " + validator.unescape(settings.tax) + "<br>" : ""}
         </p>
         <hr>
-        <left>
+        <div style="text-align: ${rcptDetailsAlign}">
             <p>
-            Order No : ${orderNumber} <br>
-            Ref No : ${refNumber == "" ? orderNumber : _.escape(refNumber)} <br>
-            Customer : ${
+            ${t('receipt_order_no')} : ${orderNumber} <br>
+            ${t('receipt_ref_no')} : ${refNumber == "" ? orderNumber : _.escape(refNumber)} <br>
+            ${t('receipt_customer')} : ${
               customer == 0 ? t('walk_in_customer') : _.escape(customer.name)
             } <br>
-            Cashier : ${user.fullname} <br>
-            Date : ${date}<br>
+            ${t('cashier')} : ${user.fullname} <br>
+            ${t('date')} : ${date}<br>
             </p>
-
-        </left>
+        </div>
         <hr>
         <table width="100%">
             <thead>
             <tr>
-                <th>Item</th>
-                <th>Qty</th>
-                <th class="text-right">Price</th>
+                <th>${t('cart_item')}</th>
+                <th>${t('cart_qty')}</th>
+                <th style="text-align: ${rcptPriceAlign}">${t('cart_price')}</th>
             </tr>
             </thead>
             <tbody>
-             ${items}                
+             ${items}
             <tr><td colspan="3"><hr></td></tr>
-            <tr>                        
-                <td><b>Subtotal</b></td>
+            <tr>
+                <td><b>${t('subtotal')}</b></td>
                 <td>:</td>
-                <td class="text-right"><b>${validator.unescape(settings.symbol)}${moneyFormat(
+                <td style="text-align: ${rcptPriceAlign}"><b>${validator.unescape(settings.symbol)}${moneyFormat(
                   subTotal.toFixed(2),
                 )}</b></td>
             </tr>
             <tr>
-                <td>Discount</td>
+                <td>${t('discount')}</td>
                 <td>:</td>
-                <td class="text-right">${
+                <td style="text-align: ${rcptPriceAlign}">${
                   discount > 0
                     ? validator.unescape(settings.symbol) +
                       moneyFormat(discount.toFixed(2))
@@ -2003,16 +2007,16 @@ if (auth == undefined) {
             </tr>
             ${tax_row}
             <tr>
-                <td><h5>Total</h5></td>
+                <td><h5>${t('total_col')}</h5></td>
                 <td><h5>:</h5></td>
-                <td class="text-right">
+                <td style="text-align: ${rcptPriceAlign}">
                     <h5>${validator.unescape(settings.symbol)} ${moneyFormat(
                       orderTotal.toFixed(2),
-                    )}</h3>
+                    )}</h5>
                 </td>
             </tr>
             ${payment == 0 ? "" : paymentRow}
-            ${mobileNumber ? `<tr><td>Mobile Number</td><td>:</td><td class="text-right">${mobileNumber}</td></tr>` : ""}
+            ${mobileNumber ? `<tr><td>${t('receipt_mobile')}</td><td>:</td><td style="text-align: ${rcptPriceAlign}">${mobileNumber}</td></tr>` : ""}
             </tbody>
             </table>
             <br>
@@ -5460,6 +5464,11 @@ function tillFilter(tills) {
 //@ts-expect-error
 $.fn.viewTransaction = function (index) {
   const DOMPurify = require("dompurify");
+  const isRtlReceipt = getCurrentLang() === 'ar';
+  const rcptDir = isRtlReceipt ? 'rtl' : 'ltr';
+  const rcptFont = isRtlReceipt ? 'Tahoma, Arial, sans-serif' : "'Courier New', Courier, monospace";
+  const rcptPriceAlign = isRtlReceipt ? 'left' : 'right';
+  const rcptDetailsAlign = isRtlReceipt ? 'right' : 'left';
   //let transaction_index = index;
 
   let discount = allTransactions[index].discount;
@@ -5480,7 +5489,7 @@ $.fn.viewTransaction = function (index) {
   products.forEach((item) => {
     items += `<tr><td>${item.product_name}</td><td>${
       item.quantity
-    } </td><td class="text-right"> ${validator.unescape(settings.symbol)} ${moneyFormat(
+    } </td><td style="text-align: ${rcptPriceAlign}"> ${validator.unescape(settings.symbol)} ${moneyFormat(
       Math.abs(item.price).toFixed(2),
     )} </td></tr>`;
   });
@@ -5491,31 +5500,31 @@ $.fn.viewTransaction = function (index) {
 
   if (allTransactions[index].paid != "") {
     paymnetRow = `<tr>
-                    <td>Paid</td>
+                    <td>${t('paid')}</td>
                     <td>:</td>
-                    <td class="text-right">${validator.unescape(settings.symbol)} ${moneyFormat(
+                    <td style="text-align: ${rcptPriceAlign}">${validator.unescape(settings.symbol)} ${moneyFormat(
                       Math.abs(allTransactions[index].paid).toFixed(2),
                     )}</td>
                 </tr>
                 <tr>
-                    <td>Change</td>
+                    <td>${t('change')}</td>
                     <td>:</td>
-                    <td class="text-right">${validator.unescape(settings.symbol)} ${moneyFormat(
+                    <td style="text-align: ${rcptPriceAlign}">${validator.unescape(settings.symbol)} ${moneyFormat(
                       Math.abs(allTransactions[index].change).toFixed(2),
                     )}</td>
                 </tr>
                 <tr>
-                    <td>Method</td>
+                    <td>${t('method_col')}</td>
                     <td>:</td>
-                    <td class="text-right">${paymentMethod}</td>
+                    <td style="text-align: ${rcptPriceAlign}">${paymentMethod}</td>
                 </tr>`;
   }
 
   if (settings.charge_tax) {
     tax_row = `<tr>
-                <td>Vat(${validator.unescape(settings.percentage)})% </td>
+                <td>${t('receipt_vat_label')}(${validator.unescape(settings.percentage)})%</td>
                 <td>:</td>
-                <td class="text-right">${validator.unescape(settings.symbol)}${parseFloat(
+                <td style="text-align: ${rcptPriceAlign}">${validator.unescape(settings.symbol)}${parseFloat(
                   allTransactions[index].tax,
                 ).toFixed(2)}</td>
             </tr>`;
@@ -5523,7 +5532,7 @@ $.fn.viewTransaction = function (index) {
 
     const logo = path.join(img_path, validator.unescape(settings.img));
       
-      receipt = `<div style="font-size: 10px">                            
+      receipt = `<div dir="${rcptDir}" style="font-size: 10px; font-family: ${rcptFont}; color: #000;">
         <p style="text-align: center;">
         ${
           checkFileExists(logo)
@@ -5534,50 +5543,49 @@ $.fn.viewTransaction = function (index) {
             ${validator.unescape(settings.address_one)} <br>
             ${validator.unescape(settings.address_two)} <br>
             ${
-              validator.unescape(settings.contact) != "" ? "Tel: " + validator.unescape(settings.contact) + "<br>" : ""
-            } 
-            ${validator.unescape(settings.tax) != "" ? "Vat No: " + validator.unescape(settings.tax) + "<br>" : ""} 
+              validator.unescape(settings.contact) != "" ? t('receipt_tel') + ": " + validator.unescape(settings.contact) + "<br>" : ""
+            }
+            ${validator.unescape(settings.tax) != "" ? t('receipt_vat_no') + ": " + validator.unescape(settings.tax) + "<br>" : ""}
     </p>
     <hr>
-    <left>
+    <div style="text-align: ${rcptDetailsAlign}">
         <p>
-        Invoice : ${orderNumber} <br>
-        Ref No : ${refNumber} <br>
-        Customer : ${
+        ${t('receipt_invoice')} : ${orderNumber} <br>
+        ${t('receipt_ref_no')} : ${refNumber} <br>
+        ${t('receipt_customer')} : ${
           allTransactions[index].customer == 0
             ? t('walk_in_customer')
             : allTransactions[index].customer.name
         } <br>
-        Cashier : ${allTransactions[index].user} <br>
-        Date : ${moment(allTransactions[index].date).format(
+        ${t('cashier')} : ${allTransactions[index].user} <br>
+        ${t('date')} : ${moment(allTransactions[index].date).format(
           "DD MMM YYYY HH:mm:ss",
         )}<br>
         </p>
-
-    </left>
+    </div>
     <hr>
     <table width="90%">
         <thead>
         <tr>
-            <th>Item</th>
-            <th>Qty</th>
-            <th class="text-right">Price</th>
+            <th>${t('cart_item')}</th>
+            <th>${t('cart_qty')}</th>
+            <th style="text-align: ${rcptPriceAlign}">${t('cart_price')}</th>
         </tr>
         </thead>
         <tbody>
-        ${items}                
+        ${items}
         <tr><td colspan="3"><hr></td></tr>
-        <tr>                        
-            <td><b>Subtotal</b></td>
+        <tr>
+            <td><b>${t('subtotal')}</b></td>
             <td>:</td>
-            <td class="text-right"><b>${validator.unescape(settings.symbol)}${moneyFormat(
+            <td style="text-align: ${rcptPriceAlign}"><b>${validator.unescape(settings.symbol)}${moneyFormat(
               allTransactions[index].subtotal,
             )}</b></td>
         </tr>
         <tr>
-            <td>Discount</td>
+            <td>${t('discount')}</td>
             <td>:</td>
-            <td class="text-right">${
+            <td style="text-align: ${rcptPriceAlign}">${
               discount > 0
                 ? validator.unescape(settings.symbol) +
                   moneyFormat(
@@ -5586,13 +5594,11 @@ $.fn.viewTransaction = function (index) {
                 : ""
             }</td>
         </tr>
-        
         ${tax_row}
-    
         <tr>
-            <td><h5>Total</h5></td>
+            <td><h5>${t('total_col')}</h5></td>
             <td><h5>:</h5></td>
-            <td class="text-right">
+            <td style="text-align: ${rcptPriceAlign}">
                 <h5>${validator.unescape(settings.symbol)}${moneyFormat(
                   allTransactions[index].total,
                 )}</h5>
