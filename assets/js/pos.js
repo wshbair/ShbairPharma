@@ -658,7 +658,31 @@ if (auth == undefined) {
           filterOpts += `<option value="${p._id}">${p.name}</option>`;
         });
         $("#providerListFilter, #productProviderFilter").html(filterOpts);
+        if ($("#Providers").is(":visible")) {
+          loadProviderList();
+        }
       });
+    }
+
+    function loadProviderList() {
+      let rows = "";
+      allProviders.forEach((provider, index) => {
+        rows += `<tr>
+          <td>${validator.escape(provider.name || "")}</td>
+          <td>${validator.escape(provider.phone || "—")}</td>
+          <td>${validator.escape(provider.email || "—")}</td>
+          <td>
+            <span class="btn-group">
+              <button onclick="$(this).editProvider(${index})" class="btn btn-warning btn-sm"><i class="fa fa-edit"></i></button>
+              <button onclick="$(this).deleteProvider(${provider._id})" class="btn btn-danger btn-sm"><i class="fa fa-trash"></i></button>
+            </span>
+          </td>
+        </tr>`;
+      });
+      if (!rows) {
+        rows = `<tr><td colspan="4" class="text-center text-muted">No providers found.</td></tr>`;
+      }
+      $("#provider_list").html(rows);
     }
 
     //load categories in dropdown and sidebar
@@ -3999,6 +4023,10 @@ if (auth == undefined) {
       loadPaymentList(null);
       $("#exportInvoiceCsvBtn, #exportInvoicePdfBtn").prop("disabled", true);
       $("#providerListFilter").val('');
+    });
+
+    $("#Providers").on("show.bs.modal", function () {
+      loadProviderList();
     });
 
     $("#invoicesModal").on("click", function () {

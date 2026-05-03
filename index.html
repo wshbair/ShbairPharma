@@ -112,8 +112,8 @@
                 <button type="button" class="btn btn-default " id="cashier" data-i18n-title="my_profile" title="My Profile">
                     <i class="glyphicon glyphicon-user"></i> <span id="loggedin-user"></span>
                 </button>
-                <!-- <button id="langToggle" type="button" class="btn btn-default " title="Toggle Language / تغيير اللغة">عربي</button>
-                 -->
+                <button id="langToggle" type="button" class="btn btn-default " title="Toggle Language / تغيير اللغة">عربي</button>
+                 
                 <button id="log-out" type="button" class="btn btn-default" data-i18n-title="sign_out">
                     <i class="glyphicon glyphicon-log-out"></i>
                 </button> 
@@ -392,10 +392,13 @@
 
                     <!-- ══ TAB 1: Provider list / detail ══ -->
                     <div class="tab-pane active" id="provTabList">
-                        <div style="margin-top:16px; margin-bottom:16px;">
+                        <div style="margin-top:16px; margin-bottom:16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                             <select id="providerListFilter" class="form-control" style="max-width:280px;">
                                 <option value="" data-i18n="all_providers_opt">— Select a Provider —</option>
                             </select>
+                            <button id="manageProvidersBtn" class="btn btn-default" data-toggle="modal" data-target="#Providers">
+                                <i class="fa fa-list"></i> <span data-i18n="manage_providers_btn">Manage Providers</span>
+                            </button>
                         </div>
 
                     <!-- Empty state -->
@@ -563,11 +566,11 @@
                                     </div>
                                     <div class="form-group">
                                         <label data-i18n="phone_lbl">Phone</label>
-                                        <input id="providerPhone" type="text" name="phone" placeholder="Phone number" class="form-control">
+                                        <input id="providerPhone" type='text' name="phone" placeholder="0599 000 000" class="form-control">
                                     </div>
                                     <div class="form-group">
                                         <label data-i18n="email_lbl">Email</label>
-                                        <input id="providerEmail" type="email" name="email" placeholder="Email address" class="form-control">
+                                        <input id="providerEmail" type="email" value="email@email.com" name="email" placeholder="Email address" class="form-control">
                                     </div>
                                     <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--c-border);">
                                         <input type="submit" id="submitProvider" class="btn btn-primary ">
@@ -1260,7 +1263,7 @@
                         <form id="saveCustomer" data-parsley-validate>
                             <div class="form-group"><label data-i18n="customer_name_lbl">Customer Name*</label><input type="text" required name="name" data-i18n-placeholder="enter_name" placeholder="Enter name" class="form-control" id="userName"></div>
                             <div class="form-group"><label data-i18n="phone_lbl">Phone</label><input type="text" name="phone" data-i18n-placeholder="phone_placeholder" placeholder="Phone number" class="form-control" id="phoneNumber"></div>
-                            <div class="form-group"><label data-i18n="email_lbl">Email</label><input type="email" name="email" data-i18n-placeholder="email_placeholder" placeholder="Email address" class="form-control" id="emailAddress"></div>
+                            <div class="form-group"><label data-i18n="email_lbl">Email</label><input type="email" name="email" value="email@email.com" data-i18n-placeholder="email_placeholder" placeholder="Email address" class="form-control" id="emailAddress"></div>
                             <div class="form-group"><label data-i18n="address_lbl">Address</label><input type="text" name="address" data-i18n-placeholder="address_placeholder" placeholder="Address" class="form-control" id="userAddress"></div>
                             <input type="submit" class="btn btn-primary ">
                         </form>
@@ -1350,8 +1353,8 @@
         <!-- New / Edit Provider -->
 
         <!-- Providers List -->
-        <div id="Providers" class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog modal-md">
+        <div id="Providers" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>

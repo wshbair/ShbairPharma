@@ -123,7 +123,6 @@ app.get("/stock-check", function(req, res){
         const expiredProducts = expired.slice(0, 4).map(function (p) {
             return `<strong>${p.name}</strong>`;
         }).join(", ") + (expired.length > 4 ? ` +${expired.length - 4} more` : "");
-        console.log(expiredProducts)
 
         res.send({
             "lowStockMsg": low.length > 0 ? `Inventory Alert: <strong>${low.length}</strong> products are at or below minimum stock levels, including ${lowStockProducts}` : "",
