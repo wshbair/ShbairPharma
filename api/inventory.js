@@ -218,7 +218,7 @@ app.post("/product", function (req, res) {
     };
 
     if (validator.escape(req.body.id) === "") {
-        Product._id = Math.floor(Date.now() / 1000);
+        Product._id = Date.now() + Math.floor(Math.random() * 1000);
         Product.invoiceHistory = [{
             invoiceId:  Product.invoiceId  || "",
             providerId: Product.provider   || "",
@@ -425,6 +425,7 @@ app.post("/products/csv", function (req, res) {
  * @returns {void}
  */
 app.delete("/product/:productId", function (req, res) {
+    console.log(req.params.productId)
     inventoryDB.remove(
         {
             _id: parseInt(req.params.productId),

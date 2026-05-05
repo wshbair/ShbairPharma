@@ -282,7 +282,6 @@ if (auth == undefined) {
               );
             });
           });
-          console.timeEnd('Phase 1: Categories');
         });
         // Immediately show the UI with categories loaded
         renderPosIdle();
@@ -1573,7 +1572,6 @@ if (auth == undefined) {
     });
     //@ts-expect-error
     $.fn.addProductToCart = function (data) {
-      console.log(data)
       item = {
         id: data._id,
         product_name: data.name,
@@ -2599,7 +2597,7 @@ if (auth == undefined) {
       $("#invProductDropdown").hide();
       let catOpts = '<option value="">— none —</option>';
       allCategories.forEach(function (c) {
-        catOpts += '<option value="' + c._id + '">' + (c.name || c._id) + '</option>';
+        catOpts += '<option value="' + c.name + '">' + (c.name || c._id) + '</option>';
       });
       $("#inp_category").html(catOpts);
     }
@@ -3420,7 +3418,7 @@ if (auth == undefined) {
         $("#inv_provider_id").html(provOpts).val(inv.providerId).prop("disabled", true);
          let catOpts = '<option value="">— none —</option>';
           allCategories.forEach(function (c) {
-            catOpts += '<option value="' + c._id + '">' + (c.name || c._id) + '</option>';
+            catOpts += '<option value="' + c.name + '">' + (c.name || c._id) + '</option>';
           });
       $("#inp_category").html(catOpts);
 

@@ -29,8 +29,7 @@ const providersDB  = new Datastore({ filename: dbFile("providers.db"), autoload:
 
 
 inventoryDB.ensureIndex({ fieldName: "_id", unique: true });
-inventoryDB.ensureIndex({ fieldName: "barcode", unique: true });
-
+//inventoryDB.ensureIndex({ fieldName: "barcode", unique: true });
 invoicesDB.ensureIndex({  fieldName: "_id", unique: true });
 paymentsDB.ensureIndex({  fieldName: "_id", unique: true });
 categoriesDB.ensureIndex({  fieldName: "name", unique: true });

@@ -125,7 +125,6 @@ const extractUniqueCategories = (csvFile) => {
 
 
 const playNotificationSound = () => {
-  console.log("Playing notification sound...");
   const audio = new Audio('./notification.mp3'); 
   audio.play().catch(err => console.error(err));
 };
