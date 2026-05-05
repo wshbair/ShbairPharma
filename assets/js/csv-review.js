@@ -337,7 +337,6 @@ $(document).ready(function() {
             success: function (resp) {
             notiflix.Report.success(
             "Categories Uploaded Successfully",
-            //`Inserted products: ${productInsertResponse.inserted}, Updated products: ${productInsertResponse.updated}`,
             "",
             "Ok"
             );

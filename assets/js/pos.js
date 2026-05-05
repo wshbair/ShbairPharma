@@ -4285,7 +4285,7 @@ if (auth == undefined) {
             icon = "fa fa-caret-down";
           }
 
-          product.stockAlert = `<span class="text-danger"><small><i class="${icon}"></i> ${product.stockStatus}</small></span>`;
+          product.stockAlert = `<br><span class="text-danger"><small><i class="${icon}"></i> ${product.stockStatus}</small></span>`;
         }
         //calculate days to expiry
         product.expiryAlert = "";
@@ -4296,13 +4296,13 @@ if (auth == undefined) {
             var days_noun = diffDays > 1 ? "days" : "day";
             icon = "fa fa-clock-o";
             product.expiryStatus = `${diffDays} ${days_noun} left`;
-            product.expiryAlert = `<span class="text-danger"><small><i class="${icon}"></i> ${product.expiryStatus}</small></span>`;
+            product.expiryAlert = `<br><span class="text-danger"><small><i class="${icon}"></i> ${product.expiryStatus}</small></span>`;
           }
           
         } else {
           icon = "fa fa-exclamation-triangle";
           product.expiryStatus = "Expired";
-          product.expiryAlert = `<span class="text-danger"><small><i class="${icon}"></i> ${product.expiryStatus}</small></span>`;
+          product.expiryAlert = `<br><span class="text-danger"><small><i class="${icon}"></i> ${product.expiryStatus}</small></span>`;
         }
 
         if(product.img==="")
