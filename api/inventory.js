@@ -425,7 +425,6 @@ app.post("/products/csv", function (req, res) {
  * @returns {void}
  */
 app.delete("/product/:productId", function (req, res) {
-    console.log(req.params.productId)
     inventoryDB.remove(
         {
             _id: parseInt(req.params.productId),

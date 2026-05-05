@@ -3,7 +3,7 @@
 
 //const jsPDF = require("jspdf");
 //const html2canvas = require("html2canvas");
-//const JsBarcode = require("jsbarcode");
+const JsBarcode = require("jsbarcode");
 //const macaddress = require("macaddress");
 const notiflix = require("notiflix");
 const validator = require("validator");
@@ -4321,7 +4321,7 @@ if (auth == undefined) {
           // product._id +
           // `"></td>
             `<td>${counter} </td>
-            <td>${product.barcode} </td>
+            <td><img id=${product._id}> </td>
             <td>${product.name} ${product.expiryAlert}</td>
             <td>${validator.unescape(settings.symbol)}${product.price}</td>
             <td>${validator.unescape(settings.symbol)}${product.costPrice}</td>
@@ -4338,14 +4338,14 @@ if (auth == undefined) {
         if (counter == products.length) {
           $("#product_list").html(product_list);
 
-          // products.forEach((product) => {
-          //   let bcode = product.barcode || product._id;
-          //   $("#" + product._id + "").JsBarcode(bcode, {
-          //     width: 1,
-          //     height: 25,
-          //     fontSize: 13,
-          //   });
-          // });
+          products.forEach((product) => {
+            let bcode = product.barcode || product._id;
+            $("#" + product._id + "").JsBarcode(bcode, {
+              width: 1,
+              height: 25,
+              fontSize: 13,
+            });
+          });
         }
       });
 

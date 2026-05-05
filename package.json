@@ -1,7 +1,7 @@
 {
   "name": "ShbairPharma",
   "productName": "ShbairPharma",
-  "version": "1.6.17",
+  "version": "1.6.18",
   "description": "Point of Sale for Shbair Pharmacies",
   "author": "Wazen SHBAIR",
   "website": "https://wshbair.github.io/",
@@ -30,6 +30,7 @@
     "express": "^4.21.2",
     "express-rate-limit": "^6.7.0",
     "jquery": "^3.7.1",
+    "jsbarcode": "^3.12.3",
     "lodash": "^4.17.21",
     "macaddress": "^0.5.4",
     "moment": "^2.29.4",
