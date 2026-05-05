@@ -4,6 +4,11 @@ let moment = require("moment");
 const DATE_FORMAT = "YYYY-MM-DD";
 const PORT = process.env.PORT;
 let path = require("path");
+const validFileTypes = [
+    "image/jpg",
+    "image/jpeg",
+    "image/png"
+];
 const moneyFormat = (amount, locale = "en-US") => {
   return new Intl.NumberFormat(locale).format(amount);
 };
@@ -74,7 +79,6 @@ const getFileHash = (filePath) => {
 
 const filterFile = (req, file, callback) => {
     try {
-      //@ts-expect-error
       const isValidFile = checkFileType(file.mimetype, validFileTypes);
       if (isValidFile) {
         return callback(null, true);

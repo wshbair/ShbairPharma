@@ -9,11 +9,11 @@ const path = require("path");
 const validator = require("validator");
 const appName = process.env.APPNAME;
 const appData = process.env.APPDATA;
-// const validFileTypes = [
-//     "image/jpg",
-//     "image/jpeg",
-//     "image/png",
-//     "image/webp"];
+const validFileTypes = [
+    "image/jpg",
+    "image/jpeg",
+    "image/png"
+];
 
 const maxFileSize = 2097152 //2MB = 2*1024*1024
 const defaultLogoName = "logo";

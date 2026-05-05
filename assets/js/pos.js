@@ -91,7 +91,7 @@ let end_date = moment(end).toDate();
 let by_till = 0;
 let by_user = 0;
 let by_status = 1;
-const default_item_img = path.join("assets","images","default.jpg");
+const default_item_img = path.join("assets","images","shbairpharma_small.png");
 const permissions = [
   "perm_products",
   "perm_categories",
@@ -450,7 +450,7 @@ if (auth == undefined) {
     function buildProductCard(item) {
       item.price = parseFloat(item.price).toFixed(2);
       let item_isExpired = isExpired(item.expirationDate);
-      
+      const dayToExpire = daysToExpire(item.expirationDate)
       let item_stockStatus = getStockStatus(item.quantity, item.minStock);
       let item_img = default_item_img;
       if (item.img !== "") {
@@ -465,11 +465,12 @@ if (auth == undefined) {
                     <div class="name" id="product_name">
                       <span class="${item_isExpired ? "text-danger" : ""}">${item.name}</span>
                     </div>
-                    <span class="sku">${item.barcode || item._id}</span>
+                    <span class="stock"> Exp. in ${dayToExpire} days</span><br>
                     <span class="${item_stockStatus < 1 ? "text-danger" : ""}">
-                      <span class="stock" data-i18n="STOCK">STOCK </span>
+                      <span class="stock" data-i18n="stock">Stock </span>
                       <span class="count">${item.stock == 1 ? item.quantity : "N/A"}</span>
                     </span>
+                     <span class="sku">${item.barcode || item._id}</span>
                   </div>
                   <span class="text-success text-center">
                     <b>${validator.unescape(settings.symbol) + moneyFormat(item.price)}</b>
@@ -1572,10 +1573,11 @@ if (auth == undefined) {
     });
     //@ts-expect-error
     $.fn.addProductToCart = function (data) {
+      console.log(data)
       item = {
         id: data._id,
         product_name: data.name,
-        sku: data.sku,
+        barcode: data.barcode,
         price: data.price,
         profit_margin: parseFloat(data.profitMargin) || 0,
         quantity: 1,
@@ -1846,9 +1848,9 @@ if (auth == undefined) {
       }
     });
 
-    function printJobComplete() {
-      notiflix.Report.success("Done", "print job complete", "Ok");
-    }
+    // function printJobComplete() {
+    //   notiflix.Report.success("Done", "print job complete", "Ok");
+    // }
 
     //@ts-expect-error
     $.fn.submitDueOrder = function (status) {
@@ -1863,7 +1865,7 @@ if (auth == undefined) {
       let paymentRow =""
       paymentType = $('.list-group-item.active').data('payment-type');
       cart.forEach((item) => {
-    items += `<tr><td>${DOMPurify.sanitize(item.product_name)}</td><td>${
+    items += `<tr><td>${DOMPurify.sanitize(item.product_name)} <br> No. ${item.barcode} </td><td>${
       DOMPurify.sanitize(item.quantity)
     } </td><td style="text-align: ${rcptPriceAlign}"> ${DOMPurify.sanitize(validator.unescape(settings.symbol))} ${moneyFormat(
       DOMPurify.sanitize(Math.abs(item.price).toFixed(2)),
@@ -2686,6 +2688,7 @@ if (auth == undefined) {
             ' &nbsp;|&nbsp; Stock: <span style="' + stockColor + 'font-weight:600;">' + stockVal + '</span>' +
             ' &nbsp;|&nbsp; Cost Price: ' + ( validator.unescape(settings.symbol) + moneyFormat(parseFloat(p.costPrice).toFixed(2) ) || '—') +
             ' &nbsp;|&nbsp; Sale Price: ' + ( validator.unescape(settings.symbol) + moneyFormat(parseFloat(p.price).toFixed(2)) || '—') +
+            ' &nbsp;|&nbsp; Expiry Date: ' +  (p.expirationDate) + ' (' + daysToExpire(p.expirationDate) +' days)' +
 
           '</div>' +
           '</div>';
@@ -3803,8 +3806,7 @@ if (auth == undefined) {
     };
 
     // ── RESTOCK PRODUCT ──────────────────────────────────────────────────────
-    //@ts-expect-error
-    $.fn.restockProduct = function (productId) {
+/*     $.fn.restockProduct = function (productId) {
       const product = allProducts.find(function (p) { return p._id === productId; });
       if (!product) return;
 
@@ -3814,6 +3816,7 @@ if (auth == undefined) {
       $("#restock_quantity").val("");
       $("#restock_cost_price").val(product.costPrice || "");
       $("#restock_entry_date").val(new Date().toISOString().split("T")[0]);
+      $("#restock_expiry_date").val(product.expirationDate);
 
       // Populate provider select
       let provOpts = '<option value="">Select provider...</option>';
@@ -3844,11 +3847,10 @@ if (auth == undefined) {
       });
 
       $("#restock_invoice_id").val(product.invoiceId || "");
-      //@ts-expect-error
-      $("#restockModal").modal("show");
-    };
+      //$("#restockModal").modal("show");
+    }; */
 
-    $("#saveRestock").submit(function (e) {
+/*     $("#saveRestock").submit(function (e) {
       e.preventDefault();
       const productId = $("#restock_product_id").val();
       const qty = parseInt($("#restock_quantity").val().toString());
@@ -3862,6 +3864,8 @@ if (auth == undefined) {
         providerId: $("#restock_provider").val(),
         costPrice:  $("#restock_cost_price").val(),
         entryDate:  $("#restock_entry_date").val(),
+        expiryDate:  $("#restock_expiry_date").val(),
+
       };
       $.ajax({
         url: api + "inventory/restock/" + productId,
@@ -3879,7 +3883,7 @@ if (auth == undefined) {
           notiflix.Report.failure("Error", "Restock failed: " + msg, "Ok");
         }
       });
-    });
+    }); */
 
     //@ts-expect-error
     $.fn.deleteUser = function (id) {
@@ -4266,7 +4270,6 @@ if (auth == undefined) {
         // });
 
         product.stockAlert = "";
-        const todayDate = moment();
         const expiryDate = moment(product.expirationDate, DATE_FORMAT);
 
         //show stock status indicator        
@@ -4315,7 +4318,7 @@ if (auth == undefined) {
         }
         //render product list
         product_list +=
-          `<tr>`+
+          `<tr ${isExpired(expiryDate) ? 'style="background-color: #ffdad7"': ""} >`+
           // <td><img id="` +
           // product._id +
           // `"></td>
@@ -4329,8 +4332,8 @@ if (auth == undefined) {
             </td>
             <td>${product.category}</td>
             <td>${product.invoiceId || "N/A"}${product.invoiceHistory && product.invoiceHistory.length > 1 ? ` <span class="badge" title="${product.invoiceHistory.length} restocks" style="cursor:default;">${product.invoiceHistory.length}</span>` : ""}</td>
-            <td>${product.expiryStatus || "N/A"}</td>
-            <td class="nobr"><span class="btn-group"><button onClick="$(this).editProduct(${index})" class="btn btn-warning btn-sm"><i class="fa fa-edit"></i></button><button onClick="$(this).restockProduct(${product._id})" class="btn btn-success btn-sm" title="Restock"><i class="fa fa-refresh"></i></button><button onClick="$(this).deleteProduct(${
+            <td> <b>Exp.</b>: ${product.expirationDate || "N/A"} <br> <b>Ent.</b> ${product.entryDate} </td>
+            <td class="nobr"><span class="btn-group"><button onClick="$(this).editProduct(${index})" class="btn btn-warning btn-sm"><i class="fa fa-edit"></i></button><button onClick="$(this).deleteProduct(${
               product._id
             })" class="btn btn-danger btn-sm"><i class="fa fa-trash"></i></button></span></td></tr>`;
 

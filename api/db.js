@@ -18,17 +18,19 @@ function dbFile(name) {
     return path.join(appData, appName, "server", "databases", name);
 }
 
-const inventoryDB = new Datastore({ filename: dbFile("inventory.db"),    autoload: true });
-const invoicesDB  = new Datastore({ filename: dbFile("invoices.db"),     autoload: true });
-const paymentsDB  = new Datastore({ filename: dbFile("payments.db"),     autoload: true });
-const categoriesDB  = new Datastore({ filename: dbFile("categories.db"),     autoload: true });
-const customersDB  = new Datastore({ filename: dbFile("customers.db"),     autoload: true });
-const transactionsDB  = new Datastore({ filename: dbFile("transactions.db"),     autoload: true });
-const usersDB  = new Datastore({ filename: dbFile("users.db"),     autoload: true });
-const providersDB  = new Datastore({ filename: dbFile("providers.db"),     autoload: true });
+const inventoryDB = new Datastore({ filename: dbFile("inventory.db"), autoload: true });
+const invoicesDB  = new Datastore({ filename: dbFile("invoices.db"), autoload: true });
+const paymentsDB  = new Datastore({ filename: dbFile("payments.db"), autoload: true });
+const categoriesDB  = new Datastore({ filename: dbFile("categories.db"), autoload: true });
+const customersDB  = new Datastore({ filename: dbFile("customers.db"), autoload: true });
+const transactionsDB  = new Datastore({ filename: dbFile("transactions.db"), autoload: true });
+const usersDB  = new Datastore({ filename: dbFile("users.db"), autoload: true });
+const providersDB  = new Datastore({ filename: dbFile("providers.db"), autoload: true });
 
 
 inventoryDB.ensureIndex({ fieldName: "_id", unique: true });
+inventoryDB.ensureIndex({ fieldName: "barcode", unique: true });
+
 invoicesDB.ensureIndex({  fieldName: "_id", unique: true });
 paymentsDB.ensureIndex({  fieldName: "_id", unique: true });
 categoriesDB.ensureIndex({  fieldName: "name", unique: true });

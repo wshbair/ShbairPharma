@@ -137,7 +137,7 @@ var translations = {
     qty_col: 'Qty',
     category_col: 'Category',
     action_col: 'Action',
-    STOCK: 'Stock',
+    stock: 'Stock',
 
     // Users Modal
     users_modal: 'Users',
@@ -288,11 +288,13 @@ var translations = {
     no_invoices_msg: 'No invoices found for this provider.',
     select_provider_hint: 'Select a provider above to add an invoice',
 
-    expiry_status_col: 'Expiry Status',
+    expiry_status_col: 'Exp./Ent. Dates',
     nothing_to_pay:"There is nothing to pay!",
     oops: "Oops!",
     all: "All",
     nothing_to_display: 'Nothing to Display!',
+    submit_btn: "Submit",
+    inv_clear_filter: 'Clear',
 
     // Receipt labels
     receipt_order_no: 'Order No',
@@ -440,7 +442,7 @@ var translations = {
     qty_col: 'الكمية',
     category_col: 'الفئة',
     action_col: 'إجراء',
-    STOCK: 'متوفر',
+    stock: 'متوفر',
 
     // Users Modal
     users_modal: 'المستخدمون',
@@ -592,11 +594,13 @@ var translations = {
     // Providers view hints
     no_invoices_msg: 'لا توجد فواتير لهذا المورد.',
     select_provider_hint: 'اختر موردًا أعلاه لعرض الفواتير',
-    expiry_status_col: 'حالة الانتهاء',
+    expiry_status_col: 'تاريخ الادخال والانتهاء',
     nothing_to_pay: 'سلة المشتريات فارغة',
     oops: 'عذرا',
     all: 'عرض الجميع',
     nothing_to_display: 'لا توجد معلومات للعرض',
+    submit_btn: 'حفظ',
+    inv_clear_filter: 'اعادة الضبط',
 
     // Receipt labels
     receipt_order_no: 'رقم الطلب',

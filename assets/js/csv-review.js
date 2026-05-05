@@ -1,4 +1,5 @@
 //const { ipcRenderer } = require("electron");
+const { randomInt } = require("node:crypto");
 const notiflix = require("notiflix");
 //const path = require("path");
 
@@ -119,7 +120,10 @@ $(document).ready(function() {
                     });
                     product.name = formatProductName(product.name).trim();
                     product.category = product.category.toLowerCase().trim();
-                    if(product.name !== "")
+                    if(product.barcode == "" || product.barcode == '0')
+                        product.barcode = randomInt(9999999999999).toString()
+
+                    if(product.name !== "" )
                         parsedProducts.push(product);
                 }
             }
@@ -215,34 +219,34 @@ $(document).ready(function() {
         return cell;
     }
 
-    // Create select cell for stock status
-    function createSelectCell(value, field, rowIndex, options) {
-        const cell = $('<td>');
-        const select = $('<select>', {
-            class: 'form-control form-control-sm',
-            'data-field': field,
-            'data-row': rowIndex
-        });
+    // // Create select cell for stock status
+    // function createSelectCell(value, field, rowIndex, options) {
+    //     const cell = $('<td>');
+    //     const select = $('<select>', {
+    //         class: 'form-control form-control-sm',
+    //         'data-field': field,
+    //         'data-row': rowIndex
+    //     });
 
-        options.forEach(option => {
-            const optionEl = $('<option>', {
-                value: option,
-                text: option,
-                selected: option === value
-            });
-            select.append(optionEl);
-        });
+    //     options.forEach(option => {
+    //         const optionEl = $('<option>', {
+    //             value: option,
+    //             text: option,
+    //             selected: option === value
+    //         });
+    //         select.append(optionEl);
+    //     });
 
-        select.on('change', function() {
-            const rowIndex = $(this).data('row');
-            const field = $(this).data('field');
-            const value = $(this).val();
-            parsedProducts[rowIndex][field] = value;
-        });
+    //     select.on('change', function() {
+    //         const rowIndex = $(this).data('row');
+    //         const field = $(this).data('field');
+    //         const value = $(this).val();
+    //         parsedProducts[rowIndex][field] = value;
+    //     });
 
-        cell.append(select);
-        return cell;
-    }
+    //     cell.append(select);
+    //     return cell;
+    // }
 
     // Handle editable cells
     $(document).on('click', '.editable-cell', function() {
@@ -318,39 +322,8 @@ $(document).ready(function() {
         //@ts-expect-error
         formData.append('csvfile', blob, input.files[0]);
 
-        // Show loading state
-        $('#uploadBtn').prop('disabled', true).text('Uploading...');
-        let productInsertResponse;
-        // Upload to API
-        $.ajax({
-            url: api + 'inventory/products/csv',
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function(response) {
-                productInsertResponse= response
-                //showMessage(`Upload successful! Inserted: ${response.inserted}, Updated: ${response.updated}`, 'success');
-                $('#uploadBtn').prop('disabled', true).text('Uploaded to Database');
-                notiflix.Report.success(
-                "Products Uploaded Successfully",
-                //`Inserted products: ${productInsertResponse.inserted}, Updated products: ${productInsertResponse.updated}`,
-                "",
-                "Ok"
-                );
-            },
-            error: function(xhr) {
-                let errorMsg = 'Upload failed';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errorMsg = xhr.responseJSON.message;
-                }
-                showMessage(errorMsg, 'danger');
-                $('#uploadBtn').prop('disabled', false).text('Upload to Database');
-            }
-        });
 
-    
-        // create categories in batch
+                // create categories in batch
         const reader = new FileReader();
         reader.onload = function(e) {
         const csvText = e.target.result;
@@ -379,6 +352,39 @@ $(document).ready(function() {
         };
         //@ts-expect-error
         reader.readAsText(input.files[0]);
+
+        // Show loading state
+        $('#uploadBtn').prop('disabled', true).text('Uploading...');
+        let productInsertResponse;
+        // Upload to API
+        $.ajax({
+            url: api + 'inventory/products/csv',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                productInsertResponse= response
+                //showMessage(`Upload successful! Inserted: ${response.inserted}, Updated: ${response.updated}`, 'success');
+                $('#uploadBtn').prop('disabled', true).text('Uploaded to Database');
+                notiflix.Report.success(
+                "Products Uploaded Successfully",
+                `Inserted products: ${productInsertResponse.inserted}, Updated products: ${productInsertResponse.updated}`,
+                "Ok"
+                );
+            },
+            error: function(xhr) {
+                let errorMsg = 'Upload failed';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMsg = xhr.responseJSON.message;
+                }
+                showMessage(errorMsg, 'danger');
+                $('#uploadBtn').prop('disabled', false).text('Upload to Database');
+            }
+        });
+
+    
+
     }
 
     function showMessage(message, type) {

@@ -98,9 +98,16 @@ app.get("/product/:productId", function (req, res) {
  * @returns {void}
  */
 app.get("/products", function (req, res) {
-    inventoryDB.find({}, function (err, docs) {
-        res.send(docs);
-    });
+      inventoryDB.find({})
+      //@ts-expect-error
+        .sort({ entryDate: 1 })   // -1 = newest first, 1 = oldest first
+        .exec((err, docs) => {
+            if (err) {
+            // handle error
+            return res.status(500).send(err);
+            }
+            res.send(docs);
+        });
 });
 
 app.get("/stock-check", function(req, res){
@@ -322,7 +329,7 @@ app.post("/products/csv", function (req, res) {
                 // Construct product document with fallback defaults
                 let p = {
                     _id: validator.escape(row.id) === "" ? Math.floor(Date.now() / 1000) : parseInt(validator.escape(row.id)),
-                    barcode: validator.escape(row.barcode) === "" ? 0 : parseInt(validator.escape(row.barcode)),
+                    barcode: validator.escape(row.barcode) === "" ? 0 : (validator.escape(row.barcode)),
                     expirationDate: parseDate(validator.escape(row.expirationDate)),
                     price: validator.escape(row.price),
                     category: validator.escape(row.category),
@@ -446,9 +453,13 @@ app.delete("/product/:productId", function (req, res) {
 
 app.post("/product/sku", function (req, res) {
     let sku = validator.escape(req.body.skuCode);
+    const safeSku = sku.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     inventoryDB.findOne(
         {
-            barcode: parseInt(sku),
+            $or: [
+                { barcode: sku }, // exact match
+                { barcode: new RegExp('^' + safeSku) } // contains
+            ]
         },
         function (err, doc) {
             if (err) {
@@ -473,13 +484,14 @@ app.post("/product/sku", function (req, res) {
  */
 
 app.post("/product/name", function (req, res) {
-    console.log("Search Product name API")
+    //console.log("Search Product name API")
     let name = validator.escape(req.body.productName);
+    const safeSku = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     inventoryDB.find(
         {  
             $or: 
             [
-                { barcode: parseInt(name) },
+                { barcode: new RegExp('^' + safeSku) },
                 { name: { $regex: new RegExp(name, "i") } }
             ]
         },

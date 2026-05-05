@@ -112,8 +112,8 @@
                 <button type="button" class="btn btn-default " id="cashier" data-i18n-title="my_profile" title="My Profile">
                     <i class="glyphicon glyphicon-user"></i> <span id="loggedin-user"></span>
                 </button>
-                <button id="langToggle" type="button" class="btn btn-default " title="Toggle Language / تغيير اللغة">عربي</button>
-                 
+<!--                 <button id="langToggle" type="button" class="btn btn-default " title="Toggle Language / تغيير اللغة">عربي</button>
+ -->                 
                 <button id="log-out" type="button" class="btn btn-default" data-i18n-title="sign_out">
                     <i class="glyphicon glyphicon-log-out"></i>
                 </button> 
@@ -244,7 +244,7 @@
                                                     <th data-i18n="qty_col">Qty</th>
                                                     <th data-i18n="category_col">Category</th>
                                                     <th data-i18n="invoice_id">Invoice ID</th>
-                                                    <th data-i18n="expiry_status_col">Expiry Status</th>
+                                                    <th data-i18n="expiry_status_col"> Exp/Ent Dates</th>
                                                     <th data-i18n="action_col">Action</th>
                                                 </tr></thead>
                                                 <tbody id="product_list"></tbody>
@@ -277,7 +277,8 @@
                                                 <div class="form-group"><label data-i18n="cost_price_lbl">Cost Price</label><input type="text" required name="cost_price" placeholder="Cost Price" class="form-control number-input" id="cost_price"></div>
                                                 <div class="form-group"><label data-i18n="expiry_date_lbl">Expiry Date</label><input type="date" name="expirationDate" class="form-control" id="expirationDate"></div>
                                                 <div class="form-group"><label data-i18n="min_stock_lbl">Minimum Stock</label><input type="number" name="minStock" placeholder="Min stock" class="form-control" id="minStock" value="1"></div>
-                                                <div class="form-group"><label><input type="checkbox" name="stock" id="stock">&nbsp; <span data-i18n="disable_stock_lbl">Disable stock check</span></label></div>
+                                                <div class="form-group"><label data-i18n="disable_stock_lbl"> Disable stock check</label> <input type="checkbox" name="stock" id="stock"></div>
+                                                
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group"><label data-i18n="product_name_lbl">Product Name</label><input type="text" required name="name" placeholder="Product name" class="form-control" id="productName"></div>
@@ -291,8 +292,8 @@
                                             </div>
                                         </div>
                                         <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--c-border);">
-                                            <input type="submit" id="submitProduct" class="btn btn-primary ">
-                                            <button type="button" class="btn btn-default" id="prodCancelBtn" style="margin-left:8px;" data-i18n="cancel_btn">Cancel</button>
+                                            <button type="submit" id="submitProduct" class="btn btn-primary" data-i18n="submit_btn">
+                                            <button type="button" class="btn btn-default" id="prodCancelBtn" style="margin-left:8px; margin-right: 8px;" data-i18n="cancel_btn">Cancel</button>
                                         </div>
                                     </form>
                                 </div>
@@ -677,7 +678,7 @@
                                         </div>
                                         <div class="col-md-1">
                                             <label style="font-size:12px;color:var(--c-muted);">&nbsp;</label>
-                                            <button id="inv_clear_filter" class="btn btn-default btn-block" title="Clear Filters">
+                                            <button id="inv_clear_filter" class="btn btn-default btn-block" title="Clear Filters" data-i18n="inv_clear_filter">
                                                 <i class="fa fa-times"></i> Clear
                                             </button>
                                         </div>
@@ -1275,14 +1276,14 @@
         <!-- Add/Modify Product -->
 
         <!-- Restock Product -->
-        <div id="restockModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+<!--         <div id="restockModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-md">
                 <div class="modal-content">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
                         <h4 class="modal-title"><i class="fa fa-refresh"></i> Restock Product</h4>
                     </div>
-                    <div class="modal-body">
+                    <div class="modal-body" style="padding: 0%;">
                         <form id="saveRestock">
                             <input type="hidden" id="restock_product_id">
                             <div class="form-group">
@@ -1305,6 +1306,10 @@
                                     <div class="form-group">
                                         <label>Entry Date</label>
                                         <input type="date" id="restock_entry_date" class="form-control">
+                                    </div>
+                                     <div class="form-group">
+                                        <label>Expiry Date</label>
+                                        <input type="date" id="restock_expiry_date" class="form-control">
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -1329,7 +1334,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </div> -->
 
         <!-- Products List -->
         <!-- Users -->

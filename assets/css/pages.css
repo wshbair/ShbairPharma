@@ -625,7 +625,7 @@ body {
 
 
 #image { height: auto !important; }
-#product_img { max-height: 46px; max-width: 46px; border-radius: 6px; }
+#product_img { max-height: 30px; max-width: 30px; border-radius: 6px; }
 .widget-panel.widget-style-2 .name {
     font-size: 13px; font-weight: 600; color: var(--c-text);
     line-height: 1.1; margin-bottom: 4px;
