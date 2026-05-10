@@ -61,7 +61,7 @@
                 <div class="nav-sep"></div>
                
                 <!-- Left actions -->
-                <button id="pointofsale" type="button" class="btn btn-success">
+                <button id="pointofsale" type="button" class="btn btn-default">
                     <i class="glyphicon glyphicon-shopping-cart"></i> <span data-i18n="point_of_sale">Point of Sale</span>
                 </button>
 
@@ -112,6 +112,7 @@
                 <button type="button" class="btn btn-default " id="cashier" data-i18n-title="my_profile" title="My Profile">
                     <i class="glyphicon glyphicon-user"></i> <span id="loggedin-user"></span>
                 </button>
+                <span id="net_status" class="btn btn-default" style="display:none;cursor:default;" title=""></span>
 <!--                 <button id="langToggle" type="button" class="btn btn-default " title="Toggle Language / تغيير اللغة">عربي</button>
  -->                 
                 <button id="log-out" type="button" class="btn btn-default" data-i18n-title="sign_out">
@@ -1468,14 +1469,40 @@
                                     <div class="form-group"><label data-i18n="app_mode">Application Mode</label>
                                         <select name="app" id="app" class="form-control">
                                             <option value="Standalone Point of Sale" data-i18n="standalone_pos">Standalone Point of Sale</option>
-                                            <!-- <option value="Network Point of Sale Terminal" data-i18n="network_terminal">Network Point of Sale Terminal</option>
-                                            <option value="Network Point of Sale Server" data-i18n="network_server">Network Point of Sale Server</option> -->
+                                            <option value="Network Point of Sale Terminal" data-i18n="network_terminal">Network Point of Sale Terminal</option>
+                                            <option value="Network Point of Sale Server" data-i18n="network_server">Network Point of Sale Server</option>
                                         </select></div>
                                     <form id="net_settings_form">
                                         <div class="form-group"><label data-i18n="server_ip_lbl">Server IP Address*</label><input type="text" required placeholder="IP address of admin computer" name="ip" class="form-control" id="ip"></div>
+                                        <div class="form-group"><label data-i18n="server_port_lbl">Server Port*</label><input type="number" required min="1" max="65535" placeholder="e.g. 4500" name="port" class="form-control" id="server_port"></div>
                                         <div class="col-md-5"><div class="form-group"><label data-i18n="till_number_lbl">Till Number*</label><input type="text" required placeholder="Number" name="till" class="form-control" id="till"></div></div>
                                         <div class="col-md-7"><div class="form-group"><label data-i18n="hardware_id_lbl">Hardware ID</label><input type="text" required name="mac" class="form-control" id="mac" readonly></div></div>
+                                        <div class="form-group"><label data-i18n="license_key_lbl">License Key*</label><input type="text" required placeholder="Paste from Server" name="license" class="form-control" id="term_license"></div>
+                                        <div class="form-group">
+                                            <button type="button" id="test_connection" class="btn btn-default btn-sm" data-i18n="test_connection_btn">Test Connection</button>
+                                            <span id="term_conn_status" style="margin-left:10px;"></span>
+                                        </div>
                                         <div class="form-group"><input id="save_settings" type="submit" class="btn btn-primary " data-i18n-value="save_settings_val" value="Save Settings"></div>
+                                    </form>
+                                    <form id="server_settings_form" style="display:none;">
+                                        <div class="form-group"><label data-i18n="bind_host_lbl">Bind Address</label>
+                                            <select name="bind" class="form-control" id="srv_bind">
+                                                <option value="0.0.0.0" data-i18n="bind_lan">0.0.0.0 — All interfaces (LAN)</option>
+                                                <option value="127.0.0.1" data-i18n="bind_local">127.0.0.1 — Local only</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group"><label data-i18n="server_port_lbl">Server Port*</label><input type="number" required min="1024" max="65535" placeholder="e.g. 4500" name="port" class="form-control" id="srv_port"></div>
+                                        <div class="form-group"><label data-i18n="detected_lan_ip_lbl">Detected LAN IP</label><input type="text" name="ip" class="form-control" id="srv_ip" readonly></div>
+                                        <div class="form-group"><label data-i18n="connection_url_lbl">Connection URL (give to Terminals)</label><input type="text" class="form-control" id="srv_url" readonly></div>
+                                        <div class="form-group"><label data-i18n="license_key_lbl">License Key*</label>
+                                            <div class="input-group">
+                                                <input type="text" required name="license" class="form-control" id="srv_license" readonly>
+                                                <span class="input-group-btn"><button type="button" id="srv_license_regen" class="btn btn-default" data-i18n="regenerate_btn">Regenerate</button></span>
+                                            </div>
+                                        </div>
+                                        <div class="form-group"><label data-i18n="hardware_id_lbl">Hardware ID</label><input type="text" name="mac" class="form-control" id="srv_mac" readonly></div>
+                                        <div class="alert alert-info" data-i18n="firewall_hint">Allow inbound TCP on the listen port in your firewall.</div>
+                                        <div class="form-group"><input id="srv_save_settings" type="submit" class="btn btn-primary" data-i18n-value="save_settings_val" value="Save Settings"></div>
                                     </form>
                                 </div>
                             </div>

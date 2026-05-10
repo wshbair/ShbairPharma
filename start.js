@@ -1,9 +1,26 @@
 require("@electron/remote/main").initialize();
-require("electron-store").initRenderer();
+const ElectronStore = require("electron-store");
+ElectronStore.initRenderer();
 const setupEvents = require("./installers/setupEvents");
 if (setupEvents.handleSquirrelEvent()) {
     //@ts-expect-error
     return;
+}
+
+// Apply per-mode network settings before the API server boots.
+try {
+    const settingsStore = new ElectronStore();
+    const stored = /** @type {any} */ (settingsStore.get("settings")) || {};
+    if (stored.app === "Network Point of Sale Server") {
+        if (stored.port) process.env.PORT = String(stored.port);
+        process.env.BIND_HOST = String(stored.bind || "0.0.0.0");
+        if (stored.license) process.env.LICENSE_KEY = String(stored.license);
+    } else {
+        // Standalone or Terminal: keep the embedded API local-only.
+        process.env.BIND_HOST = "127.0.0.1";
+    }
+} catch (e) {
+    console.warn("Could not pre-load settings for server config:", e && e.message);
 }
 
 const server = require('./server');

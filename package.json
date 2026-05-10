@@ -1,7 +1,7 @@
 {
   "name": "ShbairPharma",
   "productName": "ShbairPharma",
-  "version": "1.6.18",
+  "version": "1.6.19",
   "description": "Point of Sale for Shbair Pharmacies",
   "author": "Wazen SHBAIR",
   "website": "https://wshbair.github.io/",
@@ -23,6 +23,7 @@
     "bcrypt": "^5.1.0",
     "body-parser": "^1.20.3",
     "dompurify": "^3.2.4",
+    "dotenv": "^17.4.2",
     "electron-context-menu": "^3.6.1",
     "electron-squirrel-startup": "^1.0.0",
     "electron-store": "^8.1.0",
@@ -49,7 +50,7 @@
     "package-win": "electron-packager . ShbairPharma --overwrite --platform=win32 --arch=x64 --icon=assets/images/shbairpharma.ico --prune=true --out=release-builds --version-string.ProductName=\"ShbairPharma\"",
     "start": "electron-forge start",
     "package": "electron-forge package",
-    "make": "electron-forge make",
+    "make": "electron-forge make --arch x64",
     "publish": "electron-forge publish --arch x64 ",
     "test": "jest"
   },

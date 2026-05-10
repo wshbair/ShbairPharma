@@ -2,6 +2,7 @@ let fs = require("fs");
 const crypto = require("crypto");
 let moment = require("moment");
 const DATE_FORMAT = "YYYY-MM-DD";
+require("dotenv").config();
 const PORT = process.env.PORT;
 let path = require("path");
 const validFileTypes = [
@@ -92,10 +93,32 @@ const filterFile = (req, file, callback) => {
 
 /*Security*/
 
+// Build a connect-src whitelist that matches the current app mode.
+// Terminal: allow the configured Server's LAN endpoint. Server/Standalone:
+// only 'self' (the embedded API on localhost) is needed.
+const buildConnectSrc = () => {
+  const sources = ["'self'"];
+  try {
+    const Store = require("electron-store");
+    const stored = /** @type {any} */ (new Store().get("settings")) || {};
+    if (stored.app === "Network Point of Sale Terminal" && stored.ip && stored.port) {
+      sources.push(`http://${stored.ip}:${stored.port}`);
+    }
+    // Allow plain http: so the Test Connection probe can reach any LAN
+    // candidate before the IP is saved. The license-key gate on the Server
+    // side remains the real authentication boundary.
+    sources.push("http:");
+  } catch (e) {
+    // electron-store unavailable — fall back to self-only.
+  }
+  return sources.join(" ");
+};
+
 const setContentSecurityPolicy = () => {
   let scriptHash = getFileHash(path.join(__dirname,"../dist","js","bundle.min.js"))
   let styleHash = getFileHash(path.join(__dirname,"../dist","css","bundle.min.css"));
-  let content = `default-src 'self'; img-src 'self' data:;script-src 'self' 'unsafe-eval' 'unsafe-inline' sha256-${scriptHash}; style-src 'self' 'unsafe-inline' sha256-${styleHash};font-src 'self';base-uri 'self'; form-action 'self'; ;connect-src 'self' http://localhost:${PORT};`;
+  const connectSrc = buildConnectSrc();
+  let content = `default-src 'self'; img-src 'self' data:;script-src 'self' 'unsafe-eval' 'unsafe-inline' sha256-${scriptHash}; style-src 'self' 'unsafe-inline' sha256-${styleHash};font-src 'self';base-uri 'self'; form-action 'self'; connect-src ${connectSrc}`;
   let metaTag = document.createElement("meta");
   metaTag.setAttribute("http-equiv", "Content-Security-Policy");
   metaTag.setAttribute("content", content);

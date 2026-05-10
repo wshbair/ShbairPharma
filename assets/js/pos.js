@@ -9,6 +9,7 @@ const notiflix = require("notiflix");
 const validator = require("validator");
 //const DOMPurify = require("dompurify"); // called when needed 
 //const { dialog } = require('electron')
+require("dotenv").config();
 
 const _ = require("lodash");
 let fs = require("fs");
@@ -68,7 +69,7 @@ const appData = process.env.APPDATA;
 let host = "localhost";
 let port = process.env.PORT;
 let img_path = path.join(appData, appName, "uploads", "/");
-let api = "http://" + host + ":" + port + "/api/";
+let api =  "http://" + host + ":" + port + "/api/";
 const bcrypt = require("bcrypt");
 //let categories = [];
 let holdOrderList = [];
@@ -223,11 +224,24 @@ if (auth == undefined) {
     //@ts-expect-error
     if (platform.app == "Network Point of Sale Terminal") {
       //@ts-expect-error
-      api = "http://" + platform.ip + ":" + port + "/api/";
+      const cleanIp = String(platform.ip || "").trim()
+        .replace(/^https?:\/\//i, "").replace(/\/.*$/, "").replace(/:\d+$/, "");
+      //@ts-expect-error
+      api = "http://" + cleanIp + ":" + (platform.port || port) + "/api/";
       //@ts-expect-error
       perms = true;
     }
   }
+
+  // Attach license-key header to every API request when running as a Terminal.
+  // The Server middleware skips localhost, so this is harmless for Standalone/Server.
+  $.ajaxSetup({
+    beforeSend: function (xhr) {
+      if (platform && platform.app === "Network Point of Sale Terminal" && platform.license) {
+        xhr.setRequestHeader("X-License-Key", platform.license);
+      }
+    },
+  });
 
   $.get(api + "users/user/" + user._id, function (data) {
     user = data;
@@ -524,23 +538,6 @@ if (auth == undefined) {
       $("#posCategoryPills").html(html);
     }
 
-    // function renderPosLowStock() {
-    //   const low = allProducts.filter(function (p) {
-    //     return p.stock == 1 && parseInt(p.quantity) <= parseInt(p.minStock || 1);
-    //   });
-    //   if (!low.length) { $("#posLowStockStrip").hide(); return; }
-    //   const names = low.slice(0, 4).map(function (p) {
-    //     return `Low Stock Alert: <strong>${p.name}</strong> (${p.quantity})`;
-    //   }).join(", ") + (low.length > 4 ? ` +${low.length - 4} more` : "");
-    //   $("#posLowStockText").html(names);
-    //   $("#posLowStockStrip").show();
-    // }
-
-    // function renderPosExpiredStock(msg) {
-    //   $("#posExpiredStockText").html(msg);
-    //   $("#posExpiredStockStrip").show();
-    // }
-
     function renderPosRecent() {
       if (!posRecentItems.length) { $("#posRecentStrip").hide(); return; }
       const sym = (settings && validator.unescape(settings.symbol)) || '';
@@ -593,26 +590,6 @@ if (auth == undefined) {
       $.get(api + "inventory/products", function (data) {
         data.forEach((item) => { item.price = parseFloat(item.price).toFixed(2); });
         allProducts = [...data];
-        // let expiredCount = 0;
-        // allProducts.forEach((product) => {
-        //   let expiryDate = moment(product.expirationDate, DATE_FORMAT);
-        //   if (!isExpired(expiryDate)) {
-        //     const diffDays = daysToExpire(expiryDate);
-        //     if (diffDays > 0 && diffDays <= 30) {
-        //       let days_noun = diffDays > 1 ? "days" : "day";
-        //       //notiflix.Notify.warning(`${product.name} has only ${diffDays} ${days_noun} left to expiry`);
-        //     }
-        //   } else {
-        //     expiredCount++;
-        //   }
-        // });
-        // if (expiredCount > 0) {
-        //   //notiflix.Notify.failure(`${expiredCount} products are expired. Please restock!`);
-        //   renderPosExpiredStock(`${expiredCount} products are expired. Please restock!`);
-        // }
-
-        // //renderPosLowStock();
-        
         if (typeof callback === "function") callback();
       });
     }
@@ -4340,6 +4317,7 @@ if (auth == undefined) {
 
           products.forEach((product) => {
             let bcode = product.barcode || product._id;
+            //@ts-ignore
             $("#" + product._id + "").JsBarcode(bcode, {
               width: 1,
               height: 25,
@@ -4725,21 +4703,168 @@ if (auth == undefined) {
             ipcRenderer.send("app-reload", "");
           },
           error: function (jqXHR) {
-            console.error(jqXHR.responseJSON.message);
-            notiflix.Report.failure(
-              jqXHR.responseJSON.error,
-              jqXHR.responseJSON.message,
-              "Ok",
-            );
+            const body = jqXHR && jqXHR.responseJSON;
+            const title = (body && body.error) || "Save failed";
+            const message = (body && body.message)
+              || (jqXHR && jqXHR.statusText)
+              || "Could not reach the local API. Please restart the application.";
+            console.error("Settings save failed:", message, jqXHR);
+            notiflix.Report.failure(title, message, "Ok");
       }
     });
     }
   });
 
+    function detectLanIp() {
+      try {
+        const os = require("os");
+        const ifaces = os.networkInterfaces();
+        for (const name of Object.keys(ifaces)) {
+          for (const iface of ifaces[name]) {
+            if (iface.family === "IPv4" && !iface.internal) return iface.address;
+          }
+        }
+      } catch (e) { /* fall through */ }
+      return "127.0.0.1";
+    }
+
+    function generateLicenseKey() {
+      try {
+        return require("crypto").randomBytes(16).toString("hex");
+      } catch (e) {
+        return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+      }
+    }
+
+    function updateServerConnectionUrl() {
+      const ip = $("#srv_ip").val();
+      const port = $("#srv_port").val();
+      $("#srv_url").val("http://" + ip + ":" + port + "/api/");
+    }
+
+    function loadServerFormDefaults() {
+      const macaddress = require("macaddress");
+      macaddress.one(function (err, mac) { $("#srv_mac").val(mac); });
+      $("#srv_ip").val(detectLanIp());
+      const storedPort = (platform && platform.port) || process.env.PORT || 4500;
+      const storedBind = (platform && platform.bind) || "0.0.0.0";
+      const storedLicense = (platform && platform.license) || generateLicenseKey();
+      if (!$("#srv_port").val()) $("#srv_port").val(storedPort);
+      $("#srv_bind").val(storedBind);
+      $("#srv_license").val(storedLicense);
+      updateServerConnectionUrl();
+    }
+
+    $("#srv_port").on("input", updateServerConnectionUrl);
+    $("#srv_license_regen").on("click", function () {
+      $("#srv_license").val(generateLicenseKey());
+    });
+
+    function sanitizeHost(raw) {
+      let v = String(raw || "").trim();
+      v = v.replace(/^https?:\/\//i, "");   // strip scheme if pasted
+      v = v.replace(/\/.*$/, "");            // strip any path
+      v = v.replace(/:\d+$/, "");            // strip trailing :port
+      return v;
+    }
+
+    $("#test_connection").on("click", function () {
+      const ip = sanitizeHost($("#ip").val());
+      $("#ip").val(ip);
+      const tport = String($("#server_port").val() || "");
+      const license = String($("#term_license").val() || "");
+      const $status = $("#term_conn_status");
+      if (!ip || !tport) {
+        $status.css("color", "#dc3545").text(t("conn_failed"));
+        return;
+      }
+      $status.css("color", "#777").text(t("conn_testing"));
+      /** @type {{[k:string]:string}} */
+      const headers = {};
+      if (license) headers["X-License-Key"] = license;
+      $.ajax({
+        url: "http://" + ip + ":" + tport + "/api/discovery",
+        type: "GET",
+        timeout: 5000,
+        headers: headers,
+        success: function (data) {
+          $status.css("color", "#28a745").text(t("conn_ok") + " · v" + (data.version || "?"));
+        },
+        error: function () {
+          $status.css("color", "#dc3545").text(t("conn_failed"));
+        },
+      });
+    });
+
+    $("#server_settings_form").on("submit", function (e) {
+      e.preventDefault();
+      //@ts-expect-error
+      let formData = $(this).serializeObject();
+      formData.app = $("#app").find("option:selected").text();
+      formData.till = "1";
+      formData.mac = $("#srv_mac").val();
+      const portNum = parseInt(formData.port, 10);
+      if (!portNum || portNum < 1024 || portNum > 65535) {
+        notiflix.Report.warning("Oops!", "Port must be between 1024 and 65535.", "Ok");
+        return;
+      }
+      if (!formData.license || String(formData.license).length < 8) {
+        notiflix.Report.warning("Oops!", "License key is missing or too short.", "Ok");
+        return;
+      }
+      storage.set("settings", formData);
+      notiflix.Report.info(
+        "Restart required",
+        "Server settings saved. The app will close — please relaunch it for the new port and license to take effect.",
+        "Ok",
+        function () { ipcRenderer.send("restart-app"); }
+      );
+    });
+
+    // ── Heartbeat: Terminal-only periodic ping to verify Server reachability
+    //@ts-expect-error
+    const isTerminalMode = platform && platform.app === "Network Point of Sale Terminal";
+    if (!isTerminalMode) {
+      $("#net_status").removeClass('btn');
+      $("#net_status").hide();
+    }
+    if (isTerminalMode) {
+      const $netStatus = $("#net_status");
+      let consecutiveFailures = 0;
+      function pingHeartbeat() {
+        $.ajax({
+          url: api + "heartbeat",
+          type: "GET",
+          timeout: 4000,
+          success: function () {
+            consecutiveFailures = 0;
+            $netStatus.show().removeClass('btn-default')
+            $netStatus.show().addClass('btn-success')
+              .text("● " + t("net_status_online"))
+              .attr("title", api);
+          },
+          error: function () {
+            consecutiveFailures++;
+            if (consecutiveFailures >= 1) {
+              $netStatus.show().removeClass('btn-default')
+              $netStatus.show().removeClass('btn-success')
+              $netStatus.show().addClass('btn-danger')
+                .text("● " + t("net_status_offline"))
+                .attr("title", api);
+            }
+          },
+        });
+      }
+      pingHeartbeat();
+      setInterval(pingHeartbeat, 30000);
+    }
+
     $("#net_settings_form").on("submit", function (e) {
       e.preventDefault();
       //@ts-expect-error
       let formData = $(this).serializeObject();
+      formData.ip = sanitizeHost(formData.ip);
+      $("#ip").val(formData.ip);
 
       if (formData.till == 0 || formData.till == 1) {
         notiflix.Report.warning(
@@ -4748,7 +4873,7 @@ if (auth == undefined) {
           "Ok",
         );
       } else {
-        if (_.isNumber(formData.till)) {
+        if (_.isNumber(parseInt(formData.till))) {
           formData["app"] = $("#app").find("option:selected").text();
           storage.set("settings", formData);
           ipcRenderer.send("app-reload", "");
@@ -4807,19 +4932,19 @@ if (auth == undefined) {
     });
 
     $("#app").on("change", function () {
-      if (
-        $(this).find("option:selected").text() ==
-        "Network Point of Sale Terminal"
-      ) {
-        $("#net_settings_form").show(500);
-        $("#settings_form").hide(500);
+      const mode = $(this).find("option:selected").text();
+      const isTerminal = mode === "Network Point of Sale Terminal";
+      const isServer = mode === "Network Point of Sale Server";
+      $("#net_settings_form").toggle(isTerminal);
+      $("#server_settings_form").toggle(isServer);
+      $("#settings_form").toggle(!isTerminal && !isServer);
+      if (isTerminal) {
         const macaddress = require("macaddress");
         macaddress.one(function (err, mac) {
           $("#mac").val(mac);
         });
-      } else {
-        $("#net_settings_form").hide(500);
-        $("#settings_form").show(500);
+      } else if (isServer) {
+        loadServerFormDefaults();
       }
     });
 
@@ -4855,10 +4980,13 @@ if (auth == undefined) {
     $("#settings").on("click", function () {
       if ( platform && platform.app == "Network Point of Sale Terminal") {
         $("#net_settings_form").show(500);
+        $("#server_settings_form").hide();
         $("#settings_form").hide(500);
 
         $("#ip").val(platform.ip);
+        $("#server_port").val(platform.port || port);
         $("#till").val(platform.till);
+        $("#term_license").val(platform.license || "");
         const macaddress = require("macaddress");
         macaddress.one(function (err, mac) {
           $("#mac").val(mac);
@@ -4869,8 +4997,21 @@ if (auth == undefined) {
             return $(this).text() == platform.app;
           })
           .prop("selected", true);
+      } else if (platform && platform.app == "Network Point of Sale Server") {
+        $("#server_settings_form").show(500);
+        $("#net_settings_form").hide();
+        $("#settings_form").hide(500);
+
+        loadServerFormDefaults();
+
+        $("#app option")
+          .filter(function () {
+            return $(this).text() == platform.app;
+          })
+          .prop("selected", true);
       } else {
         $("#net_settings_form").hide(500);
+        $("#server_settings_form").hide();
         $("#settings_form").show(500);
 
         $("#settings_id").val("1");
