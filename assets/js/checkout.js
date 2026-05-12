@@ -9,7 +9,7 @@ $(document).ready(function () {
   //@ts-expect-error
   $.fn.paymentChange = function () {
     let paymentAmount = $("#paymentText").val();
-    $("#paymentText").val(utils.moneyFormat(paymentAmount));
+    $("#paymentText").val(paymentAmount);
     $("#payment").val(paymentAmount);
     //@ts-expect-error
     $(this).calculateChange();
@@ -22,7 +22,7 @@ $(document).ready(function () {
       $("#refNumber").val($("#refNumber").val() + "" + value);
     } else {
       paymentAmount = paymentAmount + "" + value;
-      $("#paymentText").val(utils.moneyFormat(paymentAmount));
+      $("#paymentText").val(paymentAmount);
       $("#payment").val(paymentAmount);
       //@ts-expect-error
       $(this).calculateChange();
@@ -50,7 +50,7 @@ $(document).ready(function () {
     const payment = $("#payment").val().toString().replace(",", "");
     const change = parseFloat(payablePrice) - parseFloat(payment);
     if (change <= 0) {
-      $("#change").text(utils.moneyFormat(Math.abs(change)));
+      $("#change").text((Math.abs(change).toFixed(2)));
       $("#confirmPayment").show();
     } else {
       $("#change").text("0");
@@ -72,7 +72,7 @@ $(document).ready(function () {
       {
         $("#payment").val((i, val) => val.slice(0, -1));
       //re-format displayed amount after deletion 
-      $("#paymentText").val((i, val) => utils.moneyFormat($("#payment").val()));
+      $("#paymentText").val($("#payment").val());
       }
       //@ts-expect-error
       $(this).calculateChange()

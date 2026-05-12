@@ -59,7 +59,7 @@ var translations = {
     products_title: 'Products',
     name_col: 'Name',
     sold_col: 'Sold',
-    available_col: 'Available',
+    available_col: 'Ava.',
     sales_col: 'Sales',
     trans_details: 'Transaction Details',
     invoice_col: 'Invoice',
@@ -319,7 +319,9 @@ var translations = {
     receipt_tel: 'Tel',
     receipt_vat_no: 'Vat No',
     receipt_vat_label: 'VAT',
-    receipt_mobile: 'Mobile Number'
+    receipt_mobile: 'Mobile Number',
+
+    sold_products_title: 'Sold Products'
   },
 
   ar: {
@@ -640,7 +642,9 @@ var translations = {
     receipt_tel: 'هاتف',
     receipt_vat_no: 'رقم ض.ق.م',
     receipt_vat_label: 'ض.ق.م',
-    receipt_mobile: 'رقم الجوال'
+    receipt_mobile: 'رقم الجوال',
+
+    sold_products_title: "منتجات مباعة"
   }
 };
 

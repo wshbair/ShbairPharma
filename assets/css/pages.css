@@ -254,7 +254,7 @@ body {
 
 /* ── POS VIEW LAYOUT ── */
 #pos_view {
-    height: calc(100vh - 64px);
+    height: calc(100vh - 94px);
     box-sizing: border-box;
     padding: 14px 16px;
     overflow: hidden;
@@ -852,7 +852,7 @@ body {
 .modal .btn-primary:hover { background-color: var(--c-primary-dk) !important; }
 
 /* ── TRANSACTIONS VIEW ── */
-#totals { display: flex !important; gap: 12px; margin: 20px 20px 16px !important; flex-wrap: nowrap; }
+#totals { display: flex !important; gap: 12px;   flex-wrap: nowrap; }
 #totals > div {
     flex: 1; border-radius: var(--radius) !important;
     padding: 18px 20px !important; margin: 0 !important;
@@ -1327,4 +1327,3 @@ html[dir="rtl"] #providers_view .card-title { flex-direction: row-reverse; }
   background-color: #ffffff;
 }
 
- 

@@ -1,36 +1,28 @@
 // @ts-check
 /// <reference types="jquery" />
 
-//const jsPDF = require("jspdf");
-//const html2canvas = require("html2canvas");
 const JsBarcode = require("jsbarcode");
-//const macaddress = require("macaddress");
 const notiflix = require("notiflix");
 const validator = require("validator");
-//const DOMPurify = require("dompurify"); // called when needed 
-//const { dialog } = require('electron')
-require("dotenv").config();
-
 const _ = require("lodash");
 let fs = require("fs");
 let path = require("path");
 let moment = require("moment");
 let { ipcRenderer } = require("electron");
-
+ 
 let dotInterval = setInterval(function () {
   $(".dot").text(".");
 }, 3000);
 let Store = require("electron-store");
 const remote = require("@electron/remote");
 const app = remote.app;
-
 const utils = require("./utils");
 const { t, getCurrentLang } = require("./i18n");
+const {printReceipt, printerStatus} = require("./printer")
 
 // Populate login footer with live version and current year
 $("#app_version").text(app.getVersion());
 $("#app_version_main").text(app.getVersion());
-
 $("#footer_year").text(new Date().getFullYear());
 
 let cart = [];
@@ -53,17 +45,13 @@ let item;
 let auth;
 let holdOrder = 0;
 let vat = 0;
-//let perms = null;
 let deleteId = 0;
 let paymentType = 0;
 let receipt = "";
 let totalVat = 0;
 let subTotal = 0;
 let method = "";
-//let order_index = 0;
 let user_index = 0;
-//let product_index = 0;
-//let transaction_index;
 const appName = process.env.APPNAME;
 const appData = process.env.APPDATA;
 let host = "localhost";
@@ -71,7 +59,6 @@ let port = process.env.PORT;
 let img_path = path.join(appData, appName, "uploads", "/");
 let api =  "http://" + host + ":" + port + "/api/";
 const bcrypt = require("bcrypt");
-//let categories = [];
 let holdOrderList = [];
 let customerOrderList = [];
 let ownUserEdit = null;
@@ -165,47 +152,11 @@ $(function () {
   );
 
   cb(start, end);
-
-
+  allowOnlyNumbers('.number-input');
 });
 
-//Allow only numbers in input field
-//@ts-expect-error
-$.fn.allowOnlyNumbers = function() {
-  return this.on('keydown', function(e) {
-  // Allow: backspace, delete, tab, escape, enter, ., ctrl/cmd+A, ctrl/cmd+C, ctrl/cmd+X, ctrl/cmd+V, end, home, left, right, down, up
-    if ($.inArray(e.keyCode, [46, 8, 9, 27, 13, 110, 190]) !== -1 || 
-      (e.keyCode >= 35 && e.keyCode <= 40) || 
-      ((e.keyCode === 65 || e.keyCode === 67 || e.keyCode === 86 || e.keyCode === 88) && (e.ctrlKey === true || e.metaKey === true))) {
-      return;
-  }
-  // Ensure that it is a number and stop the keypress
-  if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
-    e.preventDefault();
-  }
-});
-};
 
-//@ts-expect-error
-$('.number-input').allowOnlyNumbers();
 
-//Serialize Object
-//@ts-expect-error
-$.fn.serializeObject = function () {
-  var o = {};
-  var a = this.serializeArray();
-  $.each(a, function () {
-    if (o[this.name]) {
-      if (!o[this.name].push) {
-        o[this.name] = [o[this.name]];
-      }
-      o[this.name].push(this.value || "");
-    } else {
-      o[this.name] = this.value || "";
-    }
-  });
-  return o;
-};
 
 auth = storage.get("auth");
 user = storage.get("user");
@@ -257,7 +208,7 @@ if (auth == undefined) {
     allUsers = [...users];
   });
 
-  $(document).ready(function () {
+  $(function() {
     //update title based on company
     let appTitle = !!settings ? `${validator.unescape(settings.store)} - ${appName}` : appName;
     $("title").text(appTitle);
@@ -269,12 +220,6 @@ if (auth == undefined) {
     function promiseGet(url) {
       return new Promise((resolve, reject) => {
         $.get(url, resolve).fail(reject);
-      });
-    }
-
-    function promisePost(url, data) {
-      return new Promise((resolve, reject) => {
-        $.post(url, data, resolve).fail(reject);
       });
     }
 
@@ -336,40 +281,21 @@ if (auth == undefined) {
             data.forEach((item) => { item.price = parseFloat(item.price).toFixed(2); });
             allProducts = [...data];
           })
-        ]).then(() => {
-          //console.timeEnd('Phase 2: Parallel Loading');
+        ]).then(async () => {
           console.timeEnd('App Initialization');
-          //console.log('✅ All data loaded - App is fully optimized and responsive');
-          
-          // PHASE 3: Load invoices (least critical)
-          //console.time('Phase 3: Invoices');
-          // promiseGet(api + "invoice/invoices").then(data => {
-          //   allInvoices = data || [];
-          //   console.timeEnd('Phase 3: Invoices');
-          // });
+          $("#statusText").text(`Ready`)
+          $("#printerConnectionStatus").text(`Printer: ${await printerStatus()}`)
         }).catch(err => console.error('Error loading parallel data:', err));
 
       } catch (err) {
         console.error('Error during initialization:', err);
+        $("#statusText").text(`Failed`)
+        $("#printerConnectionStatus").text(`Printer: ${await printerStatus()}`)
         requestAnimationFrame(() => {
           $(".loading").hide();
         });
       }
     }
-
-    // Helper function: Update provider selects
-    // function updateProviderSelects() {
-    //   $("#provider").html(`<option value="">Select</option>`);
-    //   allProviders.forEach((provider) => {
-    //     $("#provider").append(`<option value="${provider._id}">${provider.name}</option>`);
-    //     $("#inv_filter_provider").append(`<option value="${provider._id}">${provider.name}</option>`);
-    //   });
-    //   let filterOpts = `<option value="">${t('all_providers_opt')}</option>`;
-    //   allProviders.forEach((p) => {
-    //     filterOpts += `<option value="${p._id}">${p.name}</option>`;
-    //   });
-    //   $("#providerListFilter, #productProviderFilter").html(filterOpts);
-    // }
 
     // Helper function: Update customer select
     function updateCustomerSelect(customers) {
@@ -381,38 +307,7 @@ if (auth == undefined) {
         $("#customer").append(customer);
       });
     }
-        //optimized no need
-/*     // Helper function: Process product data
-    function processProductData(data) {
-      data.forEach((item) => { item.price = parseFloat(item.price).toFixed(2); });
-      allProducts = [...data];
-      let expiredCount = 0;
-      
-      // Batch expiry checks to avoid blocking
-      allProducts.forEach((product) => {
-        let expiryDate = moment(product.expirationDate, DATE_FORMAT);
-        if (!isExpired(expiryDate)) {
-          const diffDays = daysToExpire(expiryDate);
-          if (diffDays > 0 && diffDays <= 30) {
-            let days_noun = diffDays > 1 ? "days" : "day";
-            requestAnimationFrame(() => {
-              notiflix.Notify.warning(`${product.name} has only ${diffDays} ${days_noun} left to expiry`);
-              renderPosLowStock(); // Refresh low stock strip to show expiry warnings as well 
-            });
-          }
-        } else {
-          expiredCount++;
-        }
-      });
-      
-      if (expiredCount > 0) {
-        requestAnimationFrame(() => {
-          notiflix.Notify.failure(`${expiredCount} products are expired. Please restock!`);
-          renderPosExpiredStock(`${expiredCount} products are expired. Please restock!`);
-        });
-      }
-    } */
-
+        
     // Start the optimized initialization
     initializeApp();
 
@@ -460,6 +355,7 @@ if (auth == undefined) {
       $(".p_five").hide();
     }
 
+    // ── Build product card  ────────────────────────────────────────────
     function buildProductCard(item) {
       item.price = parseFloat(item.price).toFixed(2);
       let item_isExpired = isExpired(item.expirationDate);
@@ -486,12 +382,13 @@ if (auth == undefined) {
                      <span class="sku">${item.barcode || item._id}</span>
                   </div>
                   <span class="text-success text-center">
-                    <b>${validator.unescape(settings.symbol) + moneyFormat(item.price)}</b>
+                    <b>${moneyFormat(item.price)}</b>
                   </span>
                 </div>
               </div>`;
     }
 
+    // ── Render POS Products ────────────────────────────────────────────
     function renderPosProducts(data, isSearch) {
       if (!data || data.length === 0) {
         const msg = isSearch
@@ -897,55 +794,7 @@ if (auth == undefined) {
       $("#inv_pay_stats").empty();
       $("#inv_pay_rows").empty();
 
-      // Load provider payments (if invoice has a provider)
-      // if (inv.providerId) {
-      //   $.get(api + "payment/provider/" + inv.providerId, function (payData) {
-      //     const payments = payData.payments || [];
-      //     const totalInvoiced = parseFloat(payData.totalInvoiced || 0);
-      //     const totalPaid     = parseFloat(payData.totalPaid || 0);
-      //     const balance       = parseFloat(payData.balance || 0);
-      //     const balColor      = balance > 0 ? "var(--c-danger)" : "var(--c-success)";
-
-      //     // 3 mini stat chips
-      //     const statsHtml =
-      //       '<div style="flex:1;min-width:90px;padding:8px 12px;background:var(--c-bg);border-radius:var(--radius-sm);border:1px solid var(--c-border);text-align:center;">' +
-      //         '<div style="font-size:10px;color:var(--c-muted);text-transform:uppercase;letter-spacing:.4px;">Total Invoiced</div>' +
-      //         '<div style="font-size:14px;font-weight:700;color:var(--c-text);">' + sym + totalInvoiced.toFixed(2) + '</div>' +
-      //       '</div>' +
-      //       '<div style="flex:1;min-width:90px;padding:8px 12px;background:var(--c-bg);border-radius:var(--radius-sm);border:1px solid var(--c-border);text-align:center;">' +
-      //         '<div style="font-size:10px;color:var(--c-muted);text-transform:uppercase;letter-spacing:.4px;">Payments Made</div>' +
-      //         '<div style="font-size:14px;font-weight:700;color:var(--c-success);">' + sym + totalPaid.toFixed(2) + '</div>' +
-      //       '</div>' +
-      //       '<div style="flex:1;min-width:90px;padding:8px 12px;background:var(--c-bg);border-radius:var(--radius-sm);border:1px solid var(--c-border);text-align:center;">' +
-      //         '<div style="font-size:10px;color:var(--c-muted);text-transform:uppercase;letter-spacing:.4px;">Balance Due</div>' +
-      //         '<div style="font-size:14px;font-weight:700;color:' + balColor + ';">' + sym + balance.toFixed(2) + '</div>' +
-      //       '</div>';
-      //     $("#inv_pay_stats").html(statsHtml);
-
-      //     // Payment rows
-      //     const methodLabels = { cash: "Cash", bank_transfer: "Bank Transfer", check: "Check", other: "Other" };
-      //     let running = totalInvoiced;
-      //     let rowsHtml = "";
-      //     if (payments.length > 0) {
-      //       payments.forEach(function (p) {
-      //         running -= parseFloat(p.amount || 0);
-      //         const rc = running > 0 ? "var(--c-danger)" : "var(--c-success)";
-      //         rowsHtml +=
-      //           "<tr>" +
-      //           "<td>" + (p.paymentDate ? moment(p.paymentDate).format("DD MMM YYYY") : "—") + "</td>" +
-      //           "<td><strong>" + sym + parseFloat(p.amount || 0).toFixed(2) + "</strong></td>" +
-      //           "<td>" + (methodLabels[p.paymentMethod] || p.paymentMethod || "—") + "</td>" +
-      //           "<td style='color:" + rc + ";font-weight:600;'>" + sym + running.toFixed(2) + "</td>" +
-      //           "</tr>";
-      //       });
-      //     } else {
-      //       rowsHtml = '<tr><td colspan="4" class="text-center" style="color:var(--c-muted);">No payments recorded yet.</td></tr>';
-      //     }
-      //     $("#inv_pay_rows").html(rowsHtml);
-      //     $("#inv_pay_summary").show();
-      //   });
-      // }
-
+      
       // Load linked products
       $.get(api + "invoice/invoice/" + invoiceId + "/products", function (products) {
         let prodHtml = "";
@@ -1034,12 +883,7 @@ if (auth == undefined) {
               ? `<button onclick="$(this).viewInvoiceFile('${inv.invoiceFile}')" class="btn btn-info btn-xs" title="View Bill"><i class="fa fa-file-image-o"></i> View</button> `
               : `<button class="btn btn-default btn-xs" disabled title="No file attached"><i class="fa fa-file-o"></i></button> `;
 
-            // const markPaidBtn = inv.paymentStatus !== 'paid'
-            //   ? `<button onclick="$(this).markInvoicePaid('${inv.invoiceId}')" class="btn btn-success btn-xs" title="Mark as Paid"><i class="fa fa-check"></i></button> `
-            //   : '';
-
-            //const editBtn = `<button onclick="$(this).editInvoice('${inv.invoiceId}')" class="btn btn-warning btn-xs" title="Edit"><i class="fa fa-edit"></i></button> `;
-
+ 
             html += `<tr>
               <td><strong>${inv.invoiceId}</strong></td>
               <td>${date}</td>
@@ -1428,7 +1272,7 @@ if (auth == undefined) {
             //@ts-expect-error
             $(this).addProductToCart(product);
           } else {
-            if (stock == 1) {
+            if (stock == parseFloat(product.minStock)) {
               notiflix.Report.failure(
                 "Out of stock!",
                 `${product.name} is out of stock! Please restock.`,
@@ -1551,7 +1395,7 @@ if (auth == undefined) {
     $.fn.addProductToCart = function (data) {
       item = {
         id: data._id,
-        product_name: data.name,
+        product_name: utils.decodeHtmlEntities(data.name),
         barcode: data.barcode,
         price: data.price,
         profit_margin: parseFloat(data.profitMargin) || 0,
@@ -1599,10 +1443,9 @@ if (auth == undefined) {
         total_items += parseFloat(data.quantity);
       });
       $("#total").text(total_items);
-      total = (total) - Number($("#inputDiscount").val().toString()) ;
-      $("#price").text(validator.unescape(settings.symbol) + moneyFormat(total.toFixed(2)));
-
       subTotal = total;
+      total = (total) - Number($("#inputDiscount").val().toString()) ;
+      $("#price").text(moneyFormat(subTotal.toFixed(2)));
 
       if (Number($("#inputDiscount").val().toString()) >= total) {
         $("#inputDiscount").val(0);
@@ -1617,13 +1460,13 @@ if (auth == undefined) {
 
       orderTotal = grossTotal;
 
-      $("#gross_price").text(validator.unescape(settings.symbol) + moneyFormat(orderTotal));
-      $("#payablePrice").val(moneyFormat(grossTotal));
+      $("#gross_price").text( moneyFormat(orderTotal));
+      $("#payablePrice").val((grossTotal.toFixed(2)));
 
       let profit = total - totalCost;
-      $("#bill_cost").text(validator.unescape(settings.symbol) + moneyFormat(totalCost.toFixed(2)));
+      $("#bill_cost").text(moneyFormat(totalCost.toFixed(2)));
       $("#bill_profit")
-        .text(validator.unescape(settings.symbol) + moneyFormat(profit.toFixed(2)))
+        .text(moneyFormat(profit.toFixed(2)))
         .toggleClass("text-success", profit >= 0)
         .toggleClass("text-danger", profit < 0);
     };
@@ -1664,7 +1507,6 @@ if (auth == undefined) {
             $("<div>", {
               class: "col-md-3",
               text:
-                validator.unescape(settings.symbol) +
                 moneyFormat((data.price * data.quantity).toFixed(2)),
             }),
             $("<div>", { class: "col-md-1" }).append(
@@ -1730,7 +1572,7 @@ if (auth == undefined) {
       let product = allProducts.filter(function (selected) {
         return selected._id == parseInt(item.id);
       });
-      console.log(product)
+
       if (product[0].stock == 1) {
         if (parseFloat(item.quantity) < parseFloat(product[0].quantity)) {
           //@ts-expect-error
@@ -1823,10 +1665,6 @@ if (auth == undefined) {
       }
     });
 
-    // function printJobComplete() {
-    //   notiflix.Report.success("Done", "print job complete", "Ok");
-    // }
-
     //@ts-expect-error
     $.fn.submitDueOrder = function (status) {
       const DOMPurify = require("dompurify");
@@ -1836,16 +1674,23 @@ if (auth == undefined) {
       const rcptPriceAlign = isRtlReceipt ? 'left' : 'right';
       const rcptDetailsAlign = isRtlReceipt ? 'right' : 'left';
       let items = "";
-      let payment = 0.0;
       let paymentRow =""
+      let jsonItem=[]
       paymentType = $('.list-group-item.active').data('payment-type');
       cart.forEach((item) => {
-    items += `<tr><td>${DOMPurify.sanitize(item.product_name)} <br> No. ${item.barcode} </td><td>${
-      DOMPurify.sanitize(item.quantity)
-    } </td><td style="text-align: ${rcptPriceAlign}"> ${DOMPurify.sanitize(validator.unescape(settings.symbol))} ${moneyFormat(
-      DOMPurify.sanitize(Math.abs(item.price).toFixed(2)),
-    )} </td></tr>`;
-});
+          items += `<tr><td>${DOMPurify.sanitize(item.product_name)} <br> No. ${item.barcode} </td><td>${
+            DOMPurify.sanitize(item.quantity)
+          } </td><td style="text-align: ${rcptPriceAlign}"> ${moneyFormat(
+            DOMPurify.sanitize(Math.abs(item.price).toFixed(2)),
+          )} </td></tr>`;
+          jsonItem.push({
+            "name": DOMPurify.sanitize(item.product_name),
+            "barcode": DOMPurify.sanitize(item.barcode),
+            "quantity": DOMPurify.sanitize(item.quantity),
+            "price": moneyFormat(DOMPurify.sanitize(Math.abs(item.price).toFixed(2)),
+          )
+          })
+      });
 
       let currentTime = moment();
       let discount = parseFloat($("#inputDiscount").val().toString());
@@ -1854,10 +1699,9 @@ if (auth == undefined) {
       let paymentAmount = $("#payment").val().toString().replace(",", "");
       let changeAmount = $("#change").text().replace(",", "");
       let mobileNumber = $("#paymentInfo").val();
-      let paid =
-        $("#payment").val() == "" ? 0 : parseFloat(paymentAmount);
-      let change =
-        $("#change").text() == "" ? 0 : parseFloat(changeAmount);
+      let paid = $("#payment").val() == "" ? 0 : parseFloat(paymentAmount);
+      let change = $("#change").text() == "" ? 0 : parseFloat(changeAmount);
+
       let refNumber = $("#refNumber").val().toString()
       let orderNumber = holdOrder;
       let type = "";
@@ -1875,15 +1719,16 @@ if (auth == undefined) {
         paymentRow = `<tr>
                         <td>${t('paid')}</td>
                         <td>:</td>
-                        <td style="text-align: ${rcptPriceAlign}">${validator.unescape(settings.symbol)} ${moneyFormat(
+                        <td style="text-align: ${rcptPriceAlign}">${moneyFormat(
                           Math.abs(paid).toFixed(2),
                         )}</td>
                     </tr>
                     <tr>
                         <td>${t('change')}</td>
                         <td>:</td>
-                        <td style="text-align: ${rcptPriceAlign}">${validator.unescape(settings.symbol)} ${moneyFormat(
+                        <td style="text-align: ${rcptPriceAlign}">${moneyFormat(
                           Math.abs(change).toFixed(2),
+                        
                         )}</td>
                     </tr>
                     <tr>
@@ -1897,9 +1742,7 @@ if (auth == undefined) {
         tax_row = `<tr>
                     <td>${t('receipt_vat_label')}(${validator.unescape(settings.percentage)})%</td>
                     <td>:</td>
-                    <td style="text-align: ${rcptPriceAlign}">${validator.unescape(settings.symbol)} ${moneyFormat(
-                      totalVat.toFixed(2),
-                    )}</td>
+                    <td style="text-align: ${rcptPriceAlign}">${moneyFormat(totalVat.toFixed(2))}</td>
                 </tr>`;
       }
 
@@ -1968,7 +1811,7 @@ if (auth == undefined) {
             <tr>
                 <td><b>${t('subtotal')}</b></td>
                 <td>:</td>
-                <td style="text-align: ${rcptPriceAlign}"><b>${validator.unescape(settings.symbol)}${moneyFormat(
+                <td style="text-align: ${rcptPriceAlign}"><b>${moneyFormat(
                   subTotal.toFixed(2),
                 )}</b></td>
             </tr>
@@ -1977,8 +1820,7 @@ if (auth == undefined) {
                 <td>:</td>
                 <td style="text-align: ${rcptPriceAlign}">${
                   discount > 0
-                    ? validator.unescape(settings.symbol) +
-                      moneyFormat(discount.toFixed(2))
+                    ? moneyFormat(discount.toFixed(2))
                     : ""
                 }</td>
             </tr>
@@ -1987,12 +1829,10 @@ if (auth == undefined) {
                 <td><h5>${t('total_col')}</h5></td>
                 <td><h5>:</h5></td>
                 <td style="text-align: ${rcptPriceAlign}">
-                    <h5>${validator.unescape(settings.symbol)} ${moneyFormat(
-                      orderTotal.toFixed(2),
-                    )}</h5>
+                    <h5>${moneyFormat(orderTotal.toFixed(2))}</h5>
                 </td>
             </tr>
-            ${payment == 0 ? "" : paymentRow}
+            ${paid == 0 ? "" : paymentRow}
             ${mobileNumber ? `<tr><td>${t('receipt_mobile')}</td><td>:</td><td style="text-align: ${rcptPriceAlign}">${mobileNumber}</td></tr>` : ""}
             </tbody>
             </table>
@@ -2004,9 +1844,47 @@ if (auth == undefined) {
              </p>
             </div>`;
 
+      let JsonReceipt= {
+        "store": {
+          "logo": logo,
+          "name": validator.unescape(settings.store),
+          "addressOne": validator.unescape(settings.address_one),
+          "addressTwo": validator.unescape(settings.address_two),
+          "contact": validator.unescape(settings.contact),
+          "tax": validator.unescape(settings.tax),
+          "footer": validator.unescape(settings.footer)
+        },
+        "order": {
+          "orderNumber": orderNumber,
+          "refNumber": refNumber == "" ? orderNumber : _.escape(refNumber),
+          "date": date,
+          "customer": customer == 0 ? t('walk_in_customer') : _.escape(customer.name),
+          "cashier": user.fullname,
+          "items": jsonItem,
+          "subTotal":  moneyFormat(subTotal.toFixed(2)),
+          "discount": discount > 0
+                    ? moneyFormat(discount.toFixed(2))
+                    : moneyFormat(0),
+          "tax":  settings.charge_tax 
+                  ? {
+                      "tax_percentage": validator.unescape(settings.percentage),
+                      "total_vat": moneyFormat(totalVat.toFixed(2))
+                    }
+                  : "",
+          "orderTotal": moneyFormat(orderTotal.toFixed(2)),
+          "payment": paid == 0 
+                    ? "" 
+                    : { 
+                        "paid": moneyFormat(Math.abs(paid).toFixed(2)),
+                        "change": moneyFormat(Math.abs(change).toFixed(2)),
+                        "method": type
+                        },
+          "mobileNumber": mobileNumber ? mobileNumber : ""
+        },
+      }
       if (status == 3) {
         if (cart.length > 0) {
-          //@ts-expect-error
+          //@ts-ignore
           printJS({ printable: receipt, type: "raw-html" });
 
           $(".loading").hide();
@@ -2055,6 +1933,8 @@ if (auth == undefined) {
           $("#viewTransaction").html(receipt);
           //@ts-expect-error
           $("#orderModal").modal("show");
+          printReceipt(JsonReceipt)
+          playNotificationSound();
           loadProducts(function() {
             if (posActiveCategory) {
               const filtered = allProducts.filter(function(p) { return p.category === posActiveCategory; });
@@ -2095,9 +1975,7 @@ if (auth == undefined) {
       $("#refNumber").val("");
       $("#change").text("");
       $("#payment,#paymentText").val("");
-      $("#paymentText").val("");
-      playNotificationSound();
-      
+      $("#paymentText").val("");      
 };
 
     $.get(api + "on-hold", function (data) {
@@ -2164,7 +2042,7 @@ if (auth == undefined) {
           $("<td>", { text: order.items.length }),
           $("<td>").append(
             $("<span>", {
-              text: validator.unescape(settings.symbol) + order.total,
+              text: moneyFormat(order.total),
               class: "label label-info"
             })
           ),
@@ -2661,8 +2539,8 @@ if (auth == undefined) {
           '<div class="inv-drop-meta">' +
             'Barcode: ' + (p.barcode || '—') +
             ' &nbsp;|&nbsp; Stock: <span style="' + stockColor + 'font-weight:600;">' + stockVal + '</span>' +
-            ' &nbsp;|&nbsp; Cost Price: ' + ( validator.unescape(settings.symbol) + moneyFormat(parseFloat(p.costPrice).toFixed(2) ) || '—') +
-            ' &nbsp;|&nbsp; Sale Price: ' + ( validator.unescape(settings.symbol) + moneyFormat(parseFloat(p.price).toFixed(2)) || '—') +
+            ' &nbsp;|&nbsp; Cost Price: ' + ( moneyFormat(parseFloat(p.costPrice).toFixed(2) ) || '—') +
+            ' &nbsp;|&nbsp; Sale Price: ' + ( moneyFormat(parseFloat(p.price).toFixed(2)) || '—') +
             ' &nbsp;|&nbsp; Expiry Date: ' +  (p.expirationDate) + ' (' + daysToExpire(p.expirationDate) +' days)' +
 
           '</div>' +
@@ -3678,7 +3556,7 @@ if (auth == undefined) {
           return $(this).val() == allProducts[index].category;
         })
         .prop("selected", true);
-      $("#productName").val(allProducts[index].name);
+      $("#productName").val( utils.decodeHtmlEntities(allProducts[index].name));
       $("#product_price").val(allProducts[index].price);
       $("#quantity").val(allProducts[index].quantity);
       $("#barcode").val(allProducts[index].barcode || allProducts[index]._id);
@@ -3779,86 +3657,6 @@ if (auth == undefined) {
         },
       );
     };
-
-    // ── RESTOCK PRODUCT ──────────────────────────────────────────────────────
-/*     $.fn.restockProduct = function (productId) {
-      const product = allProducts.find(function (p) { return p._id === productId; });
-      if (!product) return;
-
-      $("#restock_product_id").val(product._id);
-      $("#restock_product_name").text(product.name);
-      $("#restock_current_qty").text(product.stock == 1 ? (product.quantity || 0) : "N/A");
-      $("#restock_quantity").val("");
-      $("#restock_cost_price").val(product.costPrice || "");
-      $("#restock_entry_date").val(new Date().toISOString().split("T")[0]);
-      $("#restock_expiry_date").val(product.expirationDate);
-
-      // Populate provider select
-      let provOpts = '<option value="">Select provider...</option>';
-      allProviders.forEach(function (p) {
-        const sel = p._id === product.provider ? " selected" : "";
-        provOpts += `<option value="${p._id}"${sel}>${p.name}</option>`;
-      });
-      $("#restock_provider").html(provOpts);
-
-      // Populate invoice datalist filtered to selected provider
-      function fillRestockInvoices(providerId) {
-        const url = providerId
-          ? api + "invoice/invoice/provider/" + providerId
-          : api + "invoice/invoices";
-        $.get(url, function (data) {
-          const invoices = Array.isArray(data) ? data : (data.invoices || []);
-          let opts = "";
-          invoices.forEach(function (inv) {
-            opts += `<option value="${inv.invoiceId}">`;
-          });
-          $("#restockInvoiceList").html(opts);
-        });
-      }
-      fillRestockInvoices(product.provider || "");
-      $("#restock_provider").off("change.restock").on("change.restock", function () {
-        fillRestockInvoices($(this).val());
-        $("#restock_invoice_id").val("");
-      });
-
-      $("#restock_invoice_id").val(product.invoiceId || "");
-      //$("#restockModal").modal("show");
-    }; */
-
-/*     $("#saveRestock").submit(function (e) {
-      e.preventDefault();
-      const productId = $("#restock_product_id").val();
-      const qty = parseInt($("#restock_quantity").val().toString());
-      if (!qty || qty <= 0) {
-        notiflix.Report.warning("Validation", "Please enter a quantity greater than 0.", "Ok");
-        return;
-      }
-      const payload = {
-        quantity:   qty,
-        invoiceId:  $("#restock_invoice_id").val().toString().trim(),
-        providerId: $("#restock_provider").val(),
-        costPrice:  $("#restock_cost_price").val(),
-        entryDate:  $("#restock_entry_date").val(),
-        expiryDate:  $("#restock_expiry_date").val(),
-
-      };
-      $.ajax({
-        url: api + "inventory/restock/" + productId,
-        type: "POST",
-        contentType: "application/json",
-        data: JSON.stringify(payload),
-        success: function () {
-          //@ts-expect-error
-          $("#restockModal").modal("hide");
-          notiflix.Report.success("Restocked", "Stock updated successfully.", "Ok");
-          loadProducts();
-        },
-        error: function (err) {
-          const msg = (err.responseJSON && err.responseJSON.message) || "Unknown error.";
-          notiflix.Report.failure("Error", "Restock failed: " + msg, "Ok");
-        }
-      });
-    }); */
 
     //@ts-expect-error
     $.fn.deleteUser = function (id) {
@@ -3969,12 +3767,6 @@ if (auth == undefined) {
       });
 
       loadProducts(loadProductList);
-
-      // if (allProducts.length === 0) {
-      //   loadProducts(loadProductList);
-      // } else {
-      //   loadProductList();
-      // }
 
       // Switch to products view
       $("#pos_view").hide();
@@ -4141,685 +3933,168 @@ if (auth == undefined) {
         var salePrice = price + (price * margin / 100);
         //var salePrice = price + margin;
         $("#product_price").val(salePrice.toFixed(2));
-      });
-
-      $("#profit_margin").off("input change").on("input change", function () {
-        var price = parseFloat($("#cost_price").val().toString()) || 0;
-        var margin = parseFloat($("#profit_margin").val().toString()) || 0;
-        var salePrice = price + (price * margin / 100);
-        //var salePrice = price + margin;
-        $("#product_price").val(salePrice.toFixed(2));
-      });
-
-      $("#cost_price").off("input change").on("input change", function () {
-        var price = parseFloat($("#cost_price").val().toString()) || 0;
-        var margin = parseFloat($("#profit_margin").val().toString()) || 0;
-        var salePrice = price + (price * margin / 100);
-        //var salePrice = price + margin;
-        $("#product_price").val(salePrice.toFixed(2));
-      });
-
-    function loadUserList() {
-      let counter = 0;
-      let user_list = "";
-      let login_status;
-      let login_time;
-      $("#user_list").empty();
-      //@ts-expect-error
-      $("#userList").DataTable().destroy();
-
-      $.get(api + "users/all", function (users) {
-        allUsers = [...users];
-
-        users.forEach((user, index) => {
-          state = [];
-          let class_name = "";
-
-          if (user.status != "") {
-            state = user.status.split("_");
-            login_status = state[0];
-            login_time = state[1];
- 
-            switch (login_status) {
-              case "Logged In":
-                class_name = "btn-default";
-
-                break;
-              case "Logged Out":
-                class_name = "btn-light";
-                break;
-            }
-          }
-
-          counter++;
-          user_list += `<tr>
-            <td>${user.fullname}</td>
-            <td>${user.username}</td>
-            <td class="${class_name}">${
-              state.length > 0 ? login_status : ""
-            } <br><small> ${state.length > 0 ? login_time : ""}</small></td>
-            <td>${
-              user._id == 1
-                ? '<span class="btn-group"><button class="btn btn-dark"><i class="fa fa-edit"></i></button><button class="btn btn-dark"><i class="fa fa-trash"></i></button></span>'
-                : '<span class="btn-group"><button onClick="$(this).editUser(' +
-                  index +
-                  ')" class="btn btn-warning"><i class="fa fa-edit"></i></button><button onClick="$(this).deleteUser(' +
-                  user._id +
-                  ')" class="btn btn-danger"><i class="fa fa-trash"></i></button></span>'
-            }</td></tr>`;
-
-          if (counter == users.length) {
-            $("#user_list").html(user_list);
-
-            //@ts-expect-error
-            $("#userList").DataTable({
-              order: [[1, "desc"]],
-              autoWidth: false,
-              info: true,
-              JQueryUI: true,
-              ordering: true,
-              paging: false,
-            });
-          }
-        });
-      });
-    }
-
-    function loadProductList() {
-      const selectedProvider = $("#productProviderFilter").val();
-      let product_img
-      let products = selectedProvider
-        ? allProducts.filter((p) => p.provider === selectedProvider)
-        : [...allProducts];
-      let product_list = "";
-      let counter = 0;
-      let icon
-      $("#product_list").empty();
-      //@ts-expect-error
-      $("#productList").DataTable().destroy();
-
-      products.forEach((product, index) => {
-        counter++;
-        // let category = allCategories.filter(function (category) {
-        //   return category.name == product.category;
-        // });
-
-        product.stockAlert = "";
-        const expiryDate = moment(product.expirationDate, DATE_FORMAT);
-
-        //show stock status indicator        
-        const stockStatus = getStockStatus(product.quantity,product.minStock);
-          if(stockStatus<=0)
-          {
-          if (stockStatus === 0) {
-            product.stockStatus = "No Stock";
-            icon = "fa fa-exclamation-triangle";
-          }
-          if (stockStatus === -1) {
-            product.stockStatus = "Low Stock";
-            icon = "fa fa-caret-down";
-          }
-
-          product.stockAlert = `<br><span class="text-danger"><small><i class="${icon}"></i> ${product.stockStatus}</small></span>`;
-        }
-        //calculate days to expiry
-        product.expiryAlert = "";
-        if (!isExpired(expiryDate)) {
-          const diffDays = daysToExpire(expiryDate);
-
-          if (diffDays > 0 && diffDays <= 30) {
-            var days_noun = diffDays > 1 ? "days" : "day";
-            icon = "fa fa-clock-o";
-            product.expiryStatus = `${diffDays} ${days_noun} left`;
-            product.expiryAlert = `<br><span class="text-danger"><small><i class="${icon}"></i> ${product.expiryStatus}</small></span>`;
-          }
-          
-        } else {
-          icon = "fa fa-exclamation-triangle";
-          product.expiryStatus = "Expired";
-          product.expiryAlert = `<br><span class="text-danger"><small><i class="${icon}"></i> ${product.expiryStatus}</small></span>`;
-        }
-
-        if(product.img==="")
-        {
-          product_img=default_item_img;
-        }
-        else
-        {
-          product_img = img_path + product.img;
-          product_img = checkFileExists(product_img)
-          ? product_img
-          : default_item_img;
-        }
-        //render product list
-        product_list +=
-          `<tr ${isExpired(expiryDate) ? 'style="background-color: #ffdad7"': ""} >`+
-          // <td><img id="` +
-          // product._id +
-          // `"></td>
-            `<td>${counter} </td>
-            <td><img id=${product._id}> </td>
-            <td>${product.name} ${product.expiryAlert}</td>
-            <td>${validator.unescape(settings.symbol)}${product.price}</td>
-            <td>${validator.unescape(settings.symbol)}${product.costPrice}</td>
-
-             <td>${product.stock == 1 ? product.quantity : "N/A"} ${product.stockAlert}
-            </td>
-            <td>${product.category}</td>
-            <td>${product.invoiceId || "N/A"}${product.invoiceHistory && product.invoiceHistory.length > 1 ? ` <span class="badge" title="${product.invoiceHistory.length} restocks" style="cursor:default;">${product.invoiceHistory.length}</span>` : ""}</td>
-            <td> <b>Exp.</b>: ${product.expirationDate || "N/A"} <br> <b>Ent.</b> ${product.entryDate} </td>
-            <td class="nobr"><span class="btn-group"><button onClick="$(this).editProduct(${index})" class="btn btn-warning btn-sm"><i class="fa fa-edit"></i></button><button onClick="$(this).deleteProduct(${
-              product._id
-            })" class="btn btn-danger btn-sm"><i class="fa fa-trash"></i></button></span></td></tr>`;
-
-        if (counter == products.length) {
-          $("#product_list").html(product_list);
-
-          products.forEach((product) => {
-            let bcode = product.barcode || product._id;
-            //@ts-ignore
-            $("#" + product._id + "").JsBarcode(bcode, {
-              width: 1,
-              height: 25,
-              fontSize: 13,
-            });
-          });
-        }
-      });
-
-      //@ts-expect-error
-      $("#productList").DataTable({
-        dom: "lfrtBip",
-        pageLength: 5,
-        lengthMenu: [5, 10, 25, 50, 100],
-        buttons: [
-          // ── CSV Product Report ──────────────────────────────────────────
-          {
-            text: '<i class="fa fa-download"></i> CSV',
-            className: "btn btn-success",
-            action: function () {
-              const sym           = (settings && validator.unescape(settings.symbol)) || '';
-              const providerLabel = $("#productProviderFilter option:selected").text() || "All Providers";
-              const selectedProvider = $("#productProviderFilter").val();
-              const source = selectedProvider
-                ? allProducts.filter((p) => p.provider === selectedProvider)
-                : [...allProducts];
-
-              function q(v) { return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"'; }
-              function csvRow(arr) { return arr.map(q).join(","); }
-
-              // Compute summary
-              let totalCostValue = 0, totalSaleValue = 0, lowStockCount = 0;
-              source.forEach(function (p) {
-                const qty = p.stock == 1 ? parseFloat(p.quantity || 0) : 0;
-                totalCostValue += parseFloat(p.costPrice || 0) * qty;
-                totalSaleValue += parseFloat(p.price     || 0) * qty;
-                if (p.stock == 1 && qty <= parseFloat(p.minStock || 1)) lowStockCount++;
-              });
-              const categories = [...new Set(source.map(function (p) { return p.category; }).filter(Boolean))].length;
-
-              const rows = [];
-
-              // Section 1 — report info
-              rows.push(["Product List Report"]);
-              rows.push(["Generated", moment().format("YYYY-MM-DD HH:mm:ss")]);
-              rows.push(["Provider Filter", providerLabel]);
-              rows.push([]);
-
-              // Section 2 — summary
-              rows.push(["SUMMARY"]);
-              rows.push(["Total Products",        source.length]);
-              rows.push(["Categories",            categories]);
-              rows.push(["Total Cost Value",      sym + totalCostValue.toFixed(2)]);
-              rows.push(["Total Sale Value",      sym + totalSaleValue.toFixed(2)]);
-              rows.push(["Low / Out of Stock",    lowStockCount]);
-              rows.push([]);
-
-              // Section 3 — product data
-              rows.push(["PRODUCTS"]);
-              rows.push([
-                "Barcode", "Name", "Category", "Provider",
-                "Sale Price", "Cost Price", "Profit %",
-                "Quantity", "Min Stock", "Managed Stock",
-                "Expiration Date", "Invoice ID",
-              ]);
-              source.forEach(function (p) {
-                rows.push([
-                  p.barcode || p._id,
-                  p.name,
-                  p.category,
-                  p.provider || "",
-                  p.price,
-                  p.costPrice || 0,
-                  p.profitMargin || 0,
-                  p.stock == 1 ? p.quantity : "N/A",
-                  p.minStock || 1,
-                  p.stock == 1 ? "Yes" : "No",
-                  p.expirationDate || "",
-                  p.invoiceId || "",
-                ]);
-              });
-
-              const csvContent = "\uFEFF" + rows.map(csvRow).join("\r\n");
-              const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-              const url  = URL.createObjectURL(blob);
-              const link = document.createElement("a");
-              link.setAttribute("href", url);
-              link.setAttribute("download", "product_list_" + moment().format("YYYY-MM-DD") + ".csv");
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-              URL.revokeObjectURL(url);
-            },
-          },
-
-          // ── PDF Product Report ──────────────────────────────────────────
-          {
-            text: '<i class="fa fa-file-pdf-o"></i> PDF',
-            className: "btn btn-danger",
-            action: function () {
-              //@ts-expect-error
-              if (!pdfMake.vfs["Tahoma.ttf"]) {
-                const appRoot = app.getAppPath();
-                //@ts-expect-error
-                pdfMake.vfs["Tahoma.ttf"]      = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma.ttf")).toString("base64");
-                //@ts-expect-error
-                pdfMake.vfs["Tahoma-Bold.ttf"] = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma-Bold.ttf")).toString("base64");
-                //@ts-expect-error                
-                pdfMake.vfs["Roboto-Regular.ttf"]   = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-Regular.ttf")).toString("base64");
-                //@ts-expect-error
-                pdfMake.vfs["Roboto-Medium.ttf"]    = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-Medium.ttf")).toString("base64");
-                //@ts-expect-error
-                pdfMake.vfs["Roboto-Italic.ttf"]    = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-Italic.ttf")).toString("base64");
-                //@ts-expect-error
-                pdfMake.vfs["Roboto-MediumItalic.ttf"] = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-MediumItalic.ttf")).toString("base64");
-                //@ts-expect-error  
-                pdfMake.fonts = {
-                  Roboto: { normal: "Roboto-Regular.ttf", bold: "Roboto-Medium.ttf", italics: "Roboto-Italic.ttf", bolditalics: "Roboto-MediumItalic.ttf" },
-                  Tahoma: { normal: "Tahoma.ttf", bold: "Tahoma-Bold.ttf", italics: "Tahoma.ttf", bolditalics: "Tahoma-Bold.ttf" },
-                };
-              }
-
-              function cell(value, extra) {
-                const str = String(value == null ? "" : value);
-                const isArabic = /[\u0600-\u06FF]/.test(str);
-                return Object.assign({
-                  text: str, fontSize: 7,
-                  font:      isArabic ? "Tahoma" : "Roboto",
-                  alignment: isArabic ? "right"  : "left",
-                }, extra || {});
-              }
-
-              const sym           = (settings && validator.unescape(settings.symbol)) || '';
-              const providerLabel = $("#productProviderFilter option:selected").text() || "All Providers";
-              const selectedProvider = $("#productProviderFilter").val();
-              const source = selectedProvider
-                ? allProducts.filter((p) => p.provider === selectedProvider)
-                : [...allProducts];
-
-              // Compute summary
-              let totalCostValue = 0, totalSaleValue = 0, lowStockCount = 0;
-              source.forEach(function (p) {
-                const qty = p.stock == 1 ? parseFloat(p.quantity || 0) : 0;
-                totalCostValue += parseFloat(p.costPrice || 0) * qty;
-                totalSaleValue += parseFloat(p.price     || 0) * qty;
-                if (p.stock == 1 && qty <= parseFloat(p.minStock || 1)) lowStockCount++;
-              });
-              const categories = [...new Set(source.map(function (p) { return p.category; }).filter(Boolean))].length;
-
-              const summaryBody = [
-                [
-                  { text: "Total Products",   style: "summaryLabel" },
-                  { text: String(source.length),                    style: "summaryValue" },
-                  { text: "Total Cost Value",  style: "summaryLabel" },
-                  { text: sym + totalCostValue.toFixed(2),          style: "summaryValue" },
-                  { text: "Low / Out of Stock", style: "summaryLabel" },
-                  { text: String(lowStockCount),                    style: "summaryValue" },
-                ],
-                [
-                  { text: "Categories",        style: "summaryLabel" },
-                  { text: String(categories),                       style: "summaryValue" },
-                  { text: "Total Sale Value",  style: "summaryLabel" },
-                  { text: sym + totalSaleValue.toFixed(2),          style: "summaryValue" },
-                  { text: "Provider",          style: "summaryLabel" },
-                  { text: providerLabel,                            style: "summaryValue" },
-                ],
-              ];
-
-              const tableHeaders = [
-                "Barcode", "Name", "Category", "Provider",
-                "Sale Price", "Cost Price", "Profit %",
-                "Qty", "Min Stock", "Managed", "Expiry", "Invoice ID",
-              ];
-              const tableRows = source.map(function (p) {
-                return [
-                  p.barcode || p._id,
-                  p.name,
-                  p.category,
-                  p.provider || "—",
-                  sym + parseFloat(p.price      || 0).toFixed(2),
-                  sym + parseFloat(p.costPrice  || 0).toFixed(2),
-                  (p.profitMargin || 0) + "%",
-                  p.stock == 1 ? p.quantity : "N/A",
-                  p.minStock || 1,
-                  p.stock == 1 ? "Yes" : "No",
-                  p.expirationDate || "—",
-                  p.invoiceId || "—",
-                ].map(function (v) { return cell(v); });
-              });
-
-              const docDefinition = {
-                pageOrientation: "landscape",
-                pageMargins: [28, 50, 28, 36],
-
-                header: function (currentPage) {
-                  if (currentPage === 1) return null;
-                  return { text: "ShbairPharma — Product List Report", alignment: "center", fontSize: 7, color: "#888", margin: [0, 14, 0, 0] };
-                },
-                footer: function (currentPage, pageCount) {
-                  return {
-                    columns: [
-                      { text: "Generated: " + moment().format("YYYY-MM-DD HH:mm:ss"), fontSize: 7, color: "#888", alignment: "left",  margin: [28, 0, 0, 0] },
-                      { text: "Page " + currentPage + " of " + pageCount,             fontSize: 7, color: "#888", alignment: "right", margin: [0,  0, 28, 0] },
-                    ],
-                  };
-                },
-
-                content: [
-                  // Title block
-                  { text: "ShbairPharma",        style: "brand" },
-                  { text: "Product List Report", style: "reportTitle" },
-                  { text: moment().format("YYYY-MM-DD HH:mm:ss"), style: "generatedDate" },
-                  { text: " ", margin: [0, 4] },
-
-                  // Filter bar
-                  {
-                    table: {
-                      widths: ["*"],
-                      body: [[{ text: "Provider: " + providerLabel, style: "filterCell" }]],
-                    },
-                    layout: { hLineWidth: () => 0, vLineWidth: () => 0, fillColor: () => "#eef3f9" },
-                    margin: [0, 0, 0, 14],
-                  },
-
-                  // Summary stats
-                  { text: "Summary", style: "sectionTitle" },
-                  {
-                    table: {
-                      widths: ["auto", "*", "auto", "*", "auto", "*"],
-                      body: summaryBody,
-                    },
-                    layout: {
-                      hLineWidth: () => 1, vLineWidth: () => 1,
-                      hLineColor: () => "#c9d8e8", vLineColor: () => "#c9d8e8",
-                      fillColor:  function (i) { return i % 2 === 0 ? "#eef3f9" : "#f8fafc"; },
-                      paddingLeft: () => 8, paddingRight: () => 8,
-                      paddingTop:  () => 6, paddingBottom: () => 6,
-                    },
-                    margin: [0, 4, 0, 18],
-                  },
-
-                  // Products table
-                  { text: "Products  (" + source.length + " records)", style: "sectionTitle" },
-                  {
-                    table: {
-                      headerRows: 1,
-                      widths: ["auto", "*", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "auto"],
-                      body: [
-                        tableHeaders.map(function (h) { return { text: h, style: "tableHeader" }; }),
-                        ...tableRows,
-                      ],
-                    },
-                    layout: {
-                      hLineWidth: function (i, node) { return (i === 0 || i === node.table.body.length) ? 1 : 0.5; },
-                      vLineWidth: () => 0,
-                      hLineColor: () => "#c9d8e8",
-                      fillColor:  function (i) { return i === 0 ? null : (i % 2 === 0 ? "#f4f7fb" : null); },
-                      paddingLeft: () => 5, paddingRight: () => 5,
-                      paddingTop:  () => 3, paddingBottom: () => 3,
-                    },
-                    margin: [0, 4, 0, 0],
-                  },
-                ],
-
-                styles: {
-                  brand:        { fontSize: 17, bold: true, alignment: "center", color: "#1a2436", margin: [0, 0, 0, 4] },
-                  reportTitle:  { fontSize: 12, bold: true, alignment: "center", color: "#0d7377", margin: [0, 0, 0, 4] },
-                  generatedDate:{ fontSize: 7,              alignment: "center", color: "#888",    margin: [0, 0, 0, 8] },
-                  sectionTitle: { fontSize: 9, bold: true,  color: "#2d4154",                      margin: [0, 0, 0, 4] },
-                  filterCell:   { fontSize: 8,              alignment: "center", color: "#444",    margin: [4, 6, 4, 6] },
-                  summaryLabel: { fontSize: 8,              color: "#555",       margin: [0, 0, 0, 0] },
-                  summaryValue: { fontSize: 9, bold: true,  color: "#1a2436", alignment: "right",  margin: [0, 0, 0, 0] },
-                  tableHeader:  { fillColor: "#2d4154", color: "white", fontSize: 7, bold: true, alignment: "center", margin: [0, 3, 0, 3] },
-                },
-              };
-              //@ts-expect-error
-              pdfMake
-                .createPdf(docDefinition)
-                .download("product_list_" + moment().format("YYYY-MM-DD") + ".pdf");
-            },
-          },
-        ]
-      });
-    }
-
-    function loadCategoryList() {
-      let category_list = "";
-      let counter = 0;
-      $("#category_list").empty();
-      //@ts-expect-error
-      $("#categoryList").DataTable().destroy();
-
-      allCategories.forEach((category, index) => {
-        counter++;
-        category_list += `<tr>
-            <td>${category.name}</td>
-            <td><span class="btn-group"><button onClick="$(this).editCategory(${index})" class="btn btn-warning"><i class="fa fa-edit"></i></button><button onClick="$(this).deleteCategory(${category.id})" class="btn btn-danger"><i class="fa fa-trash"></i></button></span></td></tr>`;
-      });
-
-      if (counter == allCategories.length) {
-        $("#category_list").html(category_list);
-        //@ts-expect-error
-        $("#categoryList").DataTable({
-          autoWidth: false,
-          info: true,
-          JQueryUI: true,
-          ordering: true,
-          paging: true,
-          
-        });
-      }
-    }
-
-  
-
-    $("#log-out").on("click", function () {
-      const diagOptions = {
-        title: "Are you sure?",
-        text: "You are about to log out.",
-        cancelButtonColor: "#3085d6",
-        okButtonText: "Logout",
-      };
-
-      notiflix.Confirm.show(
-        diagOptions.title,
-        diagOptions.text,
-        diagOptions.okButtonText,
-        diagOptions.cancelButtonText,
-        () => {
-          $.get(api + "users/logout/" + user._id, function (data) {
-            storage.delete("auth");
-            storage.delete("user");
-            ipcRenderer.send("app-reload", "");
-          });
-        },
-      );
-    });
-
-    $("#settings_form").on("submit", function (e) {
-      e.preventDefault();
-      //@ts-expect-error
-      let formData = $(this).serializeObject();
-      let mac_address;
-
-      api = "http://" + host + ":" + port + "/api/";
-      const macaddress = require("macaddress");
-      macaddress.one(function (err, mac) {
-        mac_address = mac;
-      });
-      const appChoice = $("#app").find("option:selected").text();
-    
-      formData["app"] = appChoice;
-      formData["mac"] = mac_address;
-      formData["till"] = 1;
-
-      // Update application field in settings form
-      let $appField = $("#settings_form input[name='app']");
-      let $hiddenAppField = $('<input>', {
-        type: 'hidden',
-        name: 'app',
-        value: formData.app
-    });
-        $appField.length 
-            ? $appField.val(formData.app) 
-            : $("#settings_form").append(`<input type="hidden" name="app" value="${$hiddenAppField}" />`);
-
-
-      if (formData.percentage != "" && typeof formData.percentage === 'number') {
-        notiflix.Report.warning(
-          "Oops!",
-          "Please make sure the tax value is a number",
-          "Ok",
-        );
-      } else {
-        storage.set("settings", formData);
-
-        $(this).attr("action", api + "settings/post");
-        $(this).attr("method", "POST");
-        //@ts-expect-error
-        $(this).ajaxSubmit({
-          contentType: "application/json",
-          success: function () {
-            ipcRenderer.send("app-reload", "");
-          },
-          error: function (jqXHR) {
-            const body = jqXHR && jqXHR.responseJSON;
-            const title = (body && body.error) || "Save failed";
-            const message = (body && body.message)
-              || (jqXHR && jqXHR.statusText)
-              || "Could not reach the local API. Please restart the application.";
-            console.error("Settings save failed:", message, jqXHR);
-            notiflix.Report.failure(title, message, "Ok");
-      }
-    });
-    }
   });
 
-    function detectLanIp() {
-      try {
-        const os = require("os");
-        const ifaces = os.networkInterfaces();
-        for (const name of Object.keys(ifaces)) {
-          for (const iface of ifaces[name]) {
-            if (iface.family === "IPv4" && !iface.internal) return iface.address;
-          }
-        }
-      } catch (e) { /* fall through */ }
-      return "127.0.0.1";
-    }
+  $("#profit_margin").off("input change").on("input change", function () {
+    var price = parseFloat($("#cost_price").val().toString()) || 0;
+    var margin = parseFloat($("#profit_margin").val().toString()) || 0;
+    var salePrice = price + (price * margin / 100);
+    //var salePrice = price + margin;
+    $("#product_price").val(salePrice.toFixed(2));
+  });
 
-    function generateLicenseKey() {
-      try {
-        return require("crypto").randomBytes(16).toString("hex");
-      } catch (e) {
-        return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
-      }
-    }
+  $("#cost_price").off("input change").on("input change", function () {
+    var price = parseFloat($("#cost_price").val().toString()) || 0;
+    var margin = parseFloat($("#profit_margin").val().toString()) || 0;
+    var salePrice = price + (price * margin / 100);
+    //var salePrice = price + margin;
+    $("#product_price").val(salePrice.toFixed(2));
+  });
 
-    function updateServerConnectionUrl() {
-      const ip = $("#srv_ip").val();
-      const port = $("#srv_port").val();
-      $("#srv_url").val("http://" + ip + ":" + port + "/api/");
-    }
+  $("#log-out").on("click", function () {
+  const diagOptions = {
+    title: "Are you sure?",
+    text: "You are about to log out.",
+    cancelButtonColor: "#3085d6",
+    okButtonText: "Logout",
+  };
 
-    function loadServerFormDefaults() {
-      const macaddress = require("macaddress");
-      macaddress.one(function (err, mac) { $("#srv_mac").val(mac); });
-      $("#srv_ip").val(detectLanIp());
-      const storedPort = (platform && platform.port) || process.env.PORT || 4500;
-      const storedBind = (platform && platform.bind) || "0.0.0.0";
-      const storedLicense = (platform && platform.license) || generateLicenseKey();
-      if (!$("#srv_port").val()) $("#srv_port").val(storedPort);
-      $("#srv_bind").val(storedBind);
-      $("#srv_license").val(storedLicense);
-      updateServerConnectionUrl();
-    }
-
-    $("#srv_port").on("input", updateServerConnectionUrl);
-    $("#srv_license_regen").on("click", function () {
-      $("#srv_license").val(generateLicenseKey());
-    });
-
-    function sanitizeHost(raw) {
-      let v = String(raw || "").trim();
-      v = v.replace(/^https?:\/\//i, "");   // strip scheme if pasted
-      v = v.replace(/\/.*$/, "");            // strip any path
-      v = v.replace(/:\d+$/, "");            // strip trailing :port
-      return v;
-    }
-
-    $("#test_connection").on("click", function () {
-      const ip = sanitizeHost($("#ip").val());
-      $("#ip").val(ip);
-      const tport = String($("#server_port").val() || "");
-      const license = String($("#term_license").val() || "");
-      const $status = $("#term_conn_status");
-      if (!ip || !tport) {
-        $status.css("color", "#dc3545").text(t("conn_failed"));
-        return;
-      }
-      $status.css("color", "#777").text(t("conn_testing"));
-      /** @type {{[k:string]:string}} */
-      const headers = {};
-      if (license) headers["X-License-Key"] = license;
-      $.ajax({
-        url: "http://" + ip + ":" + tport + "/api/discovery",
-        type: "GET",
-        timeout: 5000,
-        headers: headers,
-        success: function (data) {
-          $status.css("color", "#28a745").text(t("conn_ok") + " · v" + (data.version || "?"));
-        },
-        error: function () {
-          $status.css("color", "#dc3545").text(t("conn_failed"));
-        },
+  notiflix.Confirm.show(
+    diagOptions.title,
+    diagOptions.text,
+    diagOptions.okButtonText,
+    diagOptions.cancelButtonText,
+    () => {
+      $.get(api + "users/logout/" + user._id, function (data) {
+        storage.delete("auth");
+        storage.delete("user");
+        ipcRenderer.send("app-reload", "");
       });
-    });
+    },
+  );
+  });
 
-    $("#server_settings_form").on("submit", function (e) {
-      e.preventDefault();
-      //@ts-expect-error
-      let formData = $(this).serializeObject();
-      formData.app = $("#app").find("option:selected").text();
-      formData.till = "1";
-      formData.mac = $("#srv_mac").val();
-      const portNum = parseInt(formData.port, 10);
-      if (!portNum || portNum < 1024 || portNum > 65535) {
-        notiflix.Report.warning("Oops!", "Port must be between 1024 and 65535.", "Ok");
-        return;
-      }
-      if (!formData.license || String(formData.license).length < 8) {
-        notiflix.Report.warning("Oops!", "License key is missing or too short.", "Ok");
-        return;
-      }
-      storage.set("settings", formData);
-      notiflix.Report.info(
-        "Restart required",
-        "Server settings saved. The app will close — please relaunch it for the new port and license to take effect.",
-        "Ok",
-        function () { ipcRenderer.send("restart-app"); }
-      );
+  $("#settings_form").on("submit", function (e) {
+    e.preventDefault();
+    //@ts-expect-error
+    let formData = $(this).serializeObject();
+    let mac_address;
+
+    api = "http://" + host + ":" + port + "/api/";
+    const macaddress = require("macaddress");
+    macaddress.one(function (err, mac) {
+      mac_address = mac;
     });
+    const appChoice = $("#app").find("option:selected").text();
+  
+    formData["app"] = appChoice;
+    formData["mac"] = mac_address;
+    formData["till"] = 1;
+
+    // Update application field in settings form
+    let $appField = $("#settings_form input[name='app']");
+    let $hiddenAppField = $('<input>', {
+      type: 'hidden',
+      name: 'app',
+      value: formData.app
+  });
+      $appField.length 
+          ? $appField.val(formData.app) 
+          : $("#settings_form").append(`<input type="hidden" name="app" value="${$hiddenAppField}" />`);
+
+
+    if (formData.percentage != "" && typeof formData.percentage === 'number') {
+      notiflix.Report.warning(
+        "Oops!",
+        "Please make sure the tax value is a number",
+        "Ok",
+      );
+    } else {
+      storage.set("settings", formData);
+
+      $(this).attr("action", api + "settings/post");
+      $(this).attr("method", "POST");
+      //@ts-expect-error
+      $(this).ajaxSubmit({
+        contentType: "application/json",
+        success: function () {
+          ipcRenderer.send("app-reload", "");
+        },
+        error: function (jqXHR) {
+          const body = jqXHR && jqXHR.responseJSON;
+          const title = (body && body.error) || "Save failed";
+          const message = (body && body.message)
+            || (jqXHR && jqXHR.statusText)
+            || "Could not reach the local API. Please restart the application.";
+          console.error("Settings save failed:", message, jqXHR);
+          notiflix.Report.failure(title, message, "Ok");
+    }
+  });
+  }
+  });
+
+  $("#srv_port").on("input", updateServerConnectionUrl);
+
+  $("#srv_license_regen").on("click", function () {
+      $("#srv_license").val(generateLicenseKey());
+  });
+
+  $("#test_connection").on("click", function () {
+    const ip = sanitizeHost($("#ip").val());
+    $("#ip").val(ip);
+    const tport = String($("#server_port").val() || "");
+    const license = String($("#term_license").val() || "");
+    const $status = $("#term_conn_status");
+    if (!ip || !tport) {
+      $status.css("color", "#dc3545").text(t("conn_failed"));
+      return;
+    }
+    $status.css("color", "#777").text(t("conn_testing"));
+    /** @type {{[k:string]:string}} */
+    const headers = {};
+    if (license) headers["X-License-Key"] = license;
+    $.ajax({
+      url: "http://" + ip + ":" + tport + "/api/discovery",
+      type: "GET",
+      timeout: 5000,
+      headers: headers,
+      success: function (data) {
+        $status.css("color", "#28a745").text(t("conn_ok") + " · v" + (data.version || "?"));
+      },
+      error: function () {
+        $status.css("color", "#dc3545").text(t("conn_failed"));
+      },
+    });
+  });
+
+  $("#server_settings_form").on("submit", function (e) {
+    e.preventDefault();
+    //@ts-expect-error
+    let formData = $(this).serializeObject();
+    formData.app = $("#app").find("option:selected").text();
+    formData.till = "1";
+    formData.mac = $("#srv_mac").val();
+    const portNum = parseInt(formData.port, 10);
+    if (!portNum || portNum < 1024 || portNum > 65535) {
+      notiflix.Report.warning("Oops!", "Port must be between 1024 and 65535.", "Ok");
+      return;
+    }
+    if (!formData.license || String(formData.license).length < 8) {
+      notiflix.Report.warning("Oops!", "License key is missing or too short.", "Ok");
+      return;
+    }
+    storage.set("settings", formData);
+    notiflix.Report.info(
+      "Restart required",
+      "Server settings saved. The app will close — please relaunch it for the new port and license to take effect.",
+      "Ok",
+      function () { ipcRenderer.send("restart-app"); }
+    );
+  });
+
+
+
+
 
     // ── Heartbeat: Terminal-only periodic ping to verify Server reachability
     //@ts-expect-error
@@ -5044,56 +4319,904 @@ if (auth == undefined) {
       }
     });
 
-  $("#rmv_logo").on("click", function () {
-    $("#remove_logo").val("1");
-    // $("#logo_img").val('');
-    $("#current_logo").hide(500);
-    $(this).hide(500);
-    $("#logoname").show(500);
-  });
+    $("#rmv_logo").on("click", function () {
+      $("#remove_logo").val("1");
+      $("#current_logo").hide(500);
+      $(this).hide(500);
+      $("#logoname").show(500);
+    });
 
-  $("#rmv_img").on("click", function () {
-    $("#remove_img").val("1");
-    // $("#img").val('');
-    $("#current_img").hide(500);
-    $(this).hide(500);
-    $("#imagename").show(500);
-  });
+    $("#rmv_img").on("click", function () {
+      $("#remove_img").val("1");
+      // $("#img").val('');
+      $("#current_img").hide(500);
+      $(this).hide(500);
+      $("#imagename").show(500);
+    });
 
-  $("#reset_database").on("click", function () {
-    notiflix.Confirm.show(
-      "Reset Application",
-      "This will permanently delete ALL data: products, invoices, payments, customers, providers, and transactions",
-      "Confirm",
-      "Cancel",
-      () => {
-        notiflix.Loading.standard("Resetting application...");
-        $.post(api + "settings/reset", function () {
-          notiflix.Loading.remove();
-          notiflix.Report.warning(
-            "Done",
-            "All data has been cleared. The application will now exit. Restart!",
-            "Confirm",
-            () => { ipcRenderer.send("restart-app", ""); }
-          );
-          storage.clear();
-        }).fail(function (jqXHR) {
-          notiflix.Loading.remove();
-          const msg = (jqXHR.responseJSON && jqXHR.responseJSON.message)
-            ? jqXHR.responseJSON.message
-            : "Failed to reset the application.";
-          notiflix.Report.failure("Error", msg, "Ok");
-        });
-      }
-    );
+    $("#reset_database").on("click", function () {
+      notiflix.Confirm.show(
+        "Reset Application",
+        "This will permanently delete ALL data: products, invoices, payments, customers, providers, and transactions",
+        "Confirm",
+        "Cancel",
+        () => {
+          notiflix.Loading.standard("Resetting application...");
+          $.post(api + "settings/reset", function () {
+            notiflix.Loading.remove();
+            notiflix.Report.warning(
+              "Done",
+              "All data has been cleared. The application will now exit. Restart!",
+              "Confirm",
+              () => { ipcRenderer.send("restart-app", ""); }
+            );
+            storage.clear();
+          }).fail(function (jqXHR) {
+            notiflix.Loading.remove();
+            const msg = (jqXHR.responseJSON && jqXHR.responseJSON.message)
+              ? jqXHR.responseJSON.message
+              : "Failed to reset the application.";
+            notiflix.Report.failure("Error", msg, "Ok");
+          });
+        }
+      );
+    });
+  }
+
+$("#status").on("change", function () {
+  by_status = parseInt($(this).find("option:selected").val().toString());
+  loadTransactions();
+});
+
+$("#tills").on("change", function () {
+  by_till = parseInt($(this).find("option:selected").val().toString());
+  loadTransactions();
+});
+
+$("#users").on("change", function () {
+  by_user = parseInt($(this).find("option:selected").val().toString());
+  loadTransactions();
+});
+
+$("#reportrange").on("apply.daterangepicker", function (ev, picker) {
+  start = picker.startDate.format("DD MMM YYYY hh:mm A");
+  end = picker.endDate.format("DD MMM YYYY hh:mm A");
+  start_date = picker.startDate.toDate().toJSON();
+  end_date = picker.endDate.toDate().toJSON();
+  loadTransactions();
+});
+
+$("body").on("submit", "#account", function (e) {
+  e.preventDefault();
+  //@ts-expect-error
+  let formData = $(this).serializeObject();
+
+  if (formData.username == "" || formData.password == "") {
+    notiflix.Report.warning("Incomplete form!", auth_empty, "Ok");
+  } else {
+    $.ajax({
+      url: api + "users/login",
+      type: "POST",
+      data: JSON.stringify(formData),
+      contentType: "application/json; charset=utf-8",
+      cache: false,
+      processData: false,
+      success: function (data) {
+        if (data.auth === true) {
+          if (formData.remember_me) {
+            storage.set("remember_me_username", formData.username);
+            storage.set("remember_me_password", formData.password);
+          } else {
+            storage.delete("remember_me_username");
+            storage.delete("remember_me_password");
+          }
+          storage.set("auth", { auth: true });
+          storage.set("user", data);
+          ipcRenderer.send("app-reload", "");
+          $("#login").hide();
+          
+        } else {
+          notiflix.Report.warning("Oops!", auth_error, "Ok");
+        }
+      },
+      error: function (data) {
+        console.log(data);
+      },
+    });
+  }
+});
+
+$("#quit").on("click", function () {
+  const diagOptions = {
+    title: "Are you sure?",
+    text: "You are about to close the application.",
+    icon: "warning",
+    okButtonText: "Close Application",
+    cancelButtonText: "Cancel"
+  };
+
+  notiflix.Confirm.show(
+    diagOptions.title,
+    diagOptions.text,
+    diagOptions.okButtonText,
+    diagOptions.cancelButtonText,
+    () => {
+      ipcRenderer.send("app-quit", "");
+    },
+  );
+});
+
+ipcRenderer.on("click-element", (event, elementId) => {
+  document.getElementById(elementId).click();
+});
+
+//Functions list ----------------------
+//Allow only numbers in input field
+function allowOnlyNumbers(selector) {
+
+  $(selector).on("keydown", function (e) {
+
+    const allowedKeys = [
+      "Backspace",
+      "Delete",
+      "Tab",
+      "Escape",
+      "Enter",
+      "ArrowLeft",
+      "ArrowRight",
+      "ArrowUp",
+      "ArrowDown"
+    ];
+
+    if (
+      allowedKeys.includes(e.key) ||
+      (
+        (e.ctrlKey || e.metaKey) &&
+        ["a", "c", "v", "x"].includes(e.key.toLowerCase())
+      )
+    ) {
+      return;
+    }
+
+    if (!/^\d$/.test(e.key)) {
+      e.preventDefault();
+    }
+
   });
 }
 
+//Serialize Object
+//@ts-expect-error
+$.fn.serializeObject = function () {
+  var o = {};
+  var a = this.serializeArray();
+  $.each(a, function () {
+    if (o[this.name]) {
+      if (!o[this.name].push) {
+        o[this.name] = [o[this.name]];
+      }
+      o[this.name].push(this.value || "");
+    } else {
+      o[this.name] = this.value || "";
+    }
+  });
+  return o;
+};
+
+//@ts-expect-error
+$.fn.print = function() {
+  console.log("printing ....")
+  //printJS({ printable: receipt, type: "raw-html" });
+};
+
+//@ts-expect-error
+$.fn.viewTransaction = function (index) {
+  const DOMPurify = require("dompurify");
+  const isRtlReceipt = getCurrentLang() === 'ar';
+  const rcptDir = isRtlReceipt ? 'rtl' : 'ltr';
+  const rcptFont = isRtlReceipt ? 'Tahoma, Arial, sans-serif' : "'Courier New', Courier, monospace";
+  const rcptPriceAlign = isRtlReceipt ? 'left' : 'right';
+  const rcptDetailsAlign = isRtlReceipt ? 'right' : 'left';
+  //let transaction_index = index;
+
+  let discount = allTransactions[index].discount;
+  // let customer =
+  //   allTransactions[index].customer == 0
+  //     ? "Walk in Customer"
+  //     : allTransactions[index].customer.username;
+  let refNumber =
+    allTransactions[index].ref_number != ""
+      ? allTransactions[index].ref_number
+      : allTransactions[index].order;
+  let orderNumber = allTransactions[index].order;
+  let paymentMethod = "";
+  let tax_row = "";
+  let items = "";
+  let products = allTransactions[index].items;
+  let paymnetRow =""
+  products.forEach((item) => {
+    items += `<tr><td>${item.product_name}</td><td>${
+      item.quantity
+    } </td><td style="text-align: ${rcptPriceAlign}"> ${moneyFormat(
+      Math.abs(item.price).toFixed(2),
+    )} </td></tr>`;
+  });
+
+  paymentMethod = allTransactions[index].payment_type;
+  let payment = allTransactions[index].payment;
+
+
+  if (allTransactions[index].paid != "") {
+    paymnetRow = `<tr>
+                    <td>${t('paid')}</td>
+                    <td>:</td>
+                    <td style="text-align: ${rcptPriceAlign}"> ${moneyFormat(
+                      Math.abs(allTransactions[index].paid).toFixed(2),
+                    )}</td>
+                </tr>
+                <tr>
+                    <td>${t('change')}</td>
+                    <td>:</td>
+                    <td style="text-align: ${rcptPriceAlign}"> ${moneyFormat(
+                      Math.abs(allTransactions[index].change).toFixed(2),
+                    )}</td>
+                </tr>
+                <tr>
+                    <td>${t('method_col')}</td>
+                    <td>:</td>
+                    <td style="text-align: ${rcptPriceAlign}">${paymentMethod}</td>
+                </tr>`;
+  }
+
+  if (settings.charge_tax) {
+    tax_row = `<tr>
+                <td>${t('receipt_vat_label')}(${validator.unescape(settings.percentage)})%</td>
+                <td>:</td>
+                <td style="text-align: ${rcptPriceAlign}">${moneyFormat(allTransactions[index].tax)}</td>
+            </tr>`;
+  }
+
+    const logo = path.join(img_path, validator.unescape(settings.img));
+      
+      receipt = `<div dir="${rcptDir}" style="font-size: 10px; font-family: ${rcptFont}; color: #000;">
+        <p style="text-align: center;">
+        ${
+          checkFileExists(logo)
+            ? `<img style='max-width: 50px' src='${logo}' /><br>`
+            : ``
+        }
+            <span style="font-size: 22px;">${validator.unescape(settings.store)}</span> <br>
+            ${validator.unescape(settings.address_one)} <br>
+            ${validator.unescape(settings.address_two)} <br>
+            ${
+              validator.unescape(settings.contact) != "" ? t('receipt_tel') + ": " + validator.unescape(settings.contact) + "<br>" : ""
+            }
+            ${validator.unescape(settings.tax) != "" ? t('receipt_vat_no') + ": " + validator.unescape(settings.tax) + "<br>" : ""}
+    </p>
+    <hr>
+    <div style="text-align: ${rcptDetailsAlign}">
+        <p>
+        ${t('receipt_invoice')} : ${orderNumber} <br>
+        ${t('receipt_ref_no')} : ${refNumber} <br>
+        ${t('receipt_customer')} : ${
+          allTransactions[index].customer == 0
+            ? t('walk_in_customer')
+            : allTransactions[index].customer.name
+        } <br>
+        ${t('cashier')} : ${allTransactions[index].user} <br>
+        ${t('date')} : ${moment(allTransactions[index].date).format(
+          "DD MMM YYYY HH:mm:ss",
+        )}<br>
+        </p>
+    </div>
+    <hr>
+    <table width="90%">
+        <thead>
+        <tr>
+            <th>${t('cart_item')}</th>
+            <th>${t('cart_qty')}</th>
+            <th style="text-align: ${rcptPriceAlign}">${t('cart_price')}</th>
+        </tr>
+        </thead>
+        <tbody>
+        ${items}
+        <tr><td colspan="3"><hr></td></tr>
+        <tr>
+            <td><b>${t('subtotal')}</b></td>
+            <td>:</td>
+            <td style="text-align: ${rcptPriceAlign}"><b>${moneyFormat(
+              allTransactions[index].subtotal,
+            )}</b></td>
+        </tr>
+        <tr>
+            <td>${t('discount')}</td>
+            <td>:</td>
+            <td style="text-align: ${rcptPriceAlign}">${
+              discount > 0
+                ? moneyFormat(
+                    parseFloat(allTransactions[index].discount).toFixed(2),
+                  )
+                : moneyFormat(0)
+            }</td>
+        </tr>
+        ${tax_row}
+        <tr>
+            <td><h5>${t('total_col')}</h5></td>
+            <td><h5>:</h5></td>
+            <td style="text-align: ${rcptPriceAlign}">
+                <h5>${moneyFormat(allTransactions[index].total)}</h5>
+            </td>
+        </tr>
+        ${payment == 0 ? "" : paymnetRow}
+        </tbody>
+        </table>
+        <br>
+        <hr>
+        <br>
+        <p style="text-align: center;">
+        ${validator.unescape(settings.footer)}
+        </p>
+        </div>`;
+
+        //prevent DOM XSS; allow windows paths in img src
+        receipt = DOMPurify.sanitize(receipt,{ ALLOW_UNKNOWN_PROTOCOLS: true });
+
+  $("#viewTransaction").html("");
+  $("#viewTransaction").html(receipt);
   //@ts-expect-error
-  $.fn.print = function () {
+  $("#orderModal").modal("show");
+};
+
+//@ts-expect-error
+$.fn.deleteTransaction = function(index) {
+  const transaction = allTransactions[index];
+  if (!transaction) return;
+
+  notiflix.Confirm.show(
+    "Delete Transaction",
+    `Are you sure you want to delete transaction ${transaction.order}?`,
+    "Yes",
+    "No",
+    function () {
+      $.ajax({
+        url: api + "delete",
+        type: "POST",
+        contentType: "application/json; charset=utf-8",
+        data: JSON.stringify({ orderId: transaction._id }),
+        success: function () {
+          $("#transaction_list").empty();
+          //@ts-expect-error
+          $("#transactionList").DataTable().destroy();
+          $("#product_sales").empty();
+          loadTransactions();
+          loadSoldProducts();
+          notiflix.Report.success("Deleted", "Transaction deleted successfully.", "Ok");
+        },
+        error: function () {
+          notiflix.Report.failure("Error", "Failed to delete transaction.", "Ok");
+        },
+      });
+    },
+    function () {},
+  );
+};
+
+function loadUserList() {
+  let counter = 0;
+  let user_list = "";
+  let login_status;
+  let login_time;
+  $("#user_list").empty();
+  //@ts-expect-error
+  $("#userList").DataTable().destroy();
+
+  $.get(api + "users/all", function (users) {
+    allUsers = [...users];
+
+    users.forEach((user, index) => {
+      state = [];
+      let class_name = "";
+
+      if (user.status != "") {
+        state = user.status.split("_");
+        login_status = state[0];
+        login_time = state[1];
+
+        switch (login_status) {
+          case "Logged In":
+            class_name = "btn-default";
+
+            break;
+          case "Logged Out":
+            class_name = "btn-light";
+            break;
+        }
+      }
+
+      counter++;
+      user_list += `<tr>
+        <td>${user.fullname}</td>
+        <td>${user.username}</td>
+        <td class="${class_name}">${
+          state.length > 0 ? login_status : ""
+        } <br><small> ${state.length > 0 ? login_time : ""}</small></td>
+        <td>${
+          user._id == 1
+            ? '<span class="btn-group"><button class="btn btn-dark"><i class="fa fa-edit"></i></button><button class="btn btn-dark"><i class="fa fa-trash"></i></button></span>'
+            : '<span class="btn-group"><button onClick="$(this).editUser(' +
+              index +
+              ')" class="btn btn-warning"><i class="fa fa-edit"></i></button><button onClick="$(this).deleteUser(' +
+              user._id +
+              ')" class="btn btn-danger"><i class="fa fa-trash"></i></button></span>'
+        }</td></tr>`;
+
+      if (counter == users.length) {
+        $("#user_list").html(user_list);
+
+        //@ts-expect-error
+        $("#userList").DataTable({
+          order: [[1, "desc"]],
+          autoWidth: false,
+          info: true,
+          JQueryUI: true,
+          ordering: true,
+          paging: false,
+        });
+      }
+    });
+  });
+}
+
+function loadProductList() {
+  const selectedProvider = $("#productProviderFilter").val();
+  let product_img
+  let products = selectedProvider
+    ? allProducts.filter((p) => p.provider === selectedProvider)
+    : [...allProducts];
+  let product_list = "";
+  let counter = 0;
+  let icon
+  $("#product_list").empty();
+  //@ts-expect-error
+  $("#productList").DataTable().destroy();
+
+  products.forEach((product, index) => {
+    counter++;
+    // let category = allCategories.filter(function (category) {
+    //   return category.name == product.category;
+    // });
+
+    product.stockAlert = "";
+    const expiryDate = moment(product.expirationDate, DATE_FORMAT);
+
+    //show stock status indicator        
+    const stockStatus = getStockStatus(product.quantity,product.minStock);
+      if(stockStatus<=0)
+      {
+      if (stockStatus === 0) {
+        product.stockStatus = "No Stock";
+        icon = "fa fa-exclamation-triangle";
+      }
+      if (stockStatus === -1) {
+        product.stockStatus = "Low Stock";
+        icon = "fa fa-caret-down";
+      }
+
+      product.stockAlert = `<br><span class="text-danger"><small><i class="${icon}"></i> ${product.stockStatus}</small></span>`;
+    }
+    //calculate days to expiry
+    product.expiryAlert = "";
+    if (!isExpired(expiryDate)) {
+      const diffDays = daysToExpire(expiryDate);
+
+      if (diffDays > 0 && diffDays <= 30) {
+        var days_noun = diffDays > 1 ? "days" : "day";
+        icon = "fa fa-clock-o";
+        product.expiryStatus = `${diffDays} ${days_noun} left`;
+        product.expiryAlert = `<br><span class="text-danger"><small><i class="${icon}"></i> ${product.expiryStatus}</small></span>`;
+      }
+      
+    } else {
+      icon = "fa fa-exclamation-triangle";
+      product.expiryStatus = "Expired";
+      product.expiryAlert = `<br><span class="text-danger"><small><i class="${icon}"></i> ${product.expiryStatus}</small></span>`;
+    }
+
+    if(product.img==="")
+    {
+      product_img=default_item_img;
+    }
+    else
+    {
+      product_img = img_path + product.img;
+      product_img = checkFileExists(product_img)
+      ? product_img
+      : default_item_img;
+    }
+    //render product list
+    product_list +=
+      `<tr ${isExpired(expiryDate) ? 'style="background-color: #ffdad7"': ""} >`+
+        `<td>${counter} </td>
+        <td><img id=${product._id}> ${product.barcode} </td>
+        <td>${product.name} ${product.expiryAlert}</td>
+        <td>${moneyFormat(product.price)}</td>
+        <td>${moneyFormat(product.costPrice)}</td>
+
+          <td>${product.stock == 1 ? product.quantity : "N/A"} ${product.stockAlert}
+        </td>
+        <td>${product.category}</td>
+        <td>${product.invoiceId || "N/A"}${product.invoiceHistory && product.invoiceHistory.length > 1 ? ` <span class="badge" title="${product.invoiceHistory.length} restocks" style="cursor:default;">${product.invoiceHistory.length}</span>` : ""}</td>
+        <td> <b>Exp.</b>: ${product.expirationDate || "N/A"} <br> <b>Ent.</b> ${product.entryDate} </td>
+        <td class="nobr"><span class="btn-group"><button onClick="$(this).editProduct(${index})" class="btn btn-warning btn-sm"><i class="fa fa-edit"></i></button><button onClick="$(this).deleteProduct(${
+          product._id
+        })" class="btn btn-danger btn-sm"><i class="fa fa-trash"></i></button></span></td></tr>`;
+
+    if (counter == products.length) {
+      $("#product_list").html(product_list);
+
+      // products.forEach((product) => {
+      //   let bcode = product.barcode || product._id;
+      //   //@ts-ignore
+      //   $("#" + product._id + "").JsBarcode(bcode, {
+      //     width: 1,
+      //     height: 25,
+      //     fontSize: 13,
+      //   });
+      // });
+    }
+  });
+
+//@ts-expect-error
+$("#productList").DataTable({
+  dom: "lfrtBip",
+  pageLength: 10,
+  lengthMenu: [5, 10, 25, 50, 100],
+  buttons: [
+    // ── CSV Product Report ──────────────────────────────────────────
+    {
+      text: '<i class="fa fa-download"></i> CSV',
+      className: "btn btn-success",
+      action: function () {
+        const sym           = (settings && validator.unescape(settings.symbol)) || '';
+        const providerLabel = $("#productProviderFilter option:selected").text() || "All Providers";
+        const selectedProvider = $("#productProviderFilter").val();
+        const source = selectedProvider
+          ? allProducts.filter((p) => p.provider === selectedProvider)
+          : [...allProducts];
+
+        function q(v) { return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"'; }
+        function csvRow(arr) { return arr.map(q).join(","); }
+
+        // Compute summary
+        let totalCostValue = 0, totalSaleValue = 0, lowStockCount = 0;
+        source.forEach(function (p) {
+          const qty = p.stock == 1 ? parseFloat(p.quantity || 0) : 0;
+          totalCostValue += parseFloat(p.costPrice || 0) * qty;
+          totalSaleValue += parseFloat(p.price     || 0) * qty;
+          if (p.stock == 1 && qty <= parseFloat(p.minStock || 1)) lowStockCount++;
+        });
+        const categories = [...new Set(source.map(function (p) { return p.category; }).filter(Boolean))].length;
+
+        const rows = [];
+
+        // Section 1 — report info
+        rows.push(["Product List Report"]);
+        rows.push(["Generated", moment().format("YYYY-MM-DD HH:mm:ss")]);
+        rows.push(["Provider Filter", providerLabel]);
+        rows.push([]);
+
+        // Section 2 — summary
+        rows.push(["SUMMARY"]);
+        rows.push(["Total Products",        source.length]);
+        rows.push(["Categories",            categories]);
+        rows.push(["Total Cost Value",      sym + totalCostValue.toFixed(2)]);
+        rows.push(["Total Sale Value",      sym + totalSaleValue.toFixed(2)]);
+        rows.push(["Low / Out of Stock",    lowStockCount]);
+        rows.push([]);
+
+        // Section 3 — product data
+        rows.push(["PRODUCTS"]);
+        rows.push([
+          "Barcode", "Name", "Category", "Provider",
+          "Sale Price", "Cost Price", "Profit %",
+          "Quantity", "Min Stock", "Managed Stock",
+          "Expiration Date", "Invoice ID",
+        ]);
+        source.forEach(function (p) {
+          rows.push([
+            p.barcode || p._id,
+            p.name,
+            p.category,
+            p.provider || "",
+            p.price,
+            p.costPrice || 0,
+            p.profitMargin || 0,
+            p.stock == 1 ? p.quantity : "N/A",
+            p.minStock || 1,
+            p.stock == 1 ? "Yes" : "No",
+            p.expirationDate || "",
+            p.invoiceId || "",
+          ]);
+        });
+
+        const csvContent = "\uFEFF" + rows.map(csvRow).join("\r\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url  = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", "product_list_" + moment().format("YYYY-MM-DD") + ".csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      },
+    },
+
+    // ── PDF Product Report ──────────────────────────────────────────
+    {
+      text: '<i class="fa fa-file-pdf-o"></i> PDF',
+      className: "btn btn-danger",
+      action: function () {
+        //@ts-expect-error
+        if (!pdfMake.vfs["Tahoma.ttf"]) {
+          const appRoot = app.getAppPath();
+          //@ts-expect-error
+          pdfMake.vfs["Tahoma.ttf"]      = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma.ttf")).toString("base64");
+          //@ts-expect-error
+          pdfMake.vfs["Tahoma-Bold.ttf"] = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma-Bold.ttf")).toString("base64");
+          //@ts-expect-error                
+          pdfMake.vfs["Roboto-Regular.ttf"]   = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-Regular.ttf")).toString("base64");
+          //@ts-expect-error
+          pdfMake.vfs["Roboto-Medium.ttf"]    = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-Medium.ttf")).toString("base64");
+          //@ts-expect-error
+          pdfMake.vfs["Roboto-Italic.ttf"]    = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-Italic.ttf")).toString("base64");
+          //@ts-expect-error
+          pdfMake.vfs["Roboto-MediumItalic.ttf"] = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-MediumItalic.ttf")).toString("base64");
+          //@ts-expect-error  
+          pdfMake.fonts = {
+            Roboto: { normal: "Roboto-Regular.ttf", bold: "Roboto-Medium.ttf", italics: "Roboto-Italic.ttf", bolditalics: "Roboto-MediumItalic.ttf" },
+            Tahoma: { normal: "Tahoma.ttf", bold: "Tahoma-Bold.ttf", italics: "Tahoma.ttf", bolditalics: "Tahoma-Bold.ttf" },
+          };
+        }
+
+        function cell(value, extra) {
+          const str = String(value == null ? "" : value);
+          const isArabic = /[\u0600-\u06FF]/.test(str);
+          return Object.assign({
+            text: str, fontSize: 7,
+            font:      isArabic ? "Tahoma" : "Roboto",
+            alignment: isArabic ? "right"  : "left",
+          }, extra || {});
+        }
+
+        const sym           = (settings && validator.unescape(settings.symbol)) || '';
+        const providerLabel = $("#productProviderFilter option:selected").text() || "All Providers";
+        const selectedProvider = $("#productProviderFilter").val();
+        const source = selectedProvider
+          ? allProducts.filter((p) => p.provider === selectedProvider)
+          : [...allProducts];
+
+        // Compute summary
+        let totalCostValue = 0, totalSaleValue = 0, lowStockCount = 0;
+        source.forEach(function (p) {
+          const qty = p.stock == 1 ? parseFloat(p.quantity || 0) : 0;
+          totalCostValue += parseFloat(p.costPrice || 0) * qty;
+          totalSaleValue += parseFloat(p.price     || 0) * qty;
+          if (p.stock == 1 && qty <= parseFloat(p.minStock || 1)) lowStockCount++;
+        });
+        const categories = [...new Set(source.map(function (p) { return p.category; }).filter(Boolean))].length;
+
+        const summaryBody = [
+          [
+            { text: "Total Products",   style: "summaryLabel" },
+            { text: String(source.length),                    style: "summaryValue" },
+            { text: "Total Cost Value",  style: "summaryLabel" },
+            { text: sym + totalCostValue.toFixed(2),          style: "summaryValue" },
+            { text: "Low / Out of Stock", style: "summaryLabel" },
+            { text: String(lowStockCount),                    style: "summaryValue" },
+          ],
+          [
+            { text: "Categories",        style: "summaryLabel" },
+            { text: String(categories),                       style: "summaryValue" },
+            { text: "Total Sale Value",  style: "summaryLabel" },
+            { text: sym + totalSaleValue.toFixed(2),          style: "summaryValue" },
+            { text: "Provider",          style: "summaryLabel" },
+            { text: providerLabel,                            style: "summaryValue" },
+          ],
+        ];
+
+        const tableHeaders = [
+          "Barcode", "Name", "Category", "Provider",
+          "Sale Price", "Cost Price", "Profit %",
+          "Qty", "Min Stock", "Managed", "Expiry", "Invoice ID",
+        ];
+        const tableRows = source.map(function (p) {
+          return [
+            p.barcode || p._id,
+            p.name,
+            p.category,
+            p.provider || "—",
+            sym + parseFloat(p.price      || 0).toFixed(2),
+            sym + parseFloat(p.costPrice  || 0).toFixed(2),
+            (p.profitMargin || 0) + "%",
+            p.stock == 1 ? p.quantity : "N/A",
+            p.minStock || 1,
+            p.stock == 1 ? "Yes" : "No",
+            p.expirationDate || "—",
+            p.invoiceId || "—",
+          ].map(function (v) { return cell(v); });
+        });
+
+        const docDefinition = {
+          pageOrientation: "landscape",
+          pageMargins: [28, 50, 28, 36],
+
+          header: function (currentPage) {
+            if (currentPage === 1) return null;
+            return { text: "ShbairPharma — Product List Report", alignment: "center", fontSize: 7, color: "#888", margin: [0, 14, 0, 0] };
+          },
+          footer: function (currentPage, pageCount) {
+            return {
+              columns: [
+                { text: "Generated: " + moment().format("YYYY-MM-DD HH:mm:ss"), fontSize: 7, color: "#888", alignment: "left",  margin: [28, 0, 0, 0] },
+                { text: "Page " + currentPage + " of " + pageCount,             fontSize: 7, color: "#888", alignment: "right", margin: [0,  0, 28, 0] },
+              ],
+            };
+          },
+
+          content: [
+            // Title block
+            { text: "ShbairPharma",        style: "brand" },
+            { text: "Product List Report", style: "reportTitle" },
+            { text: moment().format("YYYY-MM-DD HH:mm:ss"), style: "generatedDate" },
+            { text: " ", margin: [0, 4] },
+
+            // Filter bar
+            {
+              table: {
+                widths: ["*"],
+                body: [[{ text: "Provider: " + providerLabel, style: "filterCell" }]],
+              },
+              layout: { hLineWidth: () => 0, vLineWidth: () => 0, fillColor: () => "#eef3f9" },
+              margin: [0, 0, 0, 14],
+            },
+
+            // Summary stats
+            { text: "Summary", style: "sectionTitle" },
+            {
+              table: {
+                widths: ["auto", "*", "auto", "*", "auto", "*"],
+                body: summaryBody,
+              },
+              layout: {
+                hLineWidth: () => 1, vLineWidth: () => 1,
+                hLineColor: () => "#c9d8e8", vLineColor: () => "#c9d8e8",
+                fillColor:  function (i) { return i % 2 === 0 ? "#eef3f9" : "#f8fafc"; },
+                paddingLeft: () => 8, paddingRight: () => 8,
+                paddingTop:  () => 6, paddingBottom: () => 6,
+              },
+              margin: [0, 4, 0, 18],
+            },
+
+            // Products table
+            { text: "Products  (" + source.length + " records)", style: "sectionTitle" },
+            {
+              table: {
+                headerRows: 1,
+                widths: ["auto", "*", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "auto"],
+                body: [
+                  tableHeaders.map(function (h) { return { text: h, style: "tableHeader" }; }),
+                  ...tableRows,
+                ],
+              },
+              layout: {
+                hLineWidth: function (i, node) { return (i === 0 || i === node.table.body.length) ? 1 : 0.5; },
+                vLineWidth: () => 0,
+                hLineColor: () => "#c9d8e8",
+                fillColor:  function (i) { return i === 0 ? null : (i % 2 === 0 ? "#f4f7fb" : null); },
+                paddingLeft: () => 5, paddingRight: () => 5,
+                paddingTop:  () => 3, paddingBottom: () => 3,
+              },
+              margin: [0, 4, 0, 0],
+            },
+          ],
+
+          styles: {
+            brand:        { fontSize: 17, bold: true, alignment: "center", color: "#1a2436", margin: [0, 0, 0, 4] },
+            reportTitle:  { fontSize: 12, bold: true, alignment: "center", color: "#0d7377", margin: [0, 0, 0, 4] },
+            generatedDate:{ fontSize: 7,              alignment: "center", color: "#888",    margin: [0, 0, 0, 8] },
+            sectionTitle: { fontSize: 9, bold: true,  color: "#2d4154",                      margin: [0, 0, 0, 4] },
+            filterCell:   { fontSize: 8,              alignment: "center", color: "#444",    margin: [4, 6, 4, 6] },
+            summaryLabel: { fontSize: 8,              color: "#555",       margin: [0, 0, 0, 0] },
+            summaryValue: { fontSize: 9, bold: true,  color: "#1a2436", alignment: "right",  margin: [0, 0, 0, 0] },
+            tableHeader:  { fillColor: "#2d4154", color: "white", fontSize: 7, bold: true, alignment: "center", margin: [0, 3, 0, 3] },
+          },
+        };
+        //@ts-expect-error
+        pdfMake
+          .createPdf(docDefinition)
+          .download("product_list_" + moment().format("YYYY-MM-DD") + ".pdf");
+      },
+    },
+  ]
+});
+}
+
+function loadCategoryList() {
+  let category_list = "";
+  let counter = 0;
+  $("#category_list").empty();
+  //@ts-expect-error
+  $("#categoryList").DataTable().destroy();
+
+  allCategories.forEach((category, index) => {
+    counter++;
+    category_list += `<tr>
+        <td>${category.name}</td>
+        <td><span class="btn-group"><button onClick="$(this).editCategory(${index})" class="btn btn-warning"><i class="fa fa-edit"></i></button><button onClick="$(this).deleteCategory(${category.id})" class="btn btn-danger"><i class="fa fa-trash"></i></button></span></td></tr>`;
+  });
+
+  if (counter == allCategories.length) {
+    $("#category_list").html(category_list);
     //@ts-expect-error
-    printJS({ printable: receipt, type: "raw-html" });
-  };
+    $("#categoryList").DataTable({
+      autoWidth: false,
+      info: true,
+      JQueryUI: true,
+      ordering: true,
+      paging: true,
+      
+    });
+  }
+}
+
+function detectLanIp() {
+  try {
+    const os = require("os");
+    const ifaces = os.networkInterfaces();
+    for (const name of Object.keys(ifaces)) {
+      for (const iface of ifaces[name]) {
+        if (iface.family === "IPv4" && !iface.internal) return iface.address;
+      }
+    }
+  } catch (e) { /* fall through */ }
+  return "127.0.0.1";
+}
+
+function generateLicenseKey() {
+  try {
+    return require("crypto").randomBytes(16).toString("hex");
+  } catch (e) {
+    return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+  }
+}
+
+function updateServerConnectionUrl() {
+  const ip = $("#srv_ip").val();
+  const port = $("#srv_port").val();
+  $("#srv_url").val("http://" + ip + ":" + port + "/api/");
+}
+
+function loadServerFormDefaults() {
+  const macaddress = require("macaddress");
+  macaddress.one(function (err, mac) { $("#srv_mac").val(mac); });
+  $("#srv_ip").val(detectLanIp());
+  const storedPort = (platform && platform.port) || process.env.PORT || 4500;
+  const storedBind = (platform && platform.bind) || "0.0.0.0";
+  const storedLicense = (platform && platform.license) || generateLicenseKey();
+  if (!$("#srv_port").val()) $("#srv_port").val(storedPort);
+  $("#srv_bind").val(storedBind);
+  $("#srv_license").val(storedLicense);
+  updateServerConnectionUrl();
+}
+
+function sanitizeHost(raw) {
+  let v = String(raw || "").trim();
+  v = v.replace(/^https?:\/\//i, "");   // strip scheme if pasted
+  v = v.replace(/\/.*$/, "");            // strip any path
+  v = v.replace(/:\d+$/, "");            // strip trailing :port
+  return v;
+}
 
 function loadTransactions() {
   let tills = [];
@@ -5137,19 +5260,16 @@ function loadTransactions() {
                                   "DD-MMM-YYYY HH:mm:ss",
                                 )}</td>
                                 <td>${
-                                  validator.unescape(settings.symbol) + moneyFormat(trans.total)
+                                   moneyFormat(trans.total)
                                 }</td>
                                 <td>${
                                   trans.paid == ""
                                     ? ""
-                                    : validator.unescape(settings.symbol) + moneyFormat(trans.paid)
+                                    : moneyFormat(trans.paid)
                                 }</td>
                                 <td>${
                                   trans.change
-                                    ? validator.unescape(settings.symbol) +
-                                      moneyFormat(
-                                        Math.abs(trans.change).toFixed(2),
-                                      )
+                                    ? moneyFormat(Math.abs(trans.change).toFixed(2))
                                     : ""
                                 }</td>
                                 <td>${
@@ -5164,14 +5284,14 @@ function loadTransactions() {
                                     ? '<button class="btn btn-info btn-sm"><i class="fa fa-search-plus"></i></button>'
                                     : '<span class="btn-group"><button onClick="$(this).viewTransaction(' +
                                       index +
-                                      ')" class="btn btn-info btn-sm"><i class="fa fa-search-plus"></i></button><button onClick="$(this).deleteTransaction(' + index + ')" class="btn btn-danger btn-sm"><i class="fa fa-trash"></i></button></span>'
+                                      ')" class="btn btn-warning btn-sm"><i class="fa fa-search-plus"></i></button><button onClick="$(this).deleteTransaction(' + index + ')" class="btn btn-danger btn-sm"><i class="fa fa-trash"></i></button></span>'
                                 }</td>
                               </tr>
                     `;
 
         if (counter == transactions.length) {
           $("#total_sales #counter").text(
-            validator.unescape(settings.symbol) + moneyFormat((sales).toFixed(2)),
+            moneyFormat((sales).toFixed(2)),
           );
           $("#total_transactions #counter").text(transact);
 
@@ -5201,7 +5321,7 @@ function loadTransactions() {
             });
           }
 
-          loadSoldProducts();
+         
 
           if (by_user == 0 && by_till == 0) {
             userFilter(users);
@@ -5212,12 +5332,9 @@ function loadTransactions() {
           //@ts-expect-error
           $("#transactionList").DataTable({
             order: [[1, "desc"]],
-            autoWidth: false,
-            info: true,
-            JQueryUI: true,
-            ordering: true,
-            paging: true,
-            dom: "Bfrtip",
+            dom: "lfrtBip", 
+            pageLength: 5,
+            lengthMenu: [5, 10, 25, 50, 100],
             buttons: [
               // ── CSV Audit Report ───────────────────────────────────────
               {
@@ -5519,6 +5636,7 @@ function loadTransactions() {
             ],
           });
         }
+         loadSoldProducts();
       });
     } else {
       notiflix.Report.warning(
@@ -5546,7 +5664,7 @@ function loadSoldProducts() {
   let sold_list = "";
   let items = 0;
   let products = 0;
-  $("#product_sales").empty();
+  //$("#product_sales").empty();
 
   sold.forEach((item, index) => {
     items = items + parseInt(item.qty);
@@ -5569,7 +5687,6 @@ function loadSoldProducts() {
                 : "N/A"
             }</td>
             <td>${
-              validator.unescape(settings.symbol) +
               moneyFormat((item.qty * parseFloat(item.price)).toFixed(2))
             }</td>
             </tr>`;
@@ -5578,8 +5695,16 @@ function loadSoldProducts() {
       $("#total_items #counter").text(items);
       $("#total_products #counter").text(products);
       $("#product_sales").html(sold_list);
+  //     $("#product_sales_new").DataTable({
+  //       order: [[1, "desc"]],
+  //       dom: "lfrtBip", 
+  //       pageLength: 5,
+  //       lengthMenu: [5, 10, 25, 50, 100],
+  // })
     }
   });
+  
+  
 }
 
 function userFilter(users) {
@@ -5603,228 +5728,6 @@ function tillFilter(tills) {
   });
 }
 
-//@ts-expect-error
-$.fn.viewTransaction = function (index) {
-  const DOMPurify = require("dompurify");
-  const isRtlReceipt = getCurrentLang() === 'ar';
-  const rcptDir = isRtlReceipt ? 'rtl' : 'ltr';
-  const rcptFont = isRtlReceipt ? 'Tahoma, Arial, sans-serif' : "'Courier New', Courier, monospace";
-  const rcptPriceAlign = isRtlReceipt ? 'left' : 'right';
-  const rcptDetailsAlign = isRtlReceipt ? 'right' : 'left';
-  //let transaction_index = index;
-
-  let discount = allTransactions[index].discount;
-  // let customer =
-  //   allTransactions[index].customer == 0
-  //     ? "Walk in Customer"
-  //     : allTransactions[index].customer.username;
-  let refNumber =
-    allTransactions[index].ref_number != ""
-      ? allTransactions[index].ref_number
-      : allTransactions[index].order;
-  let orderNumber = allTransactions[index].order;
-  let paymentMethod = "";
-  let tax_row = "";
-  let items = "";
-  let products = allTransactions[index].items;
-  let paymnetRow =""
-  products.forEach((item) => {
-    items += `<tr><td>${item.product_name}</td><td>${
-      item.quantity
-    } </td><td style="text-align: ${rcptPriceAlign}"> ${validator.unescape(settings.symbol)} ${moneyFormat(
-      Math.abs(item.price).toFixed(2),
-    )} </td></tr>`;
-  });
-
-  paymentMethod = allTransactions[index].payment_type;
-  let payment = allTransactions[index].payment;
- 
-
-  if (allTransactions[index].paid != "") {
-    paymnetRow = `<tr>
-                    <td>${t('paid')}</td>
-                    <td>:</td>
-                    <td style="text-align: ${rcptPriceAlign}">${validator.unescape(settings.symbol)} ${moneyFormat(
-                      Math.abs(allTransactions[index].paid).toFixed(2),
-                    )}</td>
-                </tr>
-                <tr>
-                    <td>${t('change')}</td>
-                    <td>:</td>
-                    <td style="text-align: ${rcptPriceAlign}">${validator.unescape(settings.symbol)} ${moneyFormat(
-                      Math.abs(allTransactions[index].change).toFixed(2),
-                    )}</td>
-                </tr>
-                <tr>
-                    <td>${t('method_col')}</td>
-                    <td>:</td>
-                    <td style="text-align: ${rcptPriceAlign}">${paymentMethod}</td>
-                </tr>`;
-  }
-
-  if (settings.charge_tax) {
-    tax_row = `<tr>
-                <td>${t('receipt_vat_label')}(${validator.unescape(settings.percentage)})%</td>
-                <td>:</td>
-                <td style="text-align: ${rcptPriceAlign}">${validator.unescape(settings.symbol)}${parseFloat(
-                  allTransactions[index].tax,
-                ).toFixed(2)}</td>
-            </tr>`;
-  }
-
-    const logo = path.join(img_path, validator.unescape(settings.img));
-      
-      receipt = `<div dir="${rcptDir}" style="font-size: 10px; font-family: ${rcptFont}; color: #000;">
-        <p style="text-align: center;">
-        ${
-          checkFileExists(logo)
-            ? `<img style='max-width: 50px' src='${logo}' /><br>`
-            : ``
-        }
-            <span style="font-size: 22px;">${validator.unescape(settings.store)}</span> <br>
-            ${validator.unescape(settings.address_one)} <br>
-            ${validator.unescape(settings.address_two)} <br>
-            ${
-              validator.unescape(settings.contact) != "" ? t('receipt_tel') + ": " + validator.unescape(settings.contact) + "<br>" : ""
-            }
-            ${validator.unescape(settings.tax) != "" ? t('receipt_vat_no') + ": " + validator.unescape(settings.tax) + "<br>" : ""}
-    </p>
-    <hr>
-    <div style="text-align: ${rcptDetailsAlign}">
-        <p>
-        ${t('receipt_invoice')} : ${orderNumber} <br>
-        ${t('receipt_ref_no')} : ${refNumber} <br>
-        ${t('receipt_customer')} : ${
-          allTransactions[index].customer == 0
-            ? t('walk_in_customer')
-            : allTransactions[index].customer.name
-        } <br>
-        ${t('cashier')} : ${allTransactions[index].user} <br>
-        ${t('date')} : ${moment(allTransactions[index].date).format(
-          "DD MMM YYYY HH:mm:ss",
-        )}<br>
-        </p>
-    </div>
-    <hr>
-    <table width="90%">
-        <thead>
-        <tr>
-            <th>${t('cart_item')}</th>
-            <th>${t('cart_qty')}</th>
-            <th style="text-align: ${rcptPriceAlign}">${t('cart_price')}</th>
-        </tr>
-        </thead>
-        <tbody>
-        ${items}
-        <tr><td colspan="3"><hr></td></tr>
-        <tr>
-            <td><b>${t('subtotal')}</b></td>
-            <td>:</td>
-            <td style="text-align: ${rcptPriceAlign}"><b>${validator.unescape(settings.symbol)}${moneyFormat(
-              allTransactions[index].subtotal,
-            )}</b></td>
-        </tr>
-        <tr>
-            <td>${t('discount')}</td>
-            <td>:</td>
-            <td style="text-align: ${rcptPriceAlign}">${
-              discount > 0
-                ? validator.unescape(settings.symbol) +
-                  moneyFormat(
-                    parseFloat(allTransactions[index].discount).toFixed(2),
-                  )
-                : ""
-            }</td>
-        </tr>
-        ${tax_row}
-        <tr>
-            <td><h5>${t('total_col')}</h5></td>
-            <td><h5>:</h5></td>
-            <td style="text-align: ${rcptPriceAlign}">
-                <h5>${validator.unescape(settings.symbol)}${moneyFormat(
-                  allTransactions[index].total,
-                )}</h5>
-            </td>
-        </tr>
-        ${payment == 0 ? "" : paymnetRow}
-        </tbody>
-        </table>
-        <br>
-        <hr>
-        <br>
-        <p style="text-align: center;">
-         ${validator.unescape(settings.footer)}
-         </p>
-        </div>`;
-
-        //prevent DOM XSS; allow windows paths in img src
-        receipt = DOMPurify.sanitize(receipt,{ ALLOW_UNKNOWN_PROTOCOLS: true });
-
-  $("#viewTransaction").html("");
-  $("#viewTransaction").html(receipt);
-  //@ts-expect-error
-  $("#orderModal").modal("show");
-};
-
-//@ts-expect-error
-$.fn.deleteTransaction = function (index) {
-  const transaction = allTransactions[index];
-  if (!transaction) return;
-
-  notiflix.Confirm.show(
-    "Delete Transaction",
-    `Are you sure you want to delete transaction ${transaction.order}?`,
-    "Yes",
-    "No",
-    function () {
-      $.ajax({
-        url: api + "delete",
-        type: "POST",
-        contentType: "application/json; charset=utf-8",
-        data: JSON.stringify({ orderId: transaction._id }),
-        success: function () {
-          $("#transaction_list").empty();
-          //@ts-expect-error
-          $("#transactionList").DataTable().destroy();
-          $("#product_sales").empty();
-          loadTransactions();
-          loadSoldProducts();
-          notiflix.Report.success("Deleted", "Transaction deleted successfully.", "Ok");
-        },
-        error: function () {
-          notiflix.Report.failure("Error", "Failed to delete transaction.", "Ok");
-        },
-      });
-    },
-    function () {},
-  );
-};
-
-$("#status").on("change", function () {
-  by_status = parseInt($(this).find("option:selected").val().toString());
-  loadTransactions();
-});
-
-$("#tills").on("change", function () {
-  by_till = parseInt($(this).find("option:selected").val().toString());
-  loadTransactions();
-});
-
-$("#users").on("change", function () {
-  by_user = parseInt($(this).find("option:selected").val().toString());
-  loadTransactions();
-});
-
-$("#reportrange").on("apply.daterangepicker", function (ev, picker) {
-  start = picker.startDate.format("DD MMM YYYY hh:mm A");
-  end = picker.endDate.format("DD MMM YYYY hh:mm A");
-
-  start_date = picker.startDate.toDate().toJSON();
-  end_date = picker.endDate.toDate().toJSON();
-
-  loadTransactions();
-});
-
 function authenticate() {
   $(".loading").hide();
   $("body").attr("class", "login-page");
@@ -5838,66 +5741,4 @@ function authenticate() {
   }
 }
 
-$("body").on("submit", "#account", function (e) {
-  e.preventDefault();
-  //@ts-expect-error
-  let formData = $(this).serializeObject();
 
-  if (formData.username == "" || formData.password == "") {
-    notiflix.Report.warning("Incomplete form!", auth_empty, "Ok");
-  } else {
-    $.ajax({
-      url: api + "users/login",
-      type: "POST",
-      data: JSON.stringify(formData),
-      contentType: "application/json; charset=utf-8",
-      cache: false,
-      processData: false,
-      success: function (data) {
-        if (data.auth === true) {
-          if (formData.remember_me) {
-            storage.set("remember_me_username", formData.username);
-            storage.set("remember_me_password", formData.password);
-          } else {
-            storage.delete("remember_me_username");
-            storage.delete("remember_me_password");
-          }
-          storage.set("auth", { auth: true });
-          storage.set("user", data);
-          ipcRenderer.send("app-reload", "");
-          $("#login").hide();
-          
-        } else {
-          notiflix.Report.warning("Oops!", auth_error, "Ok");
-        }
-      },
-      error: function (data) {
-        console.log(data);
-      },
-    });
-  }
-});
-
-$("#quit").on("click", function () {
-  const diagOptions = {
-    title: "Are you sure?",
-    text: "You are about to close the application.",
-    icon: "warning",
-    okButtonText: "Close Application",
-    cancelButtonText: "Cancel"
-  };
-
-  notiflix.Confirm.show(
-    diagOptions.title,
-    diagOptions.text,
-    diagOptions.okButtonText,
-    diagOptions.cancelButtonText,
-    () => {
-      ipcRenderer.send("app-quit", "");
-    },
-  );
-});
-
-ipcRenderer.on("click-element", (event, elementId) => {
-  document.getElementById(elementId).click();
-});

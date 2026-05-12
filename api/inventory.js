@@ -175,7 +175,6 @@ app.post("/product", function (req, res) {
         image = sanitizeFilename(req.file.filename);
     }
 
-
     if (validator.escape(req.body.remove) === "1") {
             try {
                 let imgPath = path.join(
@@ -450,7 +449,6 @@ app.delete("/product/:productId", function (req, res) {
  * @param {Object} res response object.
  * @returns {void}
  */
-
 app.post("/product/sku", function (req, res) {
     let sku = validator.escape(req.body.skuCode);
     const safeSku = sku.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -482,7 +480,6 @@ app.post("/product/sku", function (req, res) {
  * @param {Object} res response object.
  * @returns {void}
  */
-
 app.post("/product/name", function (req, res) {
     //console.log("Search Product name API")
     let name = validator.escape(req.body.productName);
@@ -609,10 +606,7 @@ app.decrementInventory = function (products) {
                 if (!product || !product.quantity) {
                     callback();
                 } else {
-                    let updatedQuantity =
-                        parseFloat(product.quantity) -
-                        parseFloat(transactionProduct.quantity);
-                    //console.log(`Decrementing product ${product._id} quantity from ${product.quantity} to ${updatedQuantity}`);
+                    let updatedQuantity = Number((parseFloat(product.quantity) - parseFloat(transactionProduct.quantity)).toFixed(2));
                     inventoryDB.update(
                         {
                             _id: parseInt(product._id),

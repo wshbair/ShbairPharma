@@ -9,6 +9,22 @@
         ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); border-radius: 10px; }
         ::-webkit-scrollbar-track { background: transparent; }
+        .status-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;;
+        height: 32px;
+        background: #36404a;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 12px;
+        box-sizing: border-box;
+        border-top: 1px solid #444;
+        font-size: 13px;
+        }
     </style>
 </head>
 
@@ -147,7 +163,7 @@
                     <div class="row">
                         <div class="col-md-3" id="productSales">
                             <div class="card-box">
-                                <div class="card-title"><h4 data-i18n="products_title">Products</h4></div>
+                                <div class="card-title"><h4 data-i18n="sold_products_title">Products</h4></div>
                                 <div class="card-body">
                                     <table class="table tablesaw-enhanced table-responsive" id="productsSold">
                                         <thead><tr><th data-i18n="name_col">Name</th><th data-i18n="sold_col">Sold</th><th data-i18n="available_col">Available</th><th data-i18n="sales_col">Sales</th></tr></thead>
@@ -1187,11 +1203,11 @@
         </div>
 
         <!-- Payment -->
-        <div id="paymentModel" class="modal fade bs-example-modal-lg" tabindex="-1" role="dialog" aria-hidden="true">
+        <div id="paymentModel" class="modal fade bs-example-modal-lg" tabindex="-1" role="dialog" >
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                        <button type="button" class="close" data-dismiss="modal">x</button>
                         <h4 class="modal-title" data-i18n="payment">Payment</h4>
                     </div>
                     <div class="modal-body">
@@ -1441,15 +1457,15 @@
         </div>
 
         <!-- View Order -->
-        <div id="orderModal" class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog" aria-hidden="true">
+        <div id="orderModal" class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog">
             <div class="modal-dialog modal-sm">
                 <div class="modal-content">
                     <div class="modal-header">
                         <button class="btn btn-sm btn-success" onclick="$(this).print()" data-i18n="print_btn">Print</button>
-                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                        <button type="button" class="close" data-dismiss="modal">×</button>
                     </div>
                     <div class="modal-body" id="viewTransaction"></div>
-                    <div class="alert alert-danger" data-i18n="reload_tip">Right-Click and Reload if you get stuck after cancelling a print.</div>
+                    <!-- <div class="alert alert-danger" data-i18n="reload_tip">Right-Click and Reload if you get stuck after cancelling a print.</div> -->
                 </div>
             </div>
         </div>
@@ -1625,6 +1641,12 @@
             </div>
         </div>
     </div><!-- /#main_app -->
+
+    <!-- Bottom status bar -->
+    <div class="status-bar">
+      <span id="statusText"></span>
+      <span id="printerConnectionStatus"></span>
+    </div>
 
     <script src="assets/dist/js/bundle.min.js"></script>
 </body>

@@ -1,17 +1,23 @@
 let fs = require("fs");
 const crypto = require("crypto");
-let moment = require("moment");
+const { ThermalPrinter, PrinterTypes } = require("node-thermal-printer");
+const moment = require("moment");
+const path = require("path");
 const DATE_FORMAT = "YYYY-MM-DD";
-require("dotenv").config();
-const PORT = process.env.PORT;
-let path = require("path");
 const validFileTypes = [
     "image/jpg",
     "image/jpeg",
     "image/png"
 ];
+
+// Functions 
 const moneyFormat = (amount, locale = "en-US") => {
-  return new Intl.NumberFormat(locale).format(amount);
+  //return new Intl.NumberFormat(locale).format(amount);
+  return new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'ILS'
+}).format(amount);
+
 };
 
 /** Date functions **/
@@ -56,6 +62,26 @@ const getStockStatus = (currentStock, minimumStock)=>{
   return 1; // Normal stock
 }
 
+const extractCategories = (text) => {
+  const rows = text.split(/\r?\n/).filter(r => r.trim().length);
+  if (rows.length === 0) return [];
+
+  const header = rows[0].split(",").map(h => h.trim().toLowerCase());
+  const colIndex = header.indexOf("category");
+  if (colIndex === -1) return [];
+
+  return rows.slice(1)
+    .map(r => {
+      const value = r.split(",")[colIndex];
+      return value ? value.trim().toLowerCase() : "";
+    })
+    .filter(v => v !== "");
+};
+
+const extractUniqueCategories = (csvFile) => {
+  const all = extractCategories(csvFile);
+  return Array.from(new Set(all));
+};
 
 /** File **/
 const checkFileExists = (filePath) => {
@@ -77,7 +103,6 @@ const getFileHash = (filePath) => {
   return hash;
 };
 
-
 const filterFile = (req, file, callback) => {
     try {
       const isValidFile = checkFileType(file.mimetype, validFileTypes);
@@ -89,10 +114,9 @@ const filterFile = (req, file, callback) => {
     } catch (err) {
       return callback(new Error(`An error occurred: ${err}`),false);
     }
-  }
+};
 
 /*Security*/
-
 // Build a connect-src whitelist that matches the current app mode.
 // Terminal: allow the configured Server's LAN endpoint. Server/Standalone:
 // only 'self' (the embedded API on localhost) is needed.
@@ -125,32 +149,19 @@ const setContentSecurityPolicy = () => {
   document.head.appendChild(metaTag);
 };
 
-const extractCategories = (text) => {
-  const rows = text.split(/\r?\n/).filter(r => r.trim().length);
-  if (rows.length === 0) return [];
-
-  const header = rows[0].split(",").map(h => h.trim().toLowerCase());
-  const colIndex = header.indexOf("category");
-  if (colIndex === -1) return [];
-
-  return rows.slice(1)
-    .map(r => {
-      const value = r.split(",")[colIndex];
-      return value ? value.trim().toLowerCase() : "";
-    })
-    .filter(v => v !== "");
-};
-
-const extractUniqueCategories = (csvFile) => {
-  const all = extractCategories(csvFile);
-  return Array.from(new Set(all));
-};
-
 
 const playNotificationSound = () => {
   const audio = new Audio('./notification.mp3'); 
   audio.play().catch(err => console.error(err));
 };
+
+const decodeHtmlEntities = (str) => {
+    return str.replace(/&#x2F;/g, '/')
+               .replace(/&#39;/g, "'")
+               .replace(/&amp;/g, '&')
+               .replace(/&lt;/g, '<')
+               .replace(/&gt;/g, '>');
+}
 
 module.exports = {
   DATE_FORMAT,
@@ -164,5 +175,7 @@ module.exports = {
   setContentSecurityPolicy,
   extractUniqueCategories,
   playNotificationSound,
-  filterFile
+  filterFile,
+  decodeHtmlEntities
 };
+
