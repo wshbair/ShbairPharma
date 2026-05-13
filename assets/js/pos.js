@@ -5229,7 +5229,9 @@ function loadTransactions() {
 
   let counter = 0;
   let transaction_list = "";
-  let query = `by-date?start=${start_date}&end=${end_date}&user=${by_user}&status=${by_status}&till=${by_till}`;
+  // to set admin user to 0 
+  const userId = user._id == 1 ? 0 : user._id;
+  let query = `by-date?start=${start_date}&end=${end_date}&user=${userId}&status=${by_status}&till=${by_till}`;
 
   $.get(api + query, function (transactions) {
     
@@ -5710,12 +5712,10 @@ function loadSoldProducts() {
 function userFilter(users) {
   $("#users").empty();
   $("#users").append(`<option value="0">${t('all')}</option>`);
-
   users.forEach((user) => {
     let u = allUsers.filter(function (usr) {
       return usr._id == user;
     });
-
     $("#users").append(`<option value="${user}">${u[0].fullname}</option>`);
   });
 }

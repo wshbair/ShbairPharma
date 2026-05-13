@@ -1,8 +1,6 @@
 // @ts-check
 /// <reference types="jquery" />
 
-const utils = require("./utils");
-
 /** CheckOut Functions **/
 $(document).ready(function () {
 
