@@ -602,6 +602,10 @@ padding-bottom: 40px !important;
     background-color: #5fbeaa !important;
 }
 
+.bg-gray {
+    background-color: #5c5f5e !important;
+}
+
 .bg-primary {
     background-color: #5d9cec !important;
 }

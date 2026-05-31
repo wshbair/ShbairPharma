@@ -8,6 +8,7 @@ const _ = require("lodash");
 let fs = require("fs");
 let path = require("path");
 let moment = require("moment");
+const Chart = require('chart.js/auto');
 let { ipcRenderer } = require("electron");
  
 let dotInterval = setInterval(function () {
@@ -79,6 +80,7 @@ let end_date = moment(end).toDate();
 let by_till = 0;
 let by_user = 0;
 let by_status = 1;
+let histogramChart = null;
 const default_item_img = path.join("assets","images","shbairpharma_small.png");
 const permissions = [
   "perm_products",
@@ -154,9 +156,6 @@ $(function () {
   cb(start, end);
   allowOnlyNumbers('.number-input');
 });
-
-
-
 
 auth = storage.get("auth");
 user = storage.get("user");
@@ -1030,7 +1029,7 @@ if (auth == undefined) {
           success: function () {
             //@ts-expect-error
             $("#newPayment").modal("hide");
-            notiflix.Report.success("Updated", "Payment updated.", "Ok");
+            //notiflix.Report.success("Updated", "Payment updated.", "Ok");
             if (currentProvider) { loadPaymentList(currentProvider._id); loadInvoiceList(currentProvider._id); }
           },
           error: function (err) {
@@ -1048,7 +1047,7 @@ if (auth == undefined) {
           success: function () {
             //@ts-expect-error
             $("#newPayment").modal("hide");
-            notiflix.Report.success("Saved", "Payment recorded.", "Ok");
+            //notiflix.Report.success("Saved", "Payment recorded.", "Ok");
             if (currentProvider) { loadPaymentList(currentProvider._id); loadInvoiceList(currentProvider._id); }
           },
           error: function (err) {
@@ -1090,7 +1089,7 @@ if (auth == undefined) {
             url: api + "payment/" + paymentId,
             type: "DELETE",
             success: function () {
-              notiflix.Report.success("Deleted", "Payment removed.", "Ok");
+              //notiflix.Report.success("Deleted", "Payment removed.", "Ok");
               if (currentProvider) { loadPaymentList(currentProvider._id); loadInvoiceList(currentProvider._id); }
             },
             error: function (err) {
@@ -1619,11 +1618,11 @@ if (auth == undefined) {
             //@ts-expect-error
             $(this).renderTable(cart);
             holdOrder = 0;
-            notiflix.Report.success(
-              "Cleared!",
-              "All items have been removed.",
-              "Ok",
-            );
+            // notiflix.Report.success(
+            //   "Cleared!",
+            //   "All items have been removed.",
+            //   "Ok",
+            // );
           },
           null,
           diagOptions.options,
@@ -1701,7 +1700,7 @@ if (auth == undefined) {
       let mobileNumber = $("#paymentInfo").val();
       let paid = $("#payment").val() == "" ? 0 : parseFloat(paymentAmount);
       let change = $("#change").text() == "" ? 0 : parseFloat(changeAmount);
-
+      const totalCost = parseFloat($("#bill_cost").text().replace(`${settings.symbol}`, ""));
       let refNumber = $("#refNumber").val().toString()
       let orderNumber = holdOrder;
       let type = "";
@@ -1862,10 +1861,12 @@ if (auth == undefined) {
           "cashier": user.fullname,
           "items": jsonItem,
           "subTotal":  moneyFormat(subTotal.toFixed(2)),
+          "totalCost": totalCost,
+          "profit":  subTotal - totalCost,
           "discount": discount > 0
                     ? moneyFormat(discount.toFixed(2))
                     : moneyFormat(0),
-          "tax":  settings.charge_tax 
+          "tax":  settings.charge_tax
                   ? {
                       "tax_percentage": validator.unescape(settings.percentage),
                       "total_vat": moneyFormat(totalVat.toFixed(2))
@@ -1902,6 +1903,8 @@ if (auth == undefined) {
         customer: customer,
         status: status,
         subtotal: subTotal.toFixed(2),
+        totalCost: totalCost.toFixed(2),
+        profit: ( subTotal - totalCost).toFixed(2),
         tax: totalVat,
         order_type: 1,
         items: cart,
@@ -1917,7 +1920,7 @@ if (auth == undefined) {
         user: user.fullname,
         user_id: user._id,
       };
-
+      console.log("Submitting order:", data);
       $.ajax({
         url: api + "new",
         type: method,
@@ -2221,11 +2224,11 @@ if (auth == undefined) {
               //@ts-expect-error
               $(this).getCustomerOrders();
 
-              notiflix.Report.success(
-                "Deleted!",
-                "You have deleted the order!",
-                "Ok",
-              );
+              // notiflix.Report.success(
+              //   "Deleted!",
+              //   "You have deleted the order!",
+              //   "Ok",
+              // );
             },
             error: function (data) {
               $(".loading").hide();
@@ -2267,11 +2270,11 @@ if (auth == undefined) {
         success: function (data) {
           //@ts-expect-error
           $("#newCustomer").modal("hide");
-          notiflix.Report.success(
-            "Customer added!",
-            "Customer added successfully!",
-            "Ok",
-          );
+          // notiflix.Report.success(
+          //   "Customer added!",
+          //   "Customer added successfully!",
+          //   "Ok",
+          // );
           $("#customer option:selected").removeAttr("selected");
           $("#customer").append(
             $("<option>", {
@@ -2379,6 +2382,13 @@ if (auth == undefined) {
       // Send IPC message to main process to open CSV review window
       ipcRenderer.send("open-csv-review");
     });
+
+    $("#openDailyReportBtn").on("click", function () {
+      console.log("Requesting to open daily report window...");
+      // Send IPC message to main process to open daily report window
+      ipcRenderer.send("open-daily-report");
+    });
+
 
     // When provider changes in the product form, filter invoice datalist to that provider
     $("#provider").on("change", function () {
@@ -3021,8 +3031,7 @@ if (auth == undefined) {
                 : done > 0
                 ? "Invoice and " + done + " item(s) updated successfully."
                 : "Invoice updated successfully.";
-              notiflix.Report.success("Done", msg, "Ok");
-              const providerId = $("#providerListFilter").val();
+                const providerId = $("#providerListFilter").val();
               if (providerId) loadInvoiceList(providerId);
               loadInvoicesForForm();
               loadInvoicesView();
@@ -3123,7 +3132,7 @@ if (auth == undefined) {
             if (!itemsSnapshot.length) {
               //@ts-expect-error
               $('#invViewTabs a[href="#invTabList"]').tab("show");
-              notiflix.Report.success("Invoice Saved", "Invoice added successfully.", "Ok");
+              //notiflix.Report.success("Invoice Saved", "Invoice added successfully.", "Ok");
               const providerId = $("#providerListFilter").val();
               if (providerId) loadInvoiceList(providerId);
               loadInvoicesForForm();
@@ -3142,7 +3151,7 @@ if (auth == undefined) {
                 const msg = errors
                   ? "Invoice saved. " + errors + " item(s) had errors — check the product list."
                   : "Invoice and " + done + " item(s) saved successfully.";
-                notiflix.Report.success("Done", msg, "Ok");
+                //notiflix.Report.success("Done", msg, "Ok");
                 const providerId = $("#providerListFilter").val();
                 if (providerId) loadInvoiceList(providerId);
                 loadInvoicesForForm();
@@ -3225,7 +3234,7 @@ if (auth == undefined) {
             url: api + "invoice/invoice/" + invoiceId,
             type: "DELETE",
             success: function () {
-              notiflix.Report.success("Deleted!", "Invoice removed.", "Ok");
+              // notiflix.Report.success("Deleted!", "Invoice removed.", "Ok");
               const providerId = $("#providerListFilter").val();
               if (providerId) loadInvoiceList(providerId);
               loadInvoicesForForm();
@@ -3248,7 +3257,7 @@ if (auth == undefined) {
         contentType: "application/json",
         data: JSON.stringify({ paymentStatus: "paid" }),
         success: function () {
-          notiflix.Report.success("Updated!", "Invoice marked as paid.", "Ok");
+          // notiflix.Report.success("Updated!", "Invoice marked as paid.", "Ok");
           const providerId = $("#providerListFilter").val();
           if (providerId) loadInvoiceList(providerId);
         },
@@ -3311,7 +3320,7 @@ if (auth == undefined) {
             invoiceItems.push({
               type:      'edit',
               productId: p._id,
-              name:      validator.unescape(p.name || ''),
+              name:      p.name || '',
               barcode:   p.barcode || '',
               qty:       parseInt(p.quantity)    || 0,
               cost:      parseFloat(p.costPrice) || 0,
@@ -3418,7 +3427,7 @@ if (auth == undefined) {
           $("#cancelCategoryEdit").hide();
           loadCategories();
           //loadProducts();
-          notiflix.Report.success("Done!", "Category saved", "Ok");
+          //notiflix.Report.success("Done!", "Category saved", "Ok");
         },
       });
     });
@@ -3556,7 +3565,7 @@ if (auth == undefined) {
           return $(this).val() == allProducts[index].category;
         })
         .prop("selected", true);
-      $("#productName").val( utils.decodeHtmlEntities(allProducts[index].name));
+      $("#productName").val(utils.decodeHtmlEntities(allProducts[index].name));
       $("#product_price").val(allProducts[index].price);
       $("#quantity").val(allProducts[index].quantity);
       $("#barcode").val(allProducts[index].barcode || allProducts[index]._id);
@@ -3651,7 +3660,7 @@ if (auth == undefined) {
             type: "DELETE",
             success: function (result) {
               loadProducts(loadProductList);
-              notiflix.Report.success("Done!", "Product deleted", "Ok");
+              //notiflix.Report.success("Done!", "Product deleted", "Ok");
             },
           });
         },
@@ -3678,7 +3687,7 @@ if (auth == undefined) {
             type: "DELETE",
             success: function (result) {
               loadUserList();
-              notiflix.Report.success("Done!", "User deleted", "Ok");
+              //notiflix.Report.success("Done!", "User deleted", "Ok");
             },
           });
         },
@@ -3704,7 +3713,7 @@ if (auth == undefined) {
             type: "DELETE",
             success: function (result) {
               loadCategories();
-              notiflix.Report.success("Done!", "Category deleted", "Ok");
+              //notiflix.Report.success("Done!", "Category deleted", "Ok");
             },
           });
         },
@@ -3750,7 +3759,7 @@ if (auth == undefined) {
             type: "DELETE",
             success: function () {
               loadProviders();
-              notiflix.Report.success("Done!", "Provider deleted", "Ok");
+              //notiflix.Report.success("Done!", "Provider deleted", "Ok");
             },
           });
         },
@@ -3905,34 +3914,12 @@ if (auth == undefined) {
       loadProducts(loadProductList);
     });
 
-    // $("#openCsvReviewBtn").on("click", function () {
-    //   // Open the CSV review page in a new window
-    //   const { BrowserWindow } = require('@electron/remote');
-    //   const path = require('path');
-      
-    //   let csvReviewWindow = new BrowserWindow({
-    //     width: 1200,
-    //     height: 800,
-    //     webPreferences: {
-    //       nodeIntegration: true,
-    //       contextIsolation: false,
-    //       enableRemoteModule: true
-    //     },
-    //     title: 'CSV Product Review & Upload'
-    //   });
-      
-    //   csvReviewWindow.loadFile('csv-review.html');
-      
-    //   // Optional: Handle window closed
-    //   csvReviewWindow.on('closed', () => {
-    //     csvReviewWindow = null;
-    //   });
-    // });
-        var price = parseFloat($("#cost_price").val().toString()) || 0;
-        var margin = parseFloat($("#profit_margin").val().toString()) || 0;
-        var salePrice = price + (price * margin / 100);
+     
+        //var price = parseFloat($("#cost_price").val().toString()) || 0;
+        //var margin = parseFloat($("#profit_margin").val().toString()) || 0;
+        //var salePrice = price + (price * margin / 100);
         //var salePrice = price + margin;
-        $("#product_price").val(salePrice.toFixed(2));
+        //$("#product_price").val(salePrice.toFixed(2));
   });
 
   $("#profit_margin").off("input change").on("input change", function () {
@@ -4192,7 +4179,7 @@ if (auth == undefined) {
               loadUserList();
               //@ts-expect-error
               $("#Users").modal("show");
-              notiflix.Report.success("Great!", "User details saved!", "Ok");
+              //notiflix.Report.success("Great!", "User details saved!", "Ok");
             }
           },
           error: function (jqXHR,textStatus, errorThrown) {
@@ -4450,6 +4437,17 @@ ipcRenderer.on("click-element", (event, elementId) => {
   document.getElementById(elementId).click();
 });
 
+$("#searchProductHistogram").on("click", function () {
+  const productId = $("#productIdSearch").val();
+  if (!productId) {
+    notiflix.Report.warning("Input required", "Please enter a product name or barcode to search.", "Ok");
+    return;
+  }
+  const year =$("#histogramYearFilter").val();
+  searchProductHistogram(productId, year);
+});
+  
+
 //Functions list ----------------------
 //Allow only numbers in input field
 function allowOnlyNumbers(selector) {
@@ -4690,7 +4688,7 @@ $.fn.deleteTransaction = function(index) {
           $("#product_sales").empty();
           loadTransactions();
           loadSoldProducts();
-          notiflix.Report.success("Deleted", "Transaction deleted successfully.", "Ok");
+          //notiflix.Report.success("Deleted", "Transaction deleted successfully.", "Ok");
         },
         error: function () {
           notiflix.Report.failure("Error", "Failed to delete transaction.", "Ok");
@@ -4918,13 +4916,13 @@ $("#productList").DataTable({
         rows.push(["PRODUCTS"]);
         rows.push([
           "Barcode", "Name", "Category", "Provider",
-          "Sale Price", "Cost Price", "Profit %",
-          "Quantity", "Min Stock", "Managed Stock",
-          "Expiration Date", "Invoice ID",
+          "Price", "CostPrice", "ProfitMargin",
+          "Quantity", "Min Stock", "ManagedStock",
+          "ExpirationDate", "InvoiceID",
         ]);
         source.forEach(function (p) {
           rows.push([
-            p.barcode || p._id,
+            p.barcode.toString() || p._id.toString(),
             p.name,
             p.category,
             p.provider || "",
@@ -5165,7 +5163,6 @@ function loadCategoryList() {
       JQueryUI: true,
       ordering: true,
       paging: true,
-      
     });
   }
 }
@@ -5272,13 +5269,15 @@ function loadTransactions() {
                                 <td>${
                                   trans.change
                                     ? moneyFormat(Math.abs(trans.change).toFixed(2))
-                                    : ""
+                                    : 0
                                 }</td>
                                 <td>${
                                   trans.paid == ""
                                     ? ""
                                     : trans.payment_type
                                 }</td>
+                                <td>${trans.totalCost ? moneyFormat(trans.totalCost) : 0}</td>
+                                <td>${trans.profit ? moneyFormat(trans.profit) : 0}</td>
                                 <td>${trans.till}</td>
                                 <td>${trans.user}</td>
                                 <td>${
@@ -5297,8 +5296,23 @@ function loadTransactions() {
           );
           $("#total_transactions #counter").text(transact);
 
-          const result = {};
+          $('#total_profit #counter').text(
+            moneyFormat(
+              transactions.reduce(function (acc, tr) {
+                return acc + parseFloat(tr.profit || 0);
+              }, 0).toFixed(2)
+            )
+          );
 
+          $("#total_cost #counter").text(
+            moneyFormat(
+              transactions.reduce(function (acc, tr) {
+                return acc + parseFloat(tr.totalCost || 0);
+              }, 0).toFixed(2)
+            )
+          );  
+
+          const result = {};
           for (const { product_name, price, quantity, id } of sold_items) {
             if (!result[product_name]) result[product_name] = [];
             result[product_name].push({ id, price, quantity });
@@ -5324,7 +5338,6 @@ function loadTransactions() {
           }
 
          
-
           if (by_user == 0 && by_till == 0) {
             userFilter(users);
             tillFilter(tills);
@@ -5335,7 +5348,7 @@ function loadTransactions() {
           $("#transactionList").DataTable({
             order: [[1, "desc"]],
             dom: "lfrtBip", 
-            pageLength: 5,
+            pageLength: 10,
             lengthMenu: [5, 10, 25, 50, 100],
             buttons: [
               // ── CSV Audit Report ───────────────────────────────────────
@@ -5361,12 +5374,14 @@ function loadTransactions() {
                   }
 
                   // Compute summary totals
-                  let totalRevenue = 0, totalTax = 0, totalDiscount = 0, totalItemsCount = 0;
+                  let totalRevenue = 0, totalTax = 0, totalDiscount = 0, totalItemsCount = 0, totalProfit = 0, totalCost = 0;
                   allTransactions.forEach(function (tr) {
                     totalRevenue  += parseFloat(tr.total    || 0);
                     totalTax      += parseFloat(tr.tax      || 0);
                     totalDiscount += parseFloat(tr.discount || 0);
                     totalItemsCount += (tr.items || []).length;
+                    totalProfit   += parseFloat(tr.profit   || 0);
+                    totalCost     += parseFloat(tr.totalCost || 0);
                   });
                   const avg = allTransactions.length > 0
                     ? (totalRevenue / allTransactions.length).toFixed(2) : "0.00";
@@ -5391,13 +5406,15 @@ function loadTransactions() {
                   rows.push(["Total Discount",      sym + (totalDiscount).toFixed(2)]);
                   rows.push(["Avg per Transaction", sym + avg]);
                   rows.push(["Total Items Sold",    totalItemsCount]);
+                  rows.push(["Total Profit",        sym + (totalProfit).toFixed(2)]);
+                  rows.push(["Total Cost",          sym + (totalCost).toFixed(2)]);
                   rows.push([]);
 
                   // ── Section 3: Transactions ─────────────────────────────
                   rows.push(["TRANSACTIONS"]);
                   rows.push([
                     "Order #", "Date", "Customer",
-                    "Subtotal", "Tax", "Discount", "Total", "Paid", "Change",
+                    "Subtotal", "Tax", "Discount", "Total", "Paid", "Change", "Cost", "Profit",
                     "Payment Method", "Till", "Cashier", "Status", "Items",
                   ]);
                   allTransactions.forEach(function (tr) {
@@ -5411,6 +5428,8 @@ function loadTransactions() {
                       parseFloat(tr.total    || 0).toFixed(2),
                       tr.paid !== "" ? parseFloat(tr.paid || 0).toFixed(2) : "",
                       tr.change ? Math.abs(parseFloat(tr.change)).toFixed(2) : "",
+                      tr.totalCost ? parseFloat(tr.totalCost).toFixed(2) : "",
+                      tr.profit ? parseFloat(tr.profit).toFixed(2) : "",
                       tr.payment_type || "",
                       tr.till  || "",
                       tr.user  || "",
@@ -5481,11 +5500,13 @@ function loadTransactions() {
                     moment(start_date).format("DD MMM YYYY") + "  —  " +
                     moment(end_date).format("DD MMM YYYY");
 
-                  let totalRevenue = 0, totalTax = 0, totalDiscount = 0, totalItemsCount = 0;
+                  let totalRevenue = 0, totalTax = 0, totalDiscount = 0, totalItemsCount = 0, totalProfit = 0, totalCost = 0;
                   allTransactions.forEach(function (tr) {
                     totalRevenue  += parseFloat(tr.total    || 0);
                     totalTax      += parseFloat(tr.tax      || 0);
                     totalDiscount += parseFloat(tr.discount || 0);
+                    totalProfit   += parseFloat(tr.profit   || 0);
+                    totalCost     += parseFloat(tr.totalCost || 0);
                     (tr.items || []).forEach(function () { totalItemsCount++; });
                   });
                   const avg = allTransactions.length > 0
@@ -5494,27 +5515,35 @@ function loadTransactions() {
                   // Summary stats (2 rows × 6 cols)
                   const summaryBody = [
                     [
-                      { text: "Transactions",       style: "summaryLabel" },
-                      { text: String(allTransactions.length),                style: "summaryValue" },
-                      { text: "Total Revenue",       style: "summaryLabel" },
-                      { text: sym + (totalRevenue).toFixed(2),     style: "summaryValue" },
-                      { text: "Avg / Transaction",   style: "summaryLabel" },
-                      { text: sym + avg,                                      style: "summaryValue" },
+                      { text: "Transactions", style: "summaryLabel" },
+                      { text: String(allTransactions.length) ,  style: "summaryValue" },
+                      { text: "Total Revenue"                ,  style: "summaryLabel" },
+                      { text: sym + (totalRevenue).toFixed(2),  style: "summaryValue" },
+                      { text: "Avg / Transaction"            ,  style: "summaryLabel" },
+                      { text: sym + avg                      ,  style: "summaryValue" },
                     ],
                     [
-                      { text: "Items Sold",          style: "summaryLabel" },
-                      { text: String(totalItemsCount),                        style: "summaryValue" },
-                      { text: "Total Tax",           style: "summaryLabel" },
+                      { text: "Items Sold",                        style: "summaryLabel" },
+                      { text: String(totalItemsCount),             style: "summaryValue" },
+                      { text: "Total Tax",                         style: "summaryLabel" },
                       { text: sym + (totalTax).toFixed(2),         style: "summaryValue" },
-                      { text: "Total Discount",      style: "summaryLabel" },
+                      { text: "Total Discount",                    style: "summaryLabel" },
                       { text: sym + (totalDiscount).toFixed(2),    style: "summaryValue" },
+                    ],
+                    [
+                      { text: "Total Profit",                     style: "summaryLabel" },
+                      { text: sym + (totalProfit).toFixed(2),     style: "summaryValue" },
+                      { text: "Total Cost",                       style: "summaryLabel" },
+                      { text: sym + (totalCost).toFixed(2),       style: "summaryValue" },
+                      { text: "", style: "summaryLabel" },
+                      { text: "", style: "summaryValue" },
                     ],
                   ];
 
                   // Transaction rows
                   const txHeaders = [
                     "Order #", "Date & Time", "Customer",
-                    "Subtotal", "Tax", "Discount", "Total", "Paid", "Change",
+                    "Subtotal", "Tax", "Discount", "Total", "Paid", "Change", "Cost", "Profit",
                     "Method", "Till", "Cashier", "Status",
                   ];
                   const txRows = allTransactions.map(function (tr) {
@@ -5526,8 +5555,11 @@ function loadTransactions() {
                       sym + parseFloat(tr.tax      || 0).toFixed(2),
                       sym + parseFloat(tr.discount || 0).toFixed(2),
                       sym + parseFloat(tr.total    || 0).toFixed(2),
-                      tr.paid !== "" ? sym + parseFloat(tr.paid || 0).toFixed(2) : "—",
-                      tr.change ? sym + Math.abs(parseFloat(tr.change)).toFixed(2) : "—",
+
+                      tr.paid !== "" ? sym + parseFloat(tr.paid || 0).toFixed(2) : "0.00",
+                      tr.change ? sym + Math.abs(parseFloat(tr.change)).toFixed(2) : "0.00",
+                      tr.totalCost ? sym + parseFloat(tr.totalCost).toFixed(2) : "0.00",
+                      tr.profit ? sym + parseFloat(tr.profit).toFixed(2) : "0.00",
                       tr.payment_type || "—",
                       tr.till  || "—",
                       tr.user  || "—",
@@ -5536,7 +5568,7 @@ function loadTransactions() {
                   });
 
                   const docDefinition = {
-                    pageOrientation: "landscape",
+                    pageOrientation: "portrait",
                     pageMargins: [28, 50, 28, 36],
 
                     header: function (currentPage) {
@@ -5596,7 +5628,7 @@ function loadTransactions() {
                       {
                         table: {
                           headerRows: 1,
-                          widths: ["auto", "auto", "*", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "*", "auto"],
+                          widths: ["auto", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "auto","auto","auto", "auto", "auto", "auto"],
                           body: [
                             txHeaders.map(function (h) { return { text: h, style: "tableHeader" }; }),
                             ...txRows,
@@ -5640,13 +5672,19 @@ function loadTransactions() {
         }
          loadSoldProducts();
       });
-    } else {
-      notiflix.Report.warning(
-        "No data!",
-        "No transactions available within the selected criteria",
-        "Ok",
+    } 
+    else {
+      $("#transaction_list").html(
+        `<tr><td colspan="15" class="text-center">No transactions found for the selected criteria.</td></tr>`
       );
     }
+    // else {
+    //   notiflix.Report.warning(
+    //     "No data!",
+    //     "No transactions available within the selected criteria",
+    //     "Ok",
+    //   );
+    // }
   });
 }
 
@@ -5671,32 +5709,33 @@ function loadSoldProducts() {
   sold.forEach((item, index) => {
     items = items + parseInt(item.qty);
     products++;
+    
 
-    let product = allProducts.filter(function (selected) {
-      return selected._id == item.id;
-    });
+    // let product = allProducts.filter(function (selected) {
+    //   return selected._id == item.id;
+    // });
     
     counter++;
     
-    sold_list += `<tr>
-            <td>${item.product}</td>
-            <td>${item.qty}</td>
-            <td>${
-              product[0]?.stock == 1
-                ? product.length > 0
-                  ? product[0].quantity
-                  : ""
-                : "N/A"
-            }</td>
-            <td>${
-              moneyFormat((item.qty * parseFloat(item.price)).toFixed(2))
-            }</td>
-            </tr>`;
+    // sold_list += `<tr>
+    //         <td>${item.product}</td>
+    //         <td>${item.qty}</td>
+    //         <td>${
+    //           product[0]?.stock == 1
+    //             ? product.length > 0
+    //               ? product[0].quantity
+    //               : ""
+    //             : "N/A"
+    //         }</td>
+    //         <td>${
+    //           moneyFormat((item.qty * parseFloat(item.price)).toFixed(2))
+    //         }</td>
+    //         </tr>`;
 
     if (counter == sold.length) {
       $("#total_items #counter").text(items);
       $("#total_products #counter").text(products);
-      $("#product_sales").html(sold_list);
+      //$("#product_sales").html(sold_list);
   //     $("#product_sales_new").DataTable({
   //       order: [[1, "desc"]],
   //       dom: "lfrtBip", 
@@ -5739,6 +5778,219 @@ function authenticate() {
     $("input[name='password']").val(savePassword.toString());
     $("#remember_me").prop("checked", true);
   }
+}
+
+/**
+ * Search and display histogram for a product
+ */
+function searchProductHistogram(productId, year) {
+  
+  // Show loading state
+  $("#histogramEmptyState").html(
+    '<i class="fa fa-spinner fa-spin fa-2x" style="margin-bottom:16px;"></i><p>Loading chart...</p>'
+  );
+  $("#histogramStatsRow").hide();
+
+  // Fetch histogram data from API
+  fetch( api +`reports/product-sales-histogram?productId=${encodeURIComponent(productId) }&year=${encodeURIComponent(year) }`)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then((data) => {
+      // Check if data contains histogram
+      if (data.histogramData && Array.isArray(data.histogramData)) {
+        renderHistogramChart(data);
+        updateHistogramStats(data);
+      } else {
+        throw new Error("No histogram data received");
+      }
+    })
+    .catch((error) => {
+      console.error("Error fetching histogram data:", error);
+      $("#histogramEmptyState").html(
+        `<i class="fa fa-exclamation-triangle fa-2x" style="margin-bottom:16px; color:#dc3545;"></i><br>
+         <p style="font-size:14px; color:#dc3545;">Failed to load histogram: ${error.message}</p>`
+      );
+      $("#histogramStatsRow").hide();
+    });
+}
+
+/**
+ * Render the histogram chart using Chart.js
+ * @param {Object} data - Histogram data from API
+ */
+function renderHistogramChart(data) {
+  const ctx = document.getElementById("salesHistogramChart").getContext("2d");
+  const histogramData = data.histogramData || [];
+
+  // Prepare chart data
+  const labels = histogramData.map((month) => month.monthName);
+  const salesData = histogramData.map((month) => month.sales);
+  const quantityData = histogramData.map((month) => month.quantity);
+
+  // Destroy existing chart if it exists
+  if (histogramChart) {
+    histogramChart.destroy();
+  }
+
+  // Create new chart
+  histogramChart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: `Sales Amount (${(settings && validator.unescape(settings.symbol)) || ''})`,
+          data: salesData,
+          backgroundColor: "rgba(75, 192, 192, 0.6)",
+          borderColor: "rgba(75, 192, 192, 1)",
+          borderWidth: 2,
+          borderRadius: 4,
+          yAxisID: "y",
+          order: 2,
+        },
+        {
+          label: "Quantity Sold",
+          data: quantityData,
+          type: "line",
+          borderColor: "rgba(255, 99, 132, 1)",
+          backgroundColor: "rgba(255, 99, 132, 0.1)",
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          yAxisID: "y1",
+          order: 1,
+          pointBackgroundColor: "rgba(255, 99, 132, 1)",
+          pointBorderColor: "#fff",
+          pointBorderWidth: 2,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      interaction: {
+        mode: "index",
+        intersect: false,
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: "top",
+          labels: {
+            usePointStyle: true,
+            padding: 15,
+            font: {
+              size: 12,
+            },
+          },
+        },
+        tooltip: {
+          backgroundColor: "rgba(0, 0, 0, 0.8)",
+          padding: 12,
+          cornerRadius: 4,
+          titleFont: {
+            size: 13,
+            weight: "bold",
+          },
+          bodyFont: {
+            size: 12,
+          },
+          callbacks: {
+            label: function (context) {
+              let label = context.dataset.label || "";
+              if (label) {
+                label += ": ";
+              }
+              if (context.yAxisID === "y") {
+                label += parseFloat(context.parsed.y).toFixed(2);
+              } else {
+                label += context.parsed.y;
+              }
+              return label;
+            },
+          },
+        },
+      },
+      scales: {
+        y: {
+          type: "linear",
+          display: true,
+          position: "left",
+          title: {
+            display: true,
+            text: `Sales Amount (${(settings && validator.unescape(settings.symbol)) || ''})`,
+            font: {
+              size: 12,
+              weight: "bold",
+            },
+          },
+          ticks: {
+            callback: function (value) {
+              return value.toFixed(2);
+            },
+          },
+          grid: {
+            color: "rgba(0, 0, 0, 0.05)",
+          },
+        },
+        y1: {
+          type: "linear",
+          display: true,
+          position: "right",
+          title: {
+            display: true,
+            text: "Quantity Sold",
+            font: {
+              size: 12,
+              weight: "bold",
+            },
+          },
+          grid: {
+            drawOnChartArea: false,
+          },
+        },
+      },
+    },
+  });
+
+  // Show chart and hide empty state
+  $("#histogramEmptyState").hide();
+  $("#salesHistogramChart").show();
+}
+
+/**
+ * Update statistics cards with histogram data
+ * @param {Object} data - Histogram data from API
+ */
+function updateHistogramStats(data) {
+  // Update product ID display
+  $("#histogramProductId").text(`(Product Name: ${data.productName})`);
+
+  // Update period
+  const startDate = new Date(data.period.startDate);
+  const endDate = new Date(data.period.endDate);
+  const periodText = `${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}`;
+  $("#histogramPeriod").text(periodText);
+
+  // Update total sales
+  $("#histogramTotalSales").text(moneyFormat(data.totalSalesForPeriod.toFixed(2)));
+
+  // Update total quantity
+  $("#histogramTotalQty").text(data.totalQuantity);
+
+  // Calculate and update average monthly sales
+  const monthsWithSales = data.histogramData.filter((month) => month.sales > 0).length;
+  const avgMonthly = monthsWithSales > 0 ? data.totalSalesForPeriod / monthsWithSales : 0;
+  $("#histogramAvgMonthly").text(moneyFormat(avgMonthly.toFixed(2)));
+
+  // Show stats row
+  $("#histogramStatsRow").show();
 }
 
 

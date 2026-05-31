@@ -26,6 +26,7 @@
         font-size: 13px;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
 </head>
 
 <body>
@@ -104,11 +105,11 @@
                 <div class="nav-spacer"></div>
 
                 <!-- Right actions -->
-                 <button id="viewCustomerOrders" data-toggle="modal" data-target="#customerModal" type="button" onclick="$(this).getCustomerOrders()" class="btn btn-default ">
+                <button id="viewCustomerOrders" data-toggle="modal" data-target="#customerModal" type="button" onclick="$(this).getCustomerOrders()" class="btn btn-default ">
                     <i class="fa fa-shopping-cart"></i> <span data-i18n="orders">Orders</span>
                 </button>
                 <button id="transactions" type="button" class="btn btn-default p_three">
-                    <i class="glyphicon glyphicon-credit-card"></i> <span data-i18n="transactions">Transactions</span>
+                    <i class="glyphicon glyphicon-credit-card"></i> <span data-i18n="sales">Sales</span>
                 </button>
                 <div class="nav-sep"></div>
                 <div class="p_four btn-group" style="gap:5px;display:flex;">
@@ -124,6 +125,13 @@
                         <i class="glyphicon glyphicon-cog"></i>
                     </button>
                 </div>
+                <div class="nav-sep"> </div>
+                    <div class="btn-group" style="gap:5px;display:flex;">
+                        <button id="openDailyReportBtn" class="btn btn-default " data-i18n-title="daily_report" title="Daily Report">
+                            <i class="fa fa-bar-chart"></i>
+                        </button>
+                    </div>
+               
                
                 <button type="button" class="btn btn-default " id="cashier" data-i18n-title="my_profile" title="My Profile">
                     <i class="glyphicon glyphicon-user"></i> <span id="loggedin-user"></span>
@@ -139,64 +147,159 @@
             <!-- ══ TRANSACTIONS VIEW ══ -->
             <div id="transactions_view">
                 <div class="container">
-                    <div class="row text-center m-t-20" id="totals">
-                        <div id="total_sales" class="col-md-3 py-2 bg-success">
-                            <h5 data-i18n="sales">SALES</h5><span id="counter">0</span>
-                        </div>
-                        <div id="total_transactions" class="col-md-3 py-2 bg-warning">
-                            <h5 data-i18n="total_transactions">TRANSACTIONS</h5><span id="counter">0</span>
-                        </div>
-                        <div id="total_items" class="col-md-3 py-2 bg-info">
-                            <h5 data-i18n="items_sold">ITEMS SOLD</h5><span id="counter">0</span>
-                        </div>
-                        <div id="total_products" class="col-md-3 py-2 bg-success">
-                            <h5 data-i18n="total_products">PRODUCTS</h5><span id="counter">0</span>
-                        </div>
-                    </div>
-                    <div class="row p-t-10 p-b-10 bg-white m-t-10 m-b-20" style="border-radius:var(--radius);padding:14px 20px;box-shadow:var(--shadow);align-items:center;gap:8px;flex-wrap:wrap;">
-                        <h3 class="col-md-2" style="font-size:16px;font-weight:700;margin:0;" data-i18n="transactions">Transactions</h3>
-                        <div class="col-md-2"><div class="input-group"><span class="input-group-addon" id="till-addon" data-i18n="till">Till</span><select id="tills" class="form-control" aria-describedby="till-addon"></select></div></div>
-                        <div class="col-md-2"><div class="input-group"><span class="input-group-addon" id="cashier-addon" data-i18n="cashier">Cashier</span><select id="users" class="form-control" aria-describedby="cashier-addon"></select></div></div>
-                        <div class="col-md-2"><div class="input-group"><span class="input-group-addon" id="status-addon" data-i18n="status">Status</span><select id="status" class="form-control"><option value="1" data-i18n="paid">Paid</option><option value="0" data-i18n="unpaid">Unpaid</option></select></div></div>
-                        <div class="col-md-4"><div class="input-group"><span class="input-group-addon" id="date-addon" data-i18n="date">Date</span><div id="reportrange"><i class="fa fa-calendar"></i>&nbsp;<span></span>&nbsp;<i class="fa fa-caret-down"></i></div></div></div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-3" id="productSales">
-                            <div class="card-box">
-                                <div class="card-title"><h4 data-i18n="sold_products_title">Products</h4></div>
-                                <div class="card-body">
-                                    <table class="table tablesaw-enhanced table-responsive" id="productsSold">
-                                        <thead><tr><th data-i18n="name_col">Name</th><th data-i18n="sold_col">Sold</th><th data-i18n="available_col">Available</th><th data-i18n="sales_col">Sales</th></tr></thead>
-                                        <tbody id="product_sales"></tbody>
-                                    </table>
+                    
+                    <!-- Tab navigation -->
+                    <ul class="nav nav-tabs inv-view-tabs" id="prodViewTabs" role="tablist">
+                        <li role="presentation" class="active">
+                            <a href="#TransactionsReport" id="TransactionsReportLink" data-toggle="tab">
+                                <i class="fa fa-list"></i> <span data-i18n="sales">Sales</span>
+                            </a>
+                        </li>
+                        <li role="presentation">
+                            <a href="#soldProducts" id="soldProductsLink" data-toggle="tab">
+                                <i class="fa fa-plus-circle"></i> <span data-i18n="annual_sales">Annual Sales</span>
+                            </a>
+                        </li>
+                         
+                    </ul>
+
+                    <div class="tab-content inv-tab-content">
+                        <!-- ══ TAB 1: Transactions Report ══ -->
+                        <div class="tab-pane active" id="TransactionsReport">
+                         <!-- Totals boxes -->   
+                            <div class="row text-center m-t-20" id="totals">
+                                    <div id="total_sales" class="col-md-2 py-2 bg-success">
+                                        <h5 data-i18n="sales">SALES</h5><span id="counter">0</span>
+                                    </div>
+                                        <div id="total_cost" class="col-md-2 py-2 bg-success">
+                                        <h5 data-i18n="total_cost">TOTAL COST</h5><span id="counter">0</span>
+                                    </div>
+                                    <div id="total_profit" class="col-md-3 py-2 bg-success">
+                                        <h5 data-i18n="total_profit">TOTAL PROFIT</h5><span id="counter">0</span>   
+                                    </div>
+                                    <div id="total_transactions" class="col-md-2 py-2 bg-gray">
+                                        <h5 data-i18n="total_transactions">TRANSACTIONS</h5><span id="counter">0</span>
+                                    </div>
+                                    <div id="total_items" class="col-md-2 py-2 bg-gray">
+                                        <h5 data-i18n="items_sold">ITEMS SOLD</h5><span id="counter">0</span>
+                                    </div>
+                                    <div id="total_products" class="col-md-2 py-2 bg-gray">
+                                        <h5 data-i18n="total_products">PRODUCTS</h5><span id="counter">0</span>
+                                    </div>
+
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12" id="transactionDetails">
+                                    <div class="card-box">
+                                        <div class="card-body">
+                                            <div style="margin-bottom:20px; margin-top:10px; display:flex; align-items:center; gap:5px; flex-wrap:wrap; background: #f4f4f4; padding:10px; border-radius:4px;">
+                                                <h3 class="col-md-1" style="font-size:16px;font-weight:700;margin:0;" data-i18n="filter">Transactions</h3>
+                                                <div class="col-md-2"><div class="input-group"><span class="input-group-addon" id="till-addon" data-i18n="till">Till</span><select id="tills" class="form-control" aria-describedby="till-addon"></select></div></div>
+                                                <div class="col-md-2"><div class="input-group"><span class="input-group-addon" id="cashier-addon" data-i18n="cashier">Cashier</span><select id="users" class="form-control" aria-describedby="cashier-addon"></select></div></div>
+                                                <div class="col-md-2"><div class="input-group"><span class="input-group-addon" id="status-addon" data-i18n="status">Status</span><select id="status" class="form-control"><option value="1" data-i18n="paid">Paid</option><option value="0" data-i18n="unpaid">Unpaid</option></select></div></div>
+                                                <div class="col-md-4"><div class="input-group"><span class="input-group-addon" id="date-addon" data-i18n="date">Date</span><div id="reportrange"><i class="fa fa-calendar"></i>&nbsp;<span></span>&nbsp;<i class="fa fa-caret-down"></i></div></div></div>
+                                            </div>
+                                            <table class="table table-striped table-bordered table-responsive" id="transactionList">
+                                                <thead>
+                                                    <tr>
+                                                        <th data-i18n="invoice_col">Invoice</th>
+                                                        <th data-i18n="date_col">Date</th>
+                                                        <th data-i18n="total_col">Total</th>
+                                                        <th data-i18n="paid_col">Paid</th>
+                                                        <th data-i18n="change_col">Change</th>
+                                                        <th data-i18n="method_col">Method</th>
+                                                        <th> Total Cost </th>
+                                                        <th> Profit </th>
+                                                        <th data-i18n="till_col">Till</th>
+                                                        <th data-i18n="cashier_col">Cashier</th>
+                                                        <th data-i18n="view_col">View</th>
+                                                    </tr></thead>
+                                                <tbody id="transaction_list"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-9" id="transactionDetails">
-                            <div class="card-box">
-                                <div class="card-title"><h4 data-i18n="trans_details">Transaction Details</h4></div>
-                                <div class="card-body">
-                                    <table class="table table-striped table-bordered table-responsive" id="transactionList">
-                                        <thead>
-                                            <tr>
-                                                <th data-i18n="invoice_col">Invoice</th>
-                                                <th data-i18n="date_col">Date</th>
-                                                <th data-i18n="total_col">Total</th>
-                                                <th data-i18n="paid_col">Paid</th>
-                                                <th data-i18n="change_col">Change</th>
-                                                <th data-i18n="method_col">Method</th>
-                                                <th data-i18n="till_col">Till</th>
-                                                <th data-i18n="cashier_col">Cashier</th>
-                                                <th data-i18n="view_col">View</th>
-                                            </tr></thead>
-                                        <tbody id="transaction_list"></tbody>
-                                    </table>
+
+                        <!-- ══ TAB 2: Sold Products Report ══ -->
+                          <div class="tab-pane active" id="soldProducts">
+                            <div class="pv-topbar" style="margin-top:16px; margin-bottom:12px;">
+                                <div class="pv-topbar-select">
+                                    <input type="text" id="productIdSearch" class="form-control" placeholder="Enter Product ID..." maxlength="50">
+                                </div>
+                                <div>
+                                <select id="histogramYearFilter" class="form-control" style="display:inline-block; width:auto; margin-right:8px;">
+                                    <option value="" data-i18n="all_years_opt">— Select Year —</option>
+                                    <option value="2026">2026</option>
+                                    <option value="2025">2025</option>
+                                </select>
+                                <button id="searchProductHistogram" type="button" class="btn btn-success">
+                                <i class="fa fa-search"></i> <span data-i18n="search">Search</span>
+                                </button>
+                                    
+                                </div>
+                            </div>
+
+                            <!-- Stats Cards -->
+                            <div class="row" id="histogramStatsRow" style="display:none; margin-bottom:16px;">
+                                <div class="col-md-3">
+                                    <div class="card-box" style="padding:12px; text-align:center; background:#f8f9fa;">
+                                        <div style="font-size:12px; color:var(--c-muted); margin-bottom:6px;" data-i18n="period">Period</div>
+                                        <div id="histogramPeriod" style="font-size:14px; font-weight:600;">—</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card-box" style="padding:12px; text-align:center; background:#d4edda;">
+                                        <div style="font-size:12px; color:var(--c-muted); margin-bottom:6px;">Total Sales</div>
+                                        <div id="histogramTotalSales" style="font-size:16px; font-weight:600; color:#155724;">0.00</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card-box" style="padding:12px; text-align:center; background:#cfe2ff;">
+                                        <div style="font-size:12px; color:var(--c-muted); margin-bottom:6px;">Total Quantity</div>
+                                        <div id="histogramTotalQty" style="font-size:16px; font-weight:600; color:#0c5460;">0</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card-box" style="padding:12px; text-align:center; background:#fff3cd;">
+                                        <div style="font-size:12px; color:var(--c-muted); margin-bottom:6px;">Avg Monthly Sales</div>
+                                        <div id="histogramAvgMonthly" style="font-size:16px; font-weight:600; color:#856404;">0.00</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="card-box">
+                                        <div class="card-title">
+                                            <h4>
+                                                <i class="fa fa-bar-chart"></i> 
+                                                <span>Annual Sales Histogram</span>
+                                                <span id="histogramProductId" style="color:var(--c-muted); font-size:13px; margin-left:12px;">—</span>
+                                            </h4>
+                                        </div>
+                                        <div class="card-body">
+                                            <div id="histogramEmptyState" class="text-center" style="padding:60px 20px; color:var(--c-muted);">
+                                                <i class="fa fa-bar-chart fa-3x" style="margin-bottom:16px; opacity:0.5;"></i><br>
+                                                <p style="font-size:14px;">Enter a Product ID and click Search to view sales histogram</p>
+                                            </div>
+                                            <canvas id="salesHistogramChart" style="display:none; max-height:400px;"></canvas>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                        
+
+
+                    </div><!-- /tab-content -->
                 </div>
             </div>
+
+
+
+
 
             <!-- ══ PRODUCTS VIEW ══ -->
             <div id="products_view">
@@ -253,7 +356,7 @@
                                         <div class="card-body">
                                             <table class="table table-bordered" id="productList">
                                                 <thead><tr>
-                                                    <th>#</th>
+                                                    <th>Id</th>
                                                     <th data-i18n="barcode_col">Barcode</th>
                                                     <th data-i18n="name_col">Name</th>
                                                     <th data-i18n="price_col">Price</th>
@@ -354,7 +457,8 @@
                                         </div>
                                         <div class="card-body">
                                             <table class="table table-bordered" id="categoryList">
-                                                <thead><tr>
+                                                <thead>
+                                                    <tr>
                                                     <th data-i18n="name_col">Name</th>
                                                     <th data-i18n="action_col">Action</th>
                                                 </tr></thead>

@@ -372,36 +372,6 @@ app.post("/products/csv", function (req, res) {
                 }
                 else
                     return proceed()
-
-                // let catId = random(1000000, 9999999);
-                // if (!isNaN(catId)) {
-                //     categoryDB.findOne({ name: catName }, function (ce, existingCat) {
-                //         if (existingCat) {
-                //             p.category = existingCat.name;
-                //             proceed();
-                //         } else {
-                //             categoryDB.insert({ id: catId, name: catName}, function () {
-                //                 p.category = catName;
-                //                 proceed();
-                //             });
-                //         }
-                //     });
-                // } else {
-                //     let name = validator.escape(catName);
-                //     categoryDB.findOne({ name: name }, function (ce, existingCat) {
-                //         if (existingCat) {
-                //             p.category = existingCat.name;
-                //             proceed();
-                //         } else {
-                //             let id = Math.floor(Date.now() / 1000)
-                //             let newCat = { id: id, name: name };
-                //             categoryDB.insert(newCat, function () {
-                //                 p.category = newCat.name;
-                //                 proceed();
-                //             });
-                //         }
-                //     });
-                // }
             }, function (finalErr) {
                 if (finalErr) {
                     return res.status(500).json({ error: "Internal Server Error", message: "An unexpected error occurred." });

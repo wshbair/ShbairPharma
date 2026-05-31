@@ -10,3 +10,4 @@ coverage
 .github/.env
 /AppIcons
 .DS_Store
+assets/js/histogram.txt

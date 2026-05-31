@@ -132,6 +132,30 @@ ipcMain.on("open-csv-review", () => {
     });
 });
 
+ipcMain.on("open-daily-report", () => {
+    let dailyReportWindow = new BrowserWindow({
+        width: 1100,
+        height: 800,
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false,
+            //@ts-expect-error
+            enableRemoteModule: false,
+        },
+        title: 'Daily Report',
+        parent: mainWindow,
+        modal: false
+    });
+    
+    require("@electron/remote/main").enable(dailyReportWindow.webContents);
+    dailyReportWindow.loadURL(`file://${path.join(__dirname, "daily-report.html")}`);
+    
+    dailyReportWindow.on("closed", () => {
+        dailyReportWindow = null;
+    });
+});
+
+
 //Context menu
 contextMenu({
     prepend: (params, browserWindow) => [

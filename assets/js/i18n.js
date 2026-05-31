@@ -46,10 +46,10 @@ var translations = {
     cart_price: 'Price',
 
     // Transactions view
-    sales: 'SALES',
-    total_transactions: 'TRANSACTIONS',
-    items_sold: 'ITEMS SOLD',
-    total_products: 'PRODUCTS',
+    sales: 'Sales',
+    total_transactions: 'Transactions',
+    items_sold: 'Items Sold',
+    total_products: 'Products',
     till: 'Till',
     cashier: 'Cashier',
     status: 'Status',
@@ -321,7 +321,9 @@ var translations = {
     receipt_vat_label: 'VAT',
     receipt_mobile: 'Mobile Number',
 
-    sold_products_title: 'Sold Products'
+    annual_sales: 'Annual Sales',
+    filter: 'Filter',
+    all_years_opt: 'Select Year',
   },
 
   ar: {

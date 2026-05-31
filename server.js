@@ -87,6 +87,8 @@ express.use("/api", require("./api/transactions"));
 express.use("/api/invoice",  require("./api/invoice"));
 express.use("/api/payment",  require("./api/payment"));
 express.use("/api/settings",  require("./api/settings"));
+express.use("/api/reports", require("./api/reports"));
+
 
 
 

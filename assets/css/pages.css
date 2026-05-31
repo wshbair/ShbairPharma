@@ -867,7 +867,7 @@ body {
     margin: 0 0 6px; text-align: center !important;
 }
 #counter { font-size: 26px !important; font-weight: 700 !important; }
-#total_sales,#total_transactions,#total_items,#total_products {
+#total_sales,#total_transactions,#total_items,#total_products, #total_cost, #total_profit {
     color: #fff !important;
 }
 #productSales  { height: calc(100vh - 280px) !important; overflow: auto; border-radius: var(--radius); }

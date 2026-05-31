@@ -1,7 +1,5 @@
-//const { ipcRenderer } = require("electron");
 const { randomInt } = require("node:crypto");
 const notiflix = require("notiflix");
-//const path = require("path");
 
 const extractCategories = (text) => {
   const rows = text.split(/\r?\n/).filter(r => r.trim().length);
@@ -45,6 +43,7 @@ $(document).ready(function() {
 
     // Parse CSV button click
     $('#parseBtn').on('click', function() {
+        try {
         //@ts-expect-error
         const file = $('#csvFile')[0].files[0];
         if (!file) return;
@@ -55,6 +54,9 @@ $(document).ready(function() {
             parseCSV(csvText);
         };
         reader.readAsText(file);
+        } catch (error) {
+            alert('Error reading file: ' + error.message);
+        }
     });
 
     // Back to upload button
@@ -334,14 +336,14 @@ $(document).ready(function() {
             type: "POST",
             data: JSON.stringify(categoriesList),
             contentType: "application/json",
-            success: function (resp) {
-            notiflix.Report.success(
-            "Categories Uploaded Successfully",
-            "",
-            "Ok"
-            );
+            // success: function (resp) {
+            // notiflix.Report.success(
+            // "Categories Uploaded Successfully",
+            // "",
+            // "Ok"
+            // );
                 
-            },
+            // },
             error: function (jqXHR) {
             var message =  "Failed to upload categories.";
             var errorTitle = "Failed to upload categories.";
