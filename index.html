@@ -26,7 +26,6 @@
         font-size: 13px;
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
 </head>
 
 <body>
@@ -105,11 +104,12 @@
                 <div class="nav-spacer"></div>
 
                 <!-- Right actions -->
-                <button id="viewCustomerOrders" data-toggle="modal" data-target="#customerModal" type="button" onclick="$(this).getCustomerOrders()" class="btn btn-default ">
-                    <i class="fa fa-shopping-cart"></i> <span data-i18n="orders">Orders</span>
-                </button>
+               
                 <button id="transactions" type="button" class="btn btn-default p_three">
                     <i class="glyphicon glyphicon-credit-card"></i> <span data-i18n="sales">Sales</span>
+                </button>
+                 <button id="viewCustomerOrders" data-toggle="modal" data-target="#customerModal" type="button" onclick="$(this).getCustomerOrders()" class="btn btn-default ">
+                    <i class="fa fa-shopping-cart"></i> <span data-i18n="orders">Orders</span>
                 </button>
                 <div class="nav-sep"></div>
                 <div class="p_four btn-group" style="gap:5px;display:flex;">
@@ -126,13 +126,7 @@
                     </button>
                 </div>
                 <div class="nav-sep"> </div>
-                    <div class="btn-group" style="gap:5px;display:flex;">
-                        <button id="openDailyReportBtn" class="btn btn-default " data-i18n-title="daily_report" title="Daily Report">
-                            <i class="fa fa-bar-chart"></i>
-                        </button>
-                    </div>
-               
-               
+                    
                 <button type="button" class="btn btn-default " id="cashier" data-i18n-title="my_profile" title="My Profile">
                     <i class="glyphicon glyphicon-user"></i> <span id="loggedin-user"></span>
                 </button>
@@ -157,7 +151,7 @@
                         </li>
                         <li role="presentation">
                             <a href="#soldProducts" id="soldProductsLink" data-toggle="tab">
-                                <i class="fa fa-plus-circle"></i> <span data-i18n="annual_sales">Annual Sales</span>
+                                <i class="fa fa-bar-chart"></i> <span data-i18n="annual_sales">Annual Sales</span>
                             </a>
                         </li>
                          
@@ -169,22 +163,22 @@
                          <!-- Totals boxes -->   
                             <div class="row text-center m-t-20" id="totals">
                                     <div id="total_sales" class="col-md-2 py-2 bg-success">
-                                        <h5 data-i18n="sales">SALES</h5><span id="counter">0</span>
+                                        <h5 data-i18n="sales">Sales</h5><span id="counter">0</span>
                                     </div>
                                         <div id="total_cost" class="col-md-2 py-2 bg-success">
-                                        <h5 data-i18n="total_cost">TOTAL COST</h5><span id="counter">0</span>
+                                        <h5 data-i18n="total_cost">Total Cost</h5><span id="counter">0</span>
                                     </div>
                                     <div id="total_profit" class="col-md-3 py-2 bg-success">
-                                        <h5 data-i18n="total_profit">TOTAL PROFIT</h5><span id="counter">0</span>   
+                                        <h5 data-i18n="total_profit">Total Profit</h5><span id="counter">0</span>   
                                     </div>
                                     <div id="total_transactions" class="col-md-2 py-2 bg-gray">
-                                        <h5 data-i18n="total_transactions">TRANSACTIONS</h5><span id="counter">0</span>
+                                        <h5 data-i18n="total_transactions">Transactions</h5><span id="counter">0</span>
                                     </div>
                                     <div id="total_items" class="col-md-2 py-2 bg-gray">
-                                        <h5 data-i18n="items_sold">ITEMS SOLD</h5><span id="counter">0</span>
+                                        <h5 data-i18n="items_sold">Items Sold</h5><span id="counter">0</span>
                                     </div>
                                     <div id="total_products" class="col-md-2 py-2 bg-gray">
-                                        <h5 data-i18n="total_products">PRODUCTS</h5><span id="counter">0</span>
+                                        <h5 data-i18n="total_products">Products</h5><span id="counter">0</span>
                                     </div>
 
                             </div>
@@ -208,8 +202,8 @@
                                                         <th data-i18n="paid_col">Paid</th>
                                                         <th data-i18n="change_col">Change</th>
                                                         <th data-i18n="method_col">Method</th>
-                                                        <th> Total Cost </th>
-                                                        <th> Profit </th>
+                                                        <th data-i18n="total_cost_col">Total Cost</th>
+                                                        <th data-i18n="profit_col">Profit</th>
                                                         <th data-i18n="till_col">Till</th>
                                                         <th data-i18n="cashier_col">Cashier</th>
                                                         <th data-i18n="view_col">View</th>
@@ -459,6 +453,7 @@
                                             <table class="table table-bordered" id="categoryList">
                                                 <thead>
                                                     <tr>
+                                                    <th><input type="checkbox" id="categorySelectAll"></th>
                                                     <th data-i18n="name_col">Name</th>
                                                     <th data-i18n="action_col">Action</th>
                                                 </tr></thead>

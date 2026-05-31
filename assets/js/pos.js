@@ -281,7 +281,6 @@ if (auth == undefined) {
             allProducts = [...data];
           })
         ]).then(async () => {
-          console.timeEnd('App Initialization');
           $("#statusText").text(`Ready`)
           $("#printerConnectionStatus").text(`Printer: ${await printerStatus()}`)
         }).catch(err => console.error('Error loading parallel data:', err));
@@ -2646,7 +2645,6 @@ if (auth == undefined) {
       invoiceItems[idx].price = salePrice.toFixed(2);
     });
 
-
     $(document).on("input", ".inv-cost-input", function () {
       const idx = parseInt($(this).data("idx"));
       invoiceItems[idx].cost = parseFloat($(this).val()) || 0;
@@ -3695,32 +3693,6 @@ if (auth == undefined) {
     };
 
     //@ts-expect-error
-    $.fn.deleteCategory = function (id) {
-      const diagOptions = {
-        title: "Are you sure?",
-        text: "You are about to delete this category.",
-        okButtonText: "Yes, delete it!",
-      };
-
-      notiflix.Confirm.show(
-        diagOptions.title,
-        diagOptions.text,
-        diagOptions.okButtonText,
-        diagOptions.cancelButtonText,
-        () => {
-          $.ajax({
-            url: api + "categories/category/" + id,
-            type: "DELETE",
-            success: function (result) {
-              loadCategories();
-              //notiflix.Report.success("Done!", "Category deleted", "Ok");
-            },
-          });
-        },
-      );
-    };
-
-    //@ts-expect-error
     $.fn.editProvider = function (index) {
       //@ts-expect-error
       $("#Providers").modal("hide");
@@ -3914,12 +3886,6 @@ if (auth == undefined) {
       loadProducts(loadProductList);
     });
 
-     
-        //var price = parseFloat($("#cost_price").val().toString()) || 0;
-        //var margin = parseFloat($("#profit_margin").val().toString()) || 0;
-        //var salePrice = price + (price * margin / 100);
-        //var salePrice = price + margin;
-        //$("#product_price").val(salePrice.toFixed(2));
   });
 
   $("#profit_margin").off("input change").on("input change", function () {
@@ -4078,10 +4044,6 @@ if (auth == undefined) {
       function () { ipcRenderer.send("restart-app"); }
     );
   });
-
-
-
-
 
     // ── Heartbeat: Terminal-only periodic ping to verify Server reachability
     //@ts-expect-error
@@ -4780,10 +4742,6 @@ function loadProductList() {
 
   products.forEach((product, index) => {
     counter++;
-    // let category = allCategories.filter(function (category) {
-    //   return category.name == product.category;
-    // });
-
     product.stockAlert = "";
     const expiryDate = moment(product.expirationDate, DATE_FORMAT);
 
@@ -4922,7 +4880,7 @@ $("#productList").DataTable({
         ]);
         source.forEach(function (p) {
           rows.push([
-            p.barcode.toString() || p._id.toString(),
+             `"${p.barcode.toString()}"` || p._id.toString(),
             p.name,
             p.category,
             p.provider || "",
@@ -5026,7 +4984,9 @@ $("#productList").DataTable({
         const tableHeaders = [
           "Barcode", "Name", "Category", "Provider",
           "Sale Price", "Cost Price", "Profit %",
-          "Qty", "Min Stock", "Managed", "Expiry", "Invoice ID",
+          "Qty", "Min Stock", 
+          //"Managed", 
+          "Expiry", "Invoice ID",
         ];
         const tableRows = source.map(function (p) {
           return [
@@ -5039,14 +4999,14 @@ $("#productList").DataTable({
             (p.profitMargin || 0) + "%",
             p.stock == 1 ? p.quantity : "N/A",
             p.minStock || 1,
-            p.stock == 1 ? "Yes" : "No",
+            //p.stock == 1 ? "Yes" : "No",
             p.expirationDate || "—",
             p.invoiceId || "—",
           ].map(function (v) { return cell(v); });
         });
 
         const docDefinition = {
-          pageOrientation: "landscape",
+          pageOrientation: "portrait",
           pageMargins: [28, 50, 28, 36],
 
           header: function (currentPage) {
@@ -5101,7 +5061,7 @@ $("#productList").DataTable({
             {
               table: {
                 headerRows: 1,
-                widths: ["auto", "*", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "auto"],
+                widths: ["auto", "*", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "auto"],
                 body: [
                   tableHeaders.map(function (h) { return { text: h, style: "tableHeader" }; }),
                   ...tableRows,
@@ -5149,9 +5109,11 @@ function loadCategoryList() {
 
   allCategories.forEach((category, index) => {
     counter++;
+    const categoryId = category.id || category._id;
     category_list += `<tr>
+        <td><input type="checkbox" class="category-select-row" value="${categoryId}"></td>
         <td>${category.name}</td>
-        <td><span class="btn-group"><button onClick="$(this).editCategory(${index})" class="btn btn-warning"><i class="fa fa-edit"></i></button><button onClick="$(this).deleteCategory(${category.id})" class="btn btn-danger"><i class="fa fa-trash"></i></button></span></td></tr>`;
+        <td><span class="btn-group"><button onClick="$(this).editCategory(${index})" class="btn btn-warning"><i class="fa fa-edit"></i></button><button onClick="$(this).deleteCategory(${categoryId})" class="btn btn-danger"><i class="fa fa-trash"></i></button></span></td></tr>`;
   });
 
   if (counter == allCategories.length) {
@@ -5163,6 +5125,59 @@ function loadCategoryList() {
       JQueryUI: true,
       ordering: true,
       paging: true,
+      searching: true,
+      dom: "lfrtBip",
+      buttons: [
+        {
+          text: '<i class="fa fa-trash"></i> Delete Selected',
+          className: "btn btn-danger",
+          action: function () {
+            const selectedIds = $(".category-select-row:checked").map(function () {
+              return $(this).val();
+            }).get();
+
+            if (selectedIds.length === 0) {
+              notiflix.Report.warning("No Selection", "Please select at least one category to delete.", "Ok");
+              return;
+            }
+
+            notiflix.Confirm.show(
+              "Delete Categories",
+              `Are you sure you want to delete ${selectedIds.length} selected categories? This action cannot be undone.`,
+              "Yes",
+              "No",
+              function () {
+                let remaining = selectedIds.length;
+                selectedIds.forEach((id) => {
+                  $.ajax({
+                    url: api + "categories/category/" + id,
+                    type: "DELETE",
+                    success: function () {
+                      remaining -= 1;
+                      if (remaining === 0) {
+                        $.get(api + "categories/all", function (data) {
+                          allCategories = data;
+                          loadCategoryList();
+                        });
+                        
+                      }
+                    },
+                    error: function () {
+                      remaining -= 1;
+                      if (remaining === 0) {
+                        loadCategoryList();
+                      }
+                    },
+            });
+          });
+              },
+              function () {
+              },
+            );
+          }
+        },
+       ]
+      
     });
   }
 }
@@ -5990,5 +6005,3 @@ function updateHistogramStats(data) {
   // Show stats row
   $("#histogramStatsRow").show();
 }
-
-

@@ -1,5 +1,4 @@
 const app = require("express")();
-//const server = require("http").Server(app);
 const bodyParser = require("body-parser");
 const async = require("async");
 const sanitizeFilename = require('sanitize-filename');

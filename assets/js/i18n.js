@@ -321,7 +321,7 @@ var translations = {
     receipt_vat_label: 'VAT',
     receipt_mobile: 'Mobile Number',
 
-    annual_sales: 'Annual Sales',
+    annual_sales: 'Product Annual Sales',
     filter: 'Filter',
     all_years_opt: 'Select Year',
     period: 'Sales Period',
