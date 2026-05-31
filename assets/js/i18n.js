@@ -324,6 +324,7 @@ var translations = {
     annual_sales: 'Annual Sales',
     filter: 'Filter',
     all_years_opt: 'Select Year',
+    period: 'Sales Period',
   },
 
   ar: {

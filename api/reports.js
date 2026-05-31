@@ -189,6 +189,8 @@ app.get("/product-sales-histogram", async (req, res) => {
     const endDate = new Date();
     const startDate = new Date();
     startDate.setFullYear(Number(year), 0);
+    endDate.setFullYear(Number(year), 11);
+
 
     // Query transactions containing the product from the past year
     const transactions = await transactionsDB.find({
@@ -199,24 +201,27 @@ app.get("/product-sales-histogram", async (req, res) => {
       status: 1, // Only completed transactions
       "items.id": Number(productId),
     });
-    console.log(transactions);
+    //console.log(transactions);
     // Initialize histogram data for all months in the past year
     const histogramData = [];
     const monthMap = {};
     let productName = "";
     // Create entries for all months
-    for (let i = 0; i < 12; i++) {
-      const monthDate = new Date(startDate);
-      monthDate.setMonth(startDate.getMonth() + i);
-      const yearMonth = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, "0")}`;
+    for (let month = 0; month < 12; month++) {
+      const monthDate = new Date(Number(year), month, 1);
+      const yearMonth = `${year}-${String(month + 1).padStart(2, "0")}`;
       monthMap[yearMonth] = {
         month: yearMonth,
-        monthName: monthDate.toLocaleDateString("en-US", { year: "numeric", month: "long" }),
+        monthName: monthDate.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+        }),
         sales: 0,
         quantity: 0,
         transactionCount: 0,
       };
     }
+
 
     // Process transactions and aggregate sales data by month
     if (Array.isArray(transactions)) {

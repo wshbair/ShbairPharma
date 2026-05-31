@@ -5973,9 +5973,7 @@ function updateHistogramStats(data) {
   $("#histogramProductId").text(`(Product Name: ${data.productName})`);
 
   // Update period
-  const startDate = new Date(data.period.startDate);
-  const endDate = new Date(data.period.endDate);
-  const periodText = `${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}`;
+  const periodText = `${data.histogramData[0]?.monthName} to ${data.histogramData[data.histogramData.length - 1]?.monthName}`;
   $("#histogramPeriod").text(periodText);
 
   // Update total sales
