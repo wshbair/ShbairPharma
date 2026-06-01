@@ -1,7 +1,33 @@
 // @ts-check
-
 const app = require("express")();
 const bodyParser = require("body-parser");
+const sanitizeFilename = require('sanitize-filename');
+const multer = require("multer");
+const path = require("path");
+const appName = process.env.APPNAME;
+const appData = process.env.APPDATA;
+
+// ── File upload middleware (invoice photos / PDFs) ──────────────────────────
+const storage = multer.diskStorage({
+    destination: path.join(appData, appName, "uploads"),
+    filename: function (req, file, callback) {
+        callback(null, Date.now() + path.extname(file.originalname));
+    },
+});
+
+const invoiceUpload = multer({
+    storage: storage,
+    limits: { fileSize: 2097152 * 5 }, // 10 MB
+    fileFilter: function (req, file, cb) {
+        const allowed = ["application/pdf", "image/jpeg", "image/png", "image/jpg"];
+        if (allowed.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            //@ts-expect-error
+            cb(new multer.MulterError("LIMIT_UNEXPECTED_FILE"), false);
+        }
+    },
+}).single("invoiceFile");
 
 app.use(bodyParser.json());
 module.exports = app;
@@ -72,8 +98,25 @@ app.get("/", function (req, res) {
  * Get all expenses with optional filtering
  */
 app.get("/all", function (req, res) {
-  expensesDB.find({}, function (err, docs) {
-    console.log("Retrieved expenses:", docs);
+    const { category, startDate, endDate } = req.query;
+    const query = {};
+    
+    if (category && EXPENSE_CATEGORIES.includes(category)) {
+        query.category = category;
+    }
+    
+    if (startDate || endDate) {
+        query.expenseDate = {};
+        if (startDate) {
+            query.expenseDate.$gte = new Date(startDate).getTime();
+        }
+        if (endDate) {
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+            query.expenseDate.$lte = end.getTime();
+        }
+    }
+  expensesDB.find(query, function (err, docs) {
     res.send({
       success: true,
       count: docs.length,
@@ -89,14 +132,7 @@ app.get("/all", function (req, res) {
  */
 app.get("/category/:category", function (req, res) {
     const { category } = req.params;
-    
-    if (!VALID_CATEGORIES.includes(category)) {
-        return res.status(400).json({
-            error: "Invalid category",
-            message: `Category must be one of: ${VALID_CATEGORIES.join(', ')}`
-        });
-    }
-    
+
     expensesDB.find({ category }).sort({ expenseDate: -1 }).exec(function (err, docs) {
         if (err) {
             console.error(err);
@@ -147,44 +183,36 @@ app.get("/expense/:id", function (req, res) {
  * POST /expense
  * Create a new expense
  */
+
+
 app.post("/expense", function (req, res) {
-    const expenseData = req.body;
-    
-    // Validate
-    const validation = validateExpense(expenseData);
-    if (!validation.valid) {
-        return res.status(400).json({
-            error: "Validation Error",
-            message: "Invalid expense data",
-            details: validation.errors
-        });
-    }
-    
-    // Prepare data
-    const newExpense = {
-        title: expenseData.title.trim(),
-        category: expenseData.category,
-        amount: parseFloat(expenseData.amount),
-        description: expenseData.description || "",
-        expenseDate: new Date(expenseData.expenseDate).getTime(),
-        createdAt: Date.now(),
-        updatedAt: Date.now()
-    };
-    
-    expensesDB.insert(newExpense, function (err, expense) {
+    console.log("Received expense creation request with body:", req.body);
+    invoiceUpload(req, res, function (err) {
         if (err) {
-            console.error(err);
-            res.status(500).json({
-                error: "Internal Server Error",
-                message: "Failed to create expense"
-            });
-        } else {
-            res.status(201).json({
-                success: true,
-                message: "Expense created successfully",
-                data: expense
-            });
+            if (err instanceof multer.MulterError) {
+                return res.status(400).json({ error: "Upload Error", message: err.message });
+            }
+            return res.status(500).json({ error: "Internal Server Error", message: err.message });
         }
+        
+        const invoiceFile = req.file ? sanitizeFilename(req.file.filename) : "";
+        const invoice = {
+            title: req.body.title,
+            category: req.body.category,
+            amount: parseFloat(req.body.amount),
+            description: req.body.description || "",
+            expenseDate: new Date(req.body.expenseDate).getTime(),
+            expenseFile: invoiceFile,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()   
+        };
+        expensesDB.insert(invoice, function (err, newInvoice) {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({ error: "Internal Server Error" });
+            }
+            res.status(200).json(newInvoice);
+        });
     });
 });
 

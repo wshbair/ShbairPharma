@@ -335,6 +335,16 @@ var translations = {
     amount: 'Amount',
     description: 'Description',
     invoice: 'Invoice',
+    expenses: 'Expenses',
+    delete_selected: 'Delete Selected',
+    total_expenses: 'Total Expenses',
+    by_category: 'Expenses by Category',
+    export_csv: 'Export CSV',
+    export_pdf: 'Export PDF',
+    view_by_month: 'View by Month',
+    view_by_year: 'View by Year',
+    expense_shares: 'Expense Shares',
+    save_expense: 'Save Expense',
   },
 
   ar: {
@@ -657,7 +667,9 @@ var translations = {
     receipt_vat_label: 'ض.ق.م',
     receipt_mobile: 'رقم الجوال',
 
-    sold_products_title: "منتجات مباعة"
+    sold_products_title: "منتجات مباعة",
+    expense_shares: 'حصص المصروفات',
+    save: 'حفظ',
   }
 };
 

@@ -1590,7 +1590,6 @@ if (auth == undefined) {
       
     };
 
-
     //@ts-expect-error
     $.fn.cancelOrder = function () {
       if (cart.length > 0) {
@@ -2328,6 +2327,7 @@ if (auth == undefined) {
       $("#products_view").hide();
       $("#providers_view").hide();
       $("#invoices_view").hide();
+      $("#expenses_view").hide();
       $(this).hide();
     });
 
@@ -2387,7 +2387,6 @@ if (auth == undefined) {
       // Send IPC message to main process to open daily report window
       ipcRenderer.send("open-daily-report");
     });
-
 
     // When provider changes in the product form, filter invoice datalist to that provider
     $("#provider").on("change", function () {
@@ -3757,6 +3756,7 @@ if (auth == undefined) {
       $("#transactions").hide();
       $("#providers_view").hide();
       $("#invoices_view").hide();
+      $("#expenses_view").hide();
 
     });
 
