@@ -1919,7 +1919,7 @@ if (auth == undefined) {
         user: user.fullname,
         user_id: user._id,
       };
-      console.log("Submitting order:", data);
+      
       $.ajax({
         url: api + "new",
         type: method,
@@ -3771,6 +3771,7 @@ if (auth == undefined) {
       $("#invoices_view").hide();
       $("#pv_empty_state").show();
       $("#pv_detail").hide();
+      $("#expenses_view").hide();
 
       // Reset view to blank state
       updateProviderInfo(null);
@@ -3794,6 +3795,7 @@ if (auth == undefined) {
       $("#invoices_view").show();
       $("#pointofsale").hide();
       $("#transactions").hide();
+      $("#expenses_view").hide();
     });
 
     $("#productProviderFilter").on("change", function () {

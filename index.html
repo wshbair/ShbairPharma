@@ -94,6 +94,9 @@
                     <button id="invoicesModal" type="button" class="btn btn-default">
                         <i class="fa fa-file-text-o"></i> <span data-i18n="invoices_nav_btn">Invoices</span>
                     </button>
+                    <button id="expensesModal" type="button" class="btn btn-default">
+                        <i class="fa fa-money"></i> <span data-i18n="expenses">Expenses</span>
+                    </button>
                 </div>
                 
                 <button id="viewRefOrders" data-toggle="modal" data-target="#holdOrdersModal" type="button" class="btn btn-default ">
@@ -1112,6 +1115,142 @@
                 </div>
             </div>
 
+            <!-- Expenses view -->
+            <div id="expenses_view" style="display:none;">
+                <div class="row m-t-20">
+                    <div class="col-md-12">
+                        
+                            <ul class="nav nav-tabs inv-view-tabs" role="tablist">
+                                <li role="presentation" class="active"><a href="#expenses_list_tab" data-toggle="tab" aria-expanded="true"><span data-i18n="expenses_list">Expenses List</span></a></li>
+                                <li role="presentation"><a href="#expenses_add_tab" data-toggle="tab" aria-expanded="false"><span data-i18n="add_expense">Add Expense</span></a></li>
+                                <li role="presentation"><a href="#expenses_summary_tab" data-toggle="tab" aria-expanded="false"><span data-i18n="summary">Summary</span></a></li>
+                            </ul>
+
+                            <div class="tab-content inv-tab-content">
+                                <!-- LIST TAB -->
+                                <div class="tab-pane active" id="expenses_list_tab">
+                                    <div class="row m-b-10">
+                                        <div class="col-md-3">
+                                            <label style="font-size:12px;color:var(--c-muted);" data-i18n="category_lbl">Category</label>
+                                            <select id="expenseCategoryFilter" class="form-control">
+                                                <option value="" data-i18n="all_categories">All Categories</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label style="font-size:12px;color:var(--c-muted);" data-i18n="from">From</label>
+                                            <input id="expenseFromDate" class="form-control" type="date" />
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label style="font-size:12px;color:var(--c-muted);" data-i18n="to">To</label>
+                                            <input id="expenseToDate" class="form-control" type="date" />
+                                        </div>
+                                        <div class="col-md-3" style="display:flex;align-items:flex-end;">
+                                            <button id="filterExpensesBtn" class="btn btn-primary" style="margin-right:8px;" data-i18n="filter">Filter</button>
+                                            <button id="clearExpenseFilterBtn" class="btn btn-default" data-i18n="clear">Clear</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="table-responsive">
+                                        <table id="expenses_list" class="table table-bordered table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width:34px;"><input type="checkbox" id="selectAllExpenses" /></th>
+                                                    <th data-i18n="date">Date</th>
+                                                    <th data-i18n="title">Title</th>
+                                                    <th data-i18n="category">Category</th>
+                                                    <th data-i18n="amount">Amount</th>
+                                                    <th data-i18n="description">Description</th>
+                                                    <th data-i18n="Invoice">Invoice</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+
+                                    <div style="margin-top:12px;">
+                                        <button id="deleteSelectedExpensesBtn" class="btn btn-danger" data-i18n="delete_selected">Delete Selected</button>
+                                        <span id="expenses_count" style="margin-left:12px;color:var(--c-muted);"></span>
+                                    </div>
+                                </div>
+
+                                <!-- ADD TAB -->
+                                <div class="tab-pane" id="expenses_add_tab">
+                                    <form id="saveExpenseForm">
+                                        <input type="hidden" id="expense_id" value="" />
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label data-i18n="title">Title</label>
+                                                    <input id="expenseTitle" class="form-control" required />
+                                                </div>
+                                                <div class="form-group">
+                                                    <label data-i18n="category">Category</label>
+                                                    <select id="expenseCategory" class="form-control" required>
+                                                        <option value="" data-i18n="select_category">Select category</option>
+                                                    </select>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label data-i18n="date">Date</label>
+                                                    <input id="expenseDate" class="form-control" type="date" required />
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label data-i18n="amount">Amount</label>
+                                                    <input id="expenseAmount" class="form-control number-input" required />
+                                                </div>
+                                                <div class="form-group">
+                                                    <label data-i18n="invoice">Invoice</label>
+                                                    <input type="file" id="expenseInvoice" class="form-control" />
+                                                </div>
+                                                <div class="form-group">
+                                                    <label data-i18n="description">Description</label>
+                                                    <textarea id="expenseDescription" class="form-control" rows="3"></textarea>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div style="margin-top:12px;">
+                                            <button id="submitExpenseBtn" type="submit" class="btn btn-primary" data-i18n="save">Save</button>
+                                            <button id="cancelExpenseBtn" type="button" class="btn btn-default" style="margin-left:8px;" data-i18n="cancel">Cancel</button>
+                                        </div>
+                                    </form>
+                                </div>
+
+                                <!-- SUMMARY TAB -->
+                                <div class="tab-pane" id="expenses_summary_tab">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="card-box small">
+                                                <h5 data-i18n="total_expenses">Total Expenses</h5>
+                                                <div id="summaryTotal" style="font-size:20px;font-weight:700;color:var(--c-primary);">0.00</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-8">
+                                            <div class="card-box" style="padding:12px;">
+                                                <h5 data-i18n="by_category">By Category</h5>
+                                                <div id="summaryByCategory">
+                                                    <table class="table table-striped" id="expense_summary_body">
+                                                        <thead>
+                                                            <tr>
+                                                                <th data-i18n="category">Category</th>
+                                                                <th data-i18n="amount">Amount</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody></tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        
+                    </div>
+                </div>
+            </div>
+
             <!-- ══ POS VIEW ══ -->
             <div id="pos_view">
                 <div class="row m-t-20">
@@ -1263,13 +1402,6 @@
                     </div>
 
                 </div>
-
-                <!-- Last-added toast -->
-<!--                 <div id="posAddedToast" class="pos-added-toast" style="display:none;">
-                    <i class="fa fa-check-circle"></i>
-                    <span id="posAddedToastText"></span>
-                </div> -->
-
             </div>
 
         </div><!-- /.container -->
@@ -1388,69 +1520,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Add/Modify Product -->
-
-        <!-- Restock Product -->
-<!--         <div id="restockModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog modal-md">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                        <h4 class="modal-title"><i class="fa fa-refresh"></i> Restock Product</h4>
-                    </div>
-                    <div class="modal-body" style="padding: 0%;">
-                        <form id="saveRestock">
-                            <input type="hidden" id="restock_product_id">
-                            <div class="form-group">
-                                <label style="color:var(--c-muted);font-size:12px;">Product</label>
-                                <div id="restock_product_name" style="font-weight:600;font-size:14px;padding:6px 0;"></div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Provider</label>
-                                        <select id="restock_provider" class="form-control">
-                                            <option value="">Select provider...</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Invoice ID</label>
-                                        <input type="text" id="restock_invoice_id" class="form-control" placeholder="Invoice ID" list="restockInvoiceList" autocomplete="off">
-                                        <datalist id="restockInvoiceList"></datalist>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Entry Date</label>
-                                        <input type="date" id="restock_entry_date" class="form-control">
-                                    </div>
-                                     <div class="form-group">
-                                        <label>Expiry Date</label>
-                                        <input type="date" id="restock_expiry_date" class="form-control">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Quantity to Add</label>
-                                        <input type="number" id="restock_quantity" class="form-control" placeholder="0" min="1" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Cost Price</label>
-                                        <input type="number" id="restock_cost_price" class="form-control" placeholder="0.00" step="0.01" min="0">
-                                    </div>
-                                    <div class="form-group" style="margin-top:8px;padding:10px;background:var(--c-surface);border-radius:var(--radius-sm);border:1px solid var(--c-border);">
-                                        <div style="font-size:11px;color:var(--c-muted);">Current Stock</div>
-                                        <div id="restock_current_qty" style="font-size:20px;font-weight:700;">—</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <button type="submit" class="btn btn-primary">
-                                 Confirm Restock
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div> -->
 
         <!-- Products List -->
         <!-- Users -->

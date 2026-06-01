@@ -83,6 +83,7 @@ express.use("/api/categories", require("./api/categories"));
 express.use("/api/providers", require("./api/providers"));
 express.use("/api/settings", require("./api/settings"));
 express.use("/api/users", require("./api/users"));
+express.use("/api/expenses", require("./api/expenses"));
 express.use("/api", require("./api/transactions"));
 express.use("/api/invoice",  require("./api/invoice"));
 express.use("/api/payment",  require("./api/payment"));

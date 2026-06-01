@@ -325,6 +325,16 @@ var translations = {
     filter: 'Filter',
     all_years_opt: 'Select Year',
     period: 'Sales Period',
+    expenses_list: 'Expenses List',
+    add_expense: 'Add Expense',
+    summary: 'Summary',
+    from: 'From',
+    to: 'To',
+    title:'Title',
+    category: 'Category',
+    amount: 'Amount',
+    description: 'Description',
+    invoice: 'Invoice',
   },
 
   ar: {

@@ -37,7 +37,7 @@ app.get("/daily", async (req, res) => {
     }
 
     // Parse the date and create start/end timestamps for the entire day
-    const dateObj = new Date(date);
+    const dateObj = new Date(date.toString());
     const startDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), 0, 0, 0, 0);
     const endDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), 23, 59, 59, 999);
 
@@ -63,6 +63,7 @@ app.get("/daily", async (req, res) => {
     let totalProfit = 0;
 
     if (Array.isArray(transactions)) {
+      // @ts-ignore
       transactions.forEach((transaction) => {
         // Add to total sales
         totalSales += transaction.total || 0;
@@ -80,80 +81,11 @@ app.get("/daily", async (req, res) => {
 
     return res.json({
       date: date,
+      // @ts-ignore
       transactionCount: transactions.length,
       totalSales: parseFloat(totalSales.toFixed(2)),
       totalCost: parseFloat(totalCost.toFixed(2)),
       profit: parseFloat(totalProfit.toFixed(2)),
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err) {
-    console.error("Report generation error:", err);
-    return res.status(500).json({
-      error: "Internal Server Error",
-      message: "Failed to generate report",
-      details: err.message,
-    });
-  }
-});
-
-/**
- * GET endpoint: Get sales report for a date range.
- * Useful for weekly or monthly reports.
- *
- * @param {Object} req request object with start and end query parameters.
- * @param {Object} res response object.
- * @returns {void}
- */
-app.get("/range", async (req, res) => {
-  try {
-    const { start, end } = req.query;
-
-    if (!start || !end) {
-      return res.status(400).json({
-        error: "Bad Request",
-        message: "Both start and end date parameters are required (format: YYYY-MM-DD)",
-      });
-    }
-
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-
-    // Adjust end date to include entire last day
-    endDate.setHours(23, 59, 59, 999);
-
-    const transactions = await transactionsDB.find({
-      date: {
-        $gte: startDate.toISOString(),
-        $lte: endDate.toISOString(),
-      },
-      status: 1,
-    });
-
-    let totalSales = 0;
-    let totalCost = 0;
-
-    if (Array.isArray(transactions)) {
-      transactions.forEach((transaction) => {
-        totalSales += transaction.total || 0;
-
-        if (transaction.items && Array.isArray(transaction.items)) {
-          transaction.items.forEach((item) => {
-            const itemCost = (item.cost || 0) * (item.quantity || 1);
-            totalCost += itemCost;
-          });
-        }
-      });
-    }
-
-    const profit = totalSales - totalCost;
-
-    return res.json({
-      startDate: start,
-      endDate: end,
-      transactionCount: transactions.length,
-      totalSales: parseFloat(totalSales.toFixed(2)),
-      totalCost: parseFloat(totalCost.toFixed(2)),
-      profit: parseFloat(profit.toFixed(2)),
       timestamp: new Date().toISOString(),
     });
   } catch (err) {

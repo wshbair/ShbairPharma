@@ -475,7 +475,7 @@ body {
 .products-header {
     display: flex; align-items: center; gap: 10px;
     padding-bottom: 12px; margin-bottom: 0;
-    border-bottom: 1px solid var(--c-border);
+     
     flex-shrink: 0;
 }
 #search {
@@ -492,11 +492,12 @@ body {
 /* Category pills */
 .pos-cat-pills {
     display: flex; flex-wrap: wrap; gap: 6px;
-    padding: 10px 0 8px; flex-shrink: 0;
-    border-bottom: 1px solid var(--c-border);
+    padding: 10px 5px 5px 8px; flex-shrink: 0;
     margin-bottom: 8px;
     max-height: 150px; 
     overflow-y: auto;
+    background-color: var(--c-primary-lt) !important;
+    border-radius: 5px !important;
 }
 .pos-cat-pill {
     padding: 4px 12px; font-size: 12px; font-weight: 600;
