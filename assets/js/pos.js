@@ -2382,12 +2382,6 @@ if (auth == undefined) {
       ipcRenderer.send("open-csv-review");
     });
 
-    $("#openDailyReportBtn").on("click", function () {
-      console.log("Requesting to open daily report window...");
-      // Send IPC message to main process to open daily report window
-      ipcRenderer.send("open-daily-report");
-    });
-
     // When provider changes in the product form, filter invoice datalist to that provider
     $("#provider").on("change", function () {
       const providerId = $(this).val();
