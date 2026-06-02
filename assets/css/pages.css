@@ -494,7 +494,7 @@ body {
     display: flex; flex-wrap: wrap; gap: 6px;
     padding: 10px 5px 5px 8px; flex-shrink: 0;
     margin-bottom: 8px;
-    max-height: 150px; 
+    max-height: 200px; 
     overflow-y: auto;
     background-color: var(--c-primary-lt) !important;
     border-radius: 5px !important;
@@ -674,8 +674,7 @@ body {
     display: inline-flex !important; align-items: center !important;
     justify-content: center !important; gap: 6px !important;
     border: 1.5px solid var(--c-border) !important;
-    background: var(--c-surface) !important; color: var(--c-text) !important;
-    transition: var(--t) !important;
+     
 }
 .pos-pay-btn:hover {
     border-color: var(--c-primary) !important;
@@ -711,14 +710,35 @@ body {
     box-shadow: var(--shadow-lg);
 }
 #paymentModel .modal-header,
+#holdOrdersModal .modal-header,
+#customerModal .modal-header,
+#userModal .modal-header,
+#Users .modal-header,
+#settingsModal .modal-header,
+#newCustomer .modal-header,
+#Providers .modal-header,
 #dueModal .modal-header {
     background: var(--c-navbar);
     border-bottom: none; border-radius: 14px 14px 0 0;
     padding: 16px 24px;
 }
 #paymentModel .modal-title,
+#holdOrdersModal .modal-title,
+#customerModal .modal-title,
+#userModal .modal-title,
+#Users .modal-title,
+#settingsModal .modal-title,
+#newCustomer .modal-title,
+#Providers .modal-title,
 #dueModal .modal-title { color: #fff; font-weight: 600; }
 #paymentModel .modal-header .close,
+#holdOrdersModal .modal-header .close,
+#customerModal .modal-header .close,
+#userModal .modal-header .close,
+#Users .modal-header .close,
+#settingsModal .modal-header .close,
+#newCustomer .modal-header .close,
+#Providers .modal-header .close,
 #dueModal .modal-header .close {
     color: rgba(255,255,255,.6); opacity: 1 !important; text-shadow: none;
 }
@@ -1149,7 +1169,7 @@ html[dir="rtl"] .panel-heading .panel-title > a:after {
     display: flex; align-items: center; gap: 16px;
     background: var(--c-surface); border-radius: var(--radius);
     box-shadow: var(--shadow); padding: 12px 20px;
-    margin: 10px 0 16px; flex-wrap: wrap;
+    flex-wrap: wrap;
 }
 .pv-topbar-title {
     display: flex; align-items: center; gap: 10px;

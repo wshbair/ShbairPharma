@@ -24,6 +24,7 @@
         box-sizing: border-box;
         border-top: 1px solid #444;
         font-size: 13px;
+        z-index: 1000;
         }
     </style>
 </head>
@@ -327,7 +328,7 @@
 
                         <!-- ══ TAB 1: Product list ══ -->
                         <div class="tab-pane active" id="prodTabList">
-                            <div class="pv-topbar" style="margin-top:16px; margin-bottom:12px;">
+                            <div class="pv-topbar" style="margin-bottom:12px;">
                                 <div class="pv-topbar-select">
                                     <select id="productProviderFilter" class="form-control">
                                         <option value="" data-i18n="all_providers_opt">— All Providers —</option>
@@ -371,7 +372,7 @@
 
                         <!-- ══ TAB 2: New / Edit Product form ══ -->
                         <div class="tab-pane" id="prodTabAdd">
-                            <div class="card-box" style="margin-top:16px;">
+                            <div class="card-box">
                                 <div class="card-title">
                                     <h4>
                                         <i id="productFormIcon" class="fa fa-plus-circle"></i>
@@ -416,7 +417,7 @@
 
                         <!-- ══ TAB 3: CSV Import ══ -->
                         <div class="tab-pane" id="prodTabImport">
-                            <div class="card-box" style="margin-top:16px;">
+                            <div class="card-box">
                                 <div class="card-title">
                                     <h4>
                                         <i class="fa fa-upload"></i>
@@ -443,7 +444,7 @@
 
                         <!-- ══ TAB 4: Categories ══ -->
                         <div class="tab-pane" id="prodTabCat">
-                            <div class="row" style="margin-top:16px;">
+                            <div class="row">
                                 <div class="col-md-7">
                                     <div class="card-box">
                                         <div class="card-title">
@@ -1237,7 +1238,7 @@
                                     <!-- Total Expenses Card -->
                                     <div class="row m-b-20">
                                         <div class="col-md-12">
-                                            <div class="card-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px;">
+                                            <div class="card-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px;">
                                                 <div style="display:flex; justify-content:space-between; align-items:center;">
                                                     <div>
                                                         <h5 style="color:rgba(254, 254, 254, 0.8); margin:0 0 8px 0; font-weight:500;" data-i18n="total_expenses">Total Expenses</h5>
@@ -1373,11 +1374,11 @@
 
                             <!-- Quick payment shortcuts -->
                             <div class="pos-pay-shortcuts">
-                                <button type="button" class="btn pos-pay-btn" data-pay-type="1">
+                                <button type="button"  class="btn pos-pay-btn" data-pay-type="1">
                                     <i class="fa fa-money"></i> Cash
                                 </button>
-                                <button type="button" class="btn pos-pay-btn" data-pay-type="3">
-                                    <i class="fa fa-mobile fa-lg"></i> PalPay
+                                <button type="button" class="btn pos-pay-btn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff;" data-pay-type="3">
+                                    <i class="fa fa-mobile fa-lg"></i> PalPay - Pay
                                 </button>
                             </div>
 
@@ -1489,7 +1490,7 @@
                                         <i class="fa fa-money"></i> <span data-i18n="cash">Cash</span>
                                     </a>
                                     <a href="javascript:void(0)" id="palpay" data-payment-method="PalPay" data-payment-type="3" class="list-group-item">
-                                        <i class="fa fa-mobile fa-lg"></i> <span>PalPay</span>
+                                        <i class="fa fa-mobile fa-lg"></i> <span>PalPay - Pay</span>
                                     </a>
                                 </div>
                             </div>
@@ -1541,21 +1542,23 @@
         </div>
 
         <!-- New Customer -->
-        <div id="newCustomer" class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog modal-sm">
+        <div id="newCustomer" class="modal fade bs-example-modal-lg" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
                         <h4 class="modal-title" data-i18n="new_customer">New Customer</h4>
                     </div>
                     <div class="modal-body">
-                        <form id="saveCustomer" data-parsley-validate>
+                       <div class="col-md-12">
+                         <form id="saveCustomer" data-parsley-validate>
                             <div class="form-group"><label data-i18n="customer_name_lbl">Customer Name*</label><input type="text" required name="name" data-i18n-placeholder="enter_name" placeholder="Enter name" class="form-control" id="userName"></div>
                             <div class="form-group"><label data-i18n="phone_lbl">Phone</label><input type="text" name="phone" data-i18n-placeholder="phone_placeholder" placeholder="Phone number" class="form-control" id="phoneNumber"></div>
                             <div class="form-group"><label data-i18n="email_lbl">Email</label><input type="email" name="email" value="email@email.com" data-i18n-placeholder="email_placeholder" placeholder="Email address" class="form-control" id="emailAddress"></div>
                             <div class="form-group"><label data-i18n="address_lbl">Address</label><input type="text" name="address" data-i18n-placeholder="address_placeholder" placeholder="Address" class="form-control" id="userAddress"></div>
                             <input type="submit" class="btn btn-primary ">
                         </form>
+                       </div>
                     </div>
                 </div>
             </div>
@@ -1591,25 +1594,28 @@
                         <h4 class="modal-title" data-i18n="providers_modal">Providers</h4>
                     </div>
                     <div class="modal-body">
-                        <table class="table table-bordered" id="providerList">
+                       <div class="col-md-12">
+                         <table class="table table-bordered" id="providerList">
                             <thead><tr><th data-i18n="name_col">Name</th><th data-i18n="phone_lbl">Phone</th><th data-i18n="email_lbl">Email</th><th data-i18n="action_col">Action</th></tr></thead>
                             <tbody id="provider_list"></tbody>
                         </table>
+                       </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- User Account -->
-        <div id="userModal" class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog modal-sm">
+        <div id="userModal" class="modal fade bs-example-modal-lg" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
                         <h4 class="modal-title" data-i18n="account_info">Account Information</h4>
                     </div>
                     <div class="modal-body">
-                        <form id="saveUser" data-parsley-validate>
+                       <div class="col-md-12">
+                            <form id="saveUser" data-parsley-validate>
                             <input type="hidden" name="id" id="user_id">
                             <div class="form-group"><label data-i18n="full_name_lbl">Name*</label><input type="text" required name="fullname" data-i18n-placeholder="full_name_placeholder" placeholder="Full name" class="form-control" id="fullname"></div>
                             <div class="form-group"><label data-i18n="username_lbl">Username*</label><input type="text" name="username" data-i18n-placeholder="username_placeholder" placeholder="Login username" class="form-control" id="username"></div>
@@ -1625,6 +1631,7 @@
                             </div>
                             <input type="submit" class="btn btn-primary btn ">
                         </form>
+                       </div>
                     </div>
                 </div>
             </div>
@@ -1639,9 +1646,11 @@
                         <h4 class="modal-title" data-i18n="open_orders">Open Orders</h4>
                     </div>
                     <div class="modal-body">
-                        <input type="text" id="holdOrderInput" data-i18n-placeholder="search_order" placeholder="Search order by reference" class="holdOrderInput form-control">
+                        <div class="col-md-12">
+                            <input type="text" id="holdOrderInput" data-i18n-placeholder="search_order" placeholder="Search order by reference" class="holdOrderInput form-control">
                         <div class="holdOrderKeyboard"></div><br>
                         <div class="row" id="renderHoldOrders"><p>Please wait <span class="dot"></span></p></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1656,9 +1665,11 @@
                         <h4 class="modal-title" data-i18n="customer_orders">Customer Orders</h4>
                     </div>
                     <div class="modal-body">
-                        <input type="text" id="holdCustomerOrderInput" data-i18n-placeholder="search_customer" placeholder="Search by customer name" class="holdCustomerOrderInput form-control">
-                        <div class="customerOrderKeyboard"></div><br>
-                        <div class="row" id="renderCustomerOrders"><p>please wait <span class="dot"></span></p></div>
+                        <div class="col-md-12">
+                            <input type="text" id="holdCustomerOrderInput" data-i18n-placeholder="search_customer" placeholder="Search by customer name" class="holdCustomerOrderInput form-control">
+                            <div class="customerOrderKeyboard"></div><br>
+                            <div class="row" id="renderCustomerOrders"><p>please wait <span class="dot"></span></p></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1672,8 +1683,7 @@
                         <button class="btn btn-sm btn-success" onclick="$(this).print()" data-i18n="print_btn">Print</button>
                         <button type="button" class="close" data-dismiss="modal">×</button>
                     </div>
-                    <div class="modal-body" id="viewTransaction"></div>
-                    <!-- <div class="alert alert-danger" data-i18n="reload_tip">Right-Click and Reload if you get stuck after cancelling a print.</div> -->
+                    <div id="viewTransaction"></div>
                 </div>
             </div>
         </div>

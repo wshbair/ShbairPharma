@@ -1158,10 +1158,12 @@ textarea.form-control {
 
 .modal .modal-dialog .modal-content .modal-body {
     padding: 20px 0;
+    border-style: solid;
+    border-color: #1a2436;
 }
 
 .modal .modal-dialog .modal-content .modal-footer {
-    padding: 0;
+    padding: 20px;
     padding-top: 15px;
 }
 
