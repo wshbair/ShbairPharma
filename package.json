@@ -53,8 +53,8 @@
     "package-win": "electron-packager . ShbairPharma --overwrite --platform=win32 --arch=x64 --icon=assets/images/shbairpharma.ico --prune=true --out=release-builds --version-string.ProductName=\"ShbairPharma\"",
     "start": "electron-forge start",
     "package": "electron-forge package",
-    "make": "electron-forge make --arch x64",
-    "publish": "electron-forge publish --arch x64 ",
+    "make": "electron-forge make",
+    "publish": "electron-forge publish",
     "test": "jest"
   },
   "browserslist": {
