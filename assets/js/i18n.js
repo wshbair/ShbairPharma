@@ -345,6 +345,10 @@ var translations = {
     view_by_year: 'View by Year',
     expense_shares: 'Expense Shares',
     save_expense: 'Save Expense',
+    discount_col: 'Discount',
+    total_cost_col: 'Total Cost',
+    profit_col: 'Profit',
+    sub_total_col: 'Sub Total',
   },
 
   ar: {

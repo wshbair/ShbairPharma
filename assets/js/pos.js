@@ -81,7 +81,7 @@ let by_till = 0;
 let by_user = 0;
 let by_status = 1;
 let histogramChart = null;
-const default_item_img = path.join("assets","images","shbairpharma_small.png");
+const default_item_img = path.join("assets","images","logo.png");
 const permissions = [
   "perm_products",
   "perm_categories",
@@ -250,34 +250,33 @@ if (auth == undefined) {
 
         // PHASE 2: Load non-critical data in parallel (won't block UI)        
         Promise.all([
-          promiseGet(api + "providers/all").then(data => {
-            allProviders = data;
-            requestAnimationFrame(() => {
-              loadProviders();
-            });
-          }),
+          // promiseGet(api + "providers/all").then(data => {
+          //   allProviders = data;
+          //   requestAnimationFrame(() => {
+          //     loadProviders();
+          //   });
+          // }),
           promiseGet(api + "customers/all").then(customers => {
             requestAnimationFrame(() => {
               updateCustomerSelect(customers);
             });
           }),
           promiseGet(api + "inventory/stock-check").then(data => {
-            if (!data.lowStockMsg) { 
+            if (data.lowStockMsg == "none") { 
               $("#posLowStockStrip").hide();
             } else {
               $("#posLowStockText").html(data.lowStockMsg);
               $("#posLowStockStrip").show();
             }
           
-            if (!data.expiredMsg) { 
-              $("#posLowStockStrip").hide();
+            if (data.expiredMsg == "none") { 
+              $("#posExpiredStockStrip").hide();
             } else {
               $("#posExpiredStockText").html(data.expiredMsg);
               $("#posExpiredStockStrip").show();
             }
           }),
           promiseGet(api + "inventory/products").then(data => {
-            data.forEach((item) => { item.price = parseFloat(item.price).toFixed(2); });
             allProducts = [...data];
           })
         ]).then(async () => {
@@ -377,7 +376,7 @@ if (auth == undefined) {
                       <span class="stock" data-i18n="stock">Stock </span>
                       <span class="count">${item.stock == 1 ? item.quantity : "N/A"}</span>
                     </span>
-                     <span class="sku">${item.barcode || item._id}</span>
+
                   </div>
                   <span class="text-success text-center">
                     <b>${moneyFormat(item.price)}</b>
@@ -441,7 +440,7 @@ if (auth == undefined) {
         html += `<div class="pos-recent-card"
                    onclick="$(this).addToCart(${p._id}, ${p.quantity}, ${p.stock})">
                    <div class="pos-rc-name">${p.name}</div>
-                   <div class="pos-rc-price">${sym}${moneyFormat(parseFloat(p.price).toFixed(2))}</div>
+                   <div class="pos-rc-price">${sym}${(parseFloat(p.price).toFixed(2))}</div>
                  </div>`;
       });
       $("#posRecentItems").html(html);
@@ -483,7 +482,7 @@ if (auth == undefined) {
     // Fetch all products into allProducts (for management view) with expiry notifications
     function loadProducts(callback) {
       $.get(api + "inventory/products", function (data) {
-        data.forEach((item) => { item.price = parseFloat(item.price).toFixed(2); });
+        //data.forEach((item) => { item.price = parseFloat(item.price).toFixed(2); });
         allProducts = [...data];
         if (typeof callback === "function") callback();
       });
@@ -512,7 +511,6 @@ if (auth == undefined) {
 
     //load providers in dropdown
     function loadProviders() {
-      
       $.get(api + "providers/all", function (data) {
         allProviders = data;
          
@@ -1860,7 +1858,7 @@ if (auth == undefined) {
           "items": jsonItem,
           "subTotal":  moneyFormat(subTotal.toFixed(2)),
           "totalCost": totalCost,
-          "profit":  subTotal - totalCost,
+          "profit":  subTotal - totalCost - discount,
           "discount": discount > 0
                     ? moneyFormat(discount.toFixed(2))
                     : moneyFormat(0),
@@ -1902,7 +1900,7 @@ if (auth == undefined) {
         status: status,
         subtotal: subTotal.toFixed(2),
         totalCost: totalCost.toFixed(2),
-        profit: ( subTotal - totalCost).toFixed(2),
+        profit: ( subTotal - totalCost - discount).toFixed(2),
         tax: totalVat,
         order_type: 1,
         items: cart,
@@ -5109,7 +5107,7 @@ function loadCategoryList() {
     category_list += `<tr>
         <td><input type="checkbox" class="category-select-row" value="${categoryId}"></td>
         <td>${category.name}</td>
-        <td><span class="btn-group"><button onClick="$(this).editCategory(${index})" class="btn btn-warning"><i class="fa fa-edit"></i></button><button onClick="$(this).deleteCategory(${categoryId})" class="btn btn-danger"><i class="fa fa-trash"></i></button></span></td></tr>`;
+        <td><span class="btn-group"><button onClick="$(this).editCategory(${index})" class="btn btn-warning"><i class="fa fa-edit"></i></button></span></td></tr>`;
   });
 
   if (counter == allCategories.length) {
@@ -5249,6 +5247,7 @@ function loadTransactions() {
       $("#transactionList").DataTable().destroy();
       allTransactions = [...transactions];
       transactions.forEach((trans, index) => {
+        console.log(trans);
         sales += parseFloat(trans.total);
         transact++;
         trans.items.forEach((item) => {
@@ -5270,7 +5269,10 @@ function loadTransactions() {
                                   "DD-MMM-YYYY HH:mm:ss",
                                 )}</td>
                                 <td>${
-                                   moneyFormat(trans.total)
+                                   moneyFormat(trans.subtotal)
+                                }</td>
+                                 <td>${
+                                   moneyFormat(trans.discount)
                                 }</td>
                                 <td>${
                                   trans.paid == ""
@@ -5728,31 +5730,10 @@ function loadSoldProducts() {
     
     counter++;
     
-    // sold_list += `<tr>
-    //         <td>${item.product}</td>
-    //         <td>${item.qty}</td>
-    //         <td>${
-    //           product[0]?.stock == 1
-    //             ? product.length > 0
-    //               ? product[0].quantity
-    //               : ""
-    //             : "N/A"
-    //         }</td>
-    //         <td>${
-    //           moneyFormat((item.qty * parseFloat(item.price)).toFixed(2))
-    //         }</td>
-    //         </tr>`;
-
     if (counter == sold.length) {
       $("#total_items #counter").text(items);
       $("#total_products #counter").text(products);
-      //$("#product_sales").html(sold_list);
-  //     $("#product_sales_new").DataTable({
-  //       order: [[1, "desc"]],
-  //       dom: "lfrtBip", 
-  //       pageLength: 5,
-  //       lengthMenu: [5, 10, 25, 50, 100],
-  // })
+      
     }
   });
   
@@ -5834,6 +5815,7 @@ function searchProductHistogram(productId, year) {
  * @param {Object} data - Histogram data from API
  */
 function renderHistogramChart(data) {
+  console.log("Rendering histogram chart with data:", data);
   const ctx = document.getElementById("salesHistogramChart").getContext("2d");
   const histogramData = data.histogramData || [];
 

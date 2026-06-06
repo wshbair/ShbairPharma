@@ -5,17 +5,38 @@ const pkg = require("./package.json");
 
 module.exports = {
   packagerConfig: {
-    icon: 'assets/images/shbairpharma', // platform: .icns (mac), .ico (win), .png (linux)
+    icon: 'assets/images/logo', // platform: .icns (mac), .ico (win), .png (linux)
     asar: true,
     ignore: [
-      'gulpfile\\.js',
-      '\\.git.*',
-      'TODO',
-      'notes\\.txt',
-      'forge\\.config\\.js',
-      'tests',
-      'jest\\.config\\.js',
-    ],
+    /^\/\.git/,
+    /^\/\.vscode/,
+    /^\/tests/,
+    /^\/coverage/,
+    /^\/out/,
+    /^\/\.cache/,
+    /^\/\.next/,
+    /^\/\.vite/,
+    /^\/product/,
+    /^\/coverage/,
+
+
+
+    // dev files
+    /gulpfile\.js/,
+    /jest\.config\.js/,
+    /forge\.config\.js/,
+
+    // logs/docs
+    /TODO/,
+    /notes\.txt/,
+
+    // huge unnecessary folders inside node_modules
+    /node_modules\/.*\/test/,
+    /node_modules\/.*\/tests/,
+    /node_modules\/.*\/docs/,
+    /node_modules\/.*\/example/,
+    /node_modules\/.*\/examples/,
+  ],
   },
   rebuildConfig: {},
   makers: [

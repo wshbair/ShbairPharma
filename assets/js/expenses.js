@@ -125,7 +125,7 @@ const moneyFormat = require("./utils").moneyFormat;
 
     function renderExpenseRows(expenses, emptyText) {
         if(!Array.isArray(expenses) || expenses.length === 0){
-            return '<tr><td colspan="7" style="text-align:center;">' + (emptyText || 'No expenses found') + '</td></tr>';
+            return ''
         }
         var rows = '';
         expenses.forEach(function(e){

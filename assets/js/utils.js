@@ -1,7 +1,6 @@
 let fs = require("fs");
-const crypto = require("crypto");
-const { ThermalPrinter, PrinterTypes } = require("node-thermal-printer");
-const moment = require("moment");
+//const moment = require("moment");
+let moment = require("moment");
 const path = require("path");
 const DATE_FORMAT = "YYYY-MM-DD";
 const validFileTypes = [
@@ -23,14 +22,14 @@ const moneyFormat = (amount, locale = "en-US") => {
 /** Date functions **/
 const isExpired = (dueDate) => {
   let todayDate = moment();
-  return todayDate.isSameOrAfter(dueDate);
+  return todayDate.isAfter(dueDate);
 };
 
 const daysToExpire = (dueDate) => {
   let todayDate = moment();
   let expiryDate = moment(dueDate, DATE_FORMAT);
 
-  if (expiryDate.isSameOrBefore(todayDate, "day")) {
+  if (expiryDate.isBefore(todayDate, "day")) {
     return 0;
   }
 
@@ -98,6 +97,7 @@ const checkFileType = (fileType, validFileTypes) => {
 };
 
 const getFileHash = (filePath) => {
+  const crypto = require("crypto");
   const fileData = fs.readFileSync(filePath);
   const hash = crypto.createHash("sha256").update(fileData).digest("hex");
   return hash;

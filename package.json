@@ -1,7 +1,7 @@
 {
   "name": "ShbairPharma",
   "productName": "ShbairPharma",
-  "version": "1.6.20",
+  "version": "1.6.21",
   "description": "Point of Sale for Shbair Pharmacies",
   "author": "Wazen SHBAIR",
   "website": "https://wshbair.github.io/",
@@ -37,6 +37,7 @@
     "macaddress": "^0.5.4",
     "moment": "^2.29.4",
     "multer": "^2.0.2",
+    "node-abi": "^4.31.0",
     "node-html-to-image": "^5.0.0",
     "node-thermal-printer": "^4.6.0",
     "nodemon": "^3.1.14",
@@ -48,13 +49,13 @@
     "validator": "^13.15.23"
   },
   "scripts": {
-    "electron": "cross-env NODE_ENV=dev nodemon --exec \"\"electron .\"\"",
+    "electron": "cross-env NODE_ENV=dev§ nodemon --exec \"\"electron .\"\"",
     "electron-build": "electron-builder",
     "package-win": "electron-packager . ShbairPharma --overwrite --platform=win32 --arch=x64 --icon=assets/images/shbairpharma.ico --prune=true --out=release-builds --version-string.ProductName=\"ShbairPharma\"",
     "start": "electron-forge start",
     "package": "electron-forge package",
-    "make": "electron-forge make",
-    "publish": "electron-forge publish",
+    "make": "cross-env NODE_ENV=production electron-forge make",
+    "publish": "cross-env NODE_ENV=production electron-forge publish",
     "test": "jest"
   },
   "browserslist": {
@@ -78,6 +79,7 @@
     "@electron-forge/maker-wix": "^7.9.0",
     "@electron-forge/maker-zip": "^6.0.4",
     "@electron-forge/publisher-github": "^7.8.3",
+    "@fullhuman/postcss-purgecss": "^8.0.0",
     "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.6",
     "@types/jquery": "^4.0.0",
@@ -87,7 +89,7 @@
     "@types/node": "^25.6.0",
     "browser-sync": "^3.0.3",
     "cross-env": "^7.0.3",
-    "electron": "^39.2.7",
+    "electron": "^42.3.3",
     "electron-updater-yaml": "^1.1.2",
     "gulp": "^5.0.1",
     "gulp-clean-css": "^4.3.0",

@@ -24,12 +24,13 @@ try {
 }
 
 const server = require('./server');
-const { app, BrowserWindow, ipcMain, screen} = require("electron");
+const { app, BrowserWindow, ipcMain, screen } = require("electron");
 const path = require("path");
 const contextMenu = require("electron-context-menu");
 let { Menu, template } = require("./assets/js/native_menu/menu");
 const menuController = require('./assets/js/native_menu/menuController.js');
 const isPackaged = app.isPackaged;
+const isProduction = process.env.NODE_ENV === 'production' || isPackaged;
 //@ts-expect-error
 const menu = Menu.buildFromTemplate(template);
 Menu.setApplicationMenu(menu);
@@ -46,6 +47,7 @@ function createWindow() {
         width: width,
         height: height,
         frame: true,
+        icon: path.join(__dirname, "assets/images/shbairpharma.png"),
         webPreferences: {
             nodeIntegration: true,
             //@ts-expect-error
@@ -61,15 +63,17 @@ function createWindow() {
     mainWindow.maximize();
     mainWindow.show();
     mainWindow.loadURL(`file://${path.join(__dirname, "index.html")}`);
-    mainWindow.webContents.openDevTools();
+    if (!isProduction) {
+        mainWindow.webContents.openDevTools();
+    }
     mainWindow.on("closed", () => {
         mainWindow = null;
     });
-    
 }
 
 
 app.commandLine.appendSwitch('disable-features', 'AutofillServerCommunication');
+
 app.whenReady().then(() => {
     createWindow();
 });

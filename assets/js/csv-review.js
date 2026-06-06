@@ -33,7 +33,6 @@ $(document).ready(function() {
     $('#csvFile').on('change', function() {
         //@ts-expect-error
         const file = this.files[0];
-        console.log("Selected file:", file);
         if (file) {
             $('#parseBtn').prop('disabled', false);
         } else {

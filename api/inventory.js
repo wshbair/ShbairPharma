@@ -41,7 +41,6 @@ const csvUpload = multer({
 
 
 function parseDate(str) {
-    console.log("Parsing date:", str);
     if(str == "")
         return new Date().toISOString().split("T")[0];
     try {
@@ -130,10 +129,9 @@ app.get("/stock-check", function(req, res){
         const expiredProducts = expired.slice(0, 4).map(function (p) {
             return `<strong>${p.name}</strong>`;
         }).join(", ") + (expired.length > 4 ? ` +${expired.length - 4} more` : "");
-
         res.send({
-            "lowStockMsg": low.length > 0 ? `Inventory Alert: <strong>${low.length}</strong> products are at or below minimum stock levels, including ${lowStockProducts}` : "",
-            "expiredMsg": expired.length > 0 ? `Expiry Alert: <strong>${expired.length}</strong> products have expired, including ${expiredProducts}` : ""
+            "lowStockMsg": low.length > 0 ? `Inventory Alert: <strong>${low.length}</strong> products are at or below minimum stock levels, including ${lowStockProducts}` : "none",
+            "expiredMsg": expired.length > 0 ? `Expiry Alert: <strong>${expired.length}</strong> products have expired, including ${expiredProducts}` : "none"
         })
 
     })
@@ -329,7 +327,7 @@ app.post("/products/csv", function (req, res) {
                 let p = {
                     _id: validator.escape(row.id) === "" ? Math.floor(Date.now() / 1000) : parseInt(validator.escape(row.id)),
                     barcode: validator.escape(row.barcode) === "" ? 0 : (validator.escape(row.barcode)),
-                    expirationDate: parseDate(validator.escape(row.expirationDate)),
+                    expirationDate: parseDate(row.expirationDate),
                     price: validator.escape(row.price),
                     category: validator.escape(row.category),
                     quantity: validator.escape(row.quantity) === "" ? 0 : parseFloat(row.quantity),
@@ -451,7 +449,6 @@ app.post("/product/sku", function (req, res) {
  * @returns {void}
  */
 app.post("/product/name", function (req, res) {
-    //console.log("Search Product name API")
     let name = validator.escape(req.body.productName);
     const safeSku = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     inventoryDB.find(
@@ -594,7 +591,6 @@ app.decrementInventory = function (products) {
         );
         inventoryDB.compactDatafile((err) => {
         if (err) console.error('Compaction failed:', err);
-        else console.log('Database compacted.');
     });
     });
 };

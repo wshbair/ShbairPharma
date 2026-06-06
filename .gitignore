@@ -11,3 +11,6 @@ coverage
 /AppIcons
 .DS_Store
 assets/js/histogram.txt
+/Products
+command
+assets/.DS_Store

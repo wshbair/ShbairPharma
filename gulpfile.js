@@ -16,12 +16,13 @@ const config = {
 const paths = {
     syncFiles: ["index.html", "assets/js/**/*.js", "assets/css/*.css"],
     css: [
+        //"assets/css/minimal.css",
         "assets/css/bootstrap.min.css",
         "assets/css/core.css",
         "assets/css/components.css",
         "assets/css/icons.css",
         "assets/css/responsive.css",
-        "assets/plugins/chosen/chosen.min.css",
+        // //"assets/plugins/chosen/chosen.min.css",
         "assets/plugins/daterangepicker/daterangepicker.css",
         "assets/plugins/dataTables/jquery.dataTables.min.css",
         "assets/plugins/dataTables/dataTables.bootstrap.min.css",
@@ -30,7 +31,7 @@ const paths = {
     js: [
         "renderer.js",
         "assets/plugins/bootstrap/bootstrap.min.js",
-        "assets/plugins/chosen/chosen.jquery.min.js",
+        //"assets/plugins/chosen/chosen.jquery.min.js",
         "assets/plugins/jquery-ui/jquery.form.min.js",
         "assets/plugins/daterangepicker/daterangepicker.min.js",
         "assets/plugins/dataTables/jquery.dataTables.min.js",
@@ -38,7 +39,7 @@ const paths = {
         "assets/plugins/dataTables/dataTables.buttons.min.js",
         "assets/plugins/dataTables/buttons.html5.min.js",
         "assets/plugins/dataTables/pdfmake.min.js",
-        "assets/plugins/dataTables/vfs_fonts.js",
+        //"assets/plugins/dataTables/vfs_fonts.js",
     ],
 };
 

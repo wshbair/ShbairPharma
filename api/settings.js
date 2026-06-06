@@ -215,7 +215,9 @@ app.post("/reset", function (req, res) {
         'customers.db',
         'transactions.db',
         'users.db',
-        'providers.db'
+        'providers.db',
+        'expenses.db',
+        'settings.db'
     ];
     
     // Clear all databases by recreating them
