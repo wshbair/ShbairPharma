@@ -1688,7 +1688,7 @@ if (auth == undefined) {
       });
 
       let currentTime = moment();
-      let discount = parseFloat($("#inputDiscount").val().toString());
+      let discount = parseFloat($("#inputDiscount").val().toString()) || 0;
       let customer = JSON.parse($("#customer").val().toString());
       let date = moment(currentTime).format("YYYY-MM-DD HH:mm:ss");
       let paymentAmount = $("#payment").val().toString().replace(",", "");
@@ -1895,7 +1895,7 @@ if (auth == undefined) {
       let data = {
         order: orderNumber,
         ref_number: refNumber,
-        discount: discount,
+        discount: discount.toFixed(2),
         customer: customer,
         status: status,
         subtotal: subTotal.toFixed(2),
@@ -4644,7 +4644,6 @@ $.fn.deleteTransaction = function(index) {
           $("#product_sales").empty();
           loadTransactions();
           loadSoldProducts();
-          //notiflix.Report.success("Deleted", "Transaction deleted successfully.", "Ok");
         },
         error: function () {
           notiflix.Report.failure("Error", "Failed to delete transaction.", "Ok");
@@ -5247,7 +5246,6 @@ function loadTransactions() {
       $("#transactionList").DataTable().destroy();
       allTransactions = [...transactions];
       transactions.forEach((trans, index) => {
-        console.log(trans);
         sales += parseFloat(trans.total);
         transact++;
         trans.items.forEach((item) => {
@@ -5282,7 +5280,7 @@ function loadTransactions() {
                                 <td>${
                                   trans.change
                                     ? moneyFormat(Math.abs(trans.change).toFixed(2))
-                                    : 0
+                                    : moneyFormat(0)
                                 }</td>
                                 <td>${
                                   trans.paid == ""
