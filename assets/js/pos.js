@@ -1394,6 +1394,7 @@ if (auth == undefined) {
         product_name: utils.decodeHtmlEntities(data.name),
         barcode: data.barcode,
         price: data.price,
+        cost_price: data.costPrice,
         profit_margin: parseFloat(data.profitMargin) || 0,
         quantity: 1,
       };
@@ -1434,8 +1435,11 @@ if (auth == undefined) {
       let total_items = 0;
       $.each(cart, function (index, data) {
         let margin = data.profit_margin || 0;
+        console.log(margin)
         total += data.quantity * data.price;
-        totalCost += data.quantity * data.price * 100 / (100 + margin);
+        totalCost += data.quantity * data.cost_price; // data.price * 100 / (100 + margin);
+        console.log(data)
+        console.log(totalCost)
         total_items += parseFloat(data.quantity);
       });
       $("#total").text(total_items);
