@@ -39,7 +39,7 @@ const paths = {
         "assets/plugins/dataTables/dataTables.buttons.min.js",
         "assets/plugins/dataTables/buttons.html5.min.js",
         "assets/plugins/dataTables/pdfmake.min.js",
-        //"assets/plugins/dataTables/vfs_fonts.js",
+        "assets/plugins/dataTables/vfs_fonts.js",
     ],
 };
 
