@@ -349,9 +349,14 @@ var translations = {
     total_cost_col: 'Total Cost',
     profit_col: 'Profit',
     sub_total_col: 'Sub Total',
+    inventory_evaluation: 'Inventory Evaluation',
+    evaluation_period: 'Evaluation Period',
+    pdf_save: 'Save PDF '
   },
 
   ar: {
+    inventory_evaluation: 'موجدات الصيدليه',
+    evaluation_period: 'فترة التقيم',
     // Splash
     please_wait: 'الرجاء الانتظار...',
 

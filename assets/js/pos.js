@@ -1,7 +1,8 @@
 // @ts-check
 /// <reference types="jquery" />
-
-const JsBarcode = require("jsbarcode");
+ 
+//const JsBarcode = require("jsbarcode");
+const printJS = require('print-js');
 const notiflix = require("notiflix");
 const validator = require("validator");
 const _ = require("lodash");
@@ -49,6 +50,7 @@ let vat = 0;
 let deleteId = 0;
 let paymentType = 0;
 let receipt = "";
+let JsonReceipt = {};
 let totalVat = 0;
 let subTotal = 0;
 let method = "";
@@ -1435,11 +1437,8 @@ if (auth == undefined) {
       let total_items = 0;
       $.each(cart, function (index, data) {
         let margin = data.profit_margin || 0;
-        console.log(margin)
         total += data.quantity * data.price;
         totalCost += data.quantity * data.cost_price; // data.price * 100 / (100 + margin);
-        console.log(data)
-        console.log(totalCost)
         total_items += parseFloat(data.quantity);
       });
       $("#total").text(total_items);
@@ -1676,8 +1675,9 @@ if (auth == undefined) {
       let paymentRow =""
       let jsonItem=[]
       paymentType = $('.list-group-item.active').data('payment-type');
+      
       cart.forEach((item) => {
-          items += `<tr><td>${DOMPurify.sanitize(item.product_name)} <br> No. ${item.barcode} </td><td>${
+          items += `<tr><td>${DOMPurify.sanitize(item.product_name)} <br> Barcode: ${item.barcode} </td><td>${
             DOMPurify.sanitize(item.quantity)
           } </td><td style="text-align: ${rcptPriceAlign}"> ${moneyFormat(
             DOMPurify.sanitize(Math.abs(item.price).toFixed(2)),
@@ -1700,11 +1700,19 @@ if (auth == undefined) {
       let mobileNumber = $("#paymentInfo").val();
       let paid = $("#payment").val() == "" ? 0 : parseFloat(paymentAmount);
       let change = $("#change").text() == "" ? 0 : parseFloat(changeAmount);
-      const totalCost = parseFloat($("#bill_cost").text().replace(`${settings.symbol}`, ""));
+
+      let totalCost = parseFloat(
+        $("#bill_cost")
+            .text()
+            .replace(settings.symbol, "")
+            .replace(/,/g, "")
+        );
+      
       let refNumber = $("#refNumber").val().toString()
       let orderNumber = holdOrder;
       let type = "";
       let tax_row = "";
+
       switch (paymentType) {
         case 1:
           type = "Cash";
@@ -1768,6 +1776,7 @@ if (auth == undefined) {
 
       const logo = path.join(img_path, validator.unescape(settings.img));
 
+      // used for pdf print
       receipt = `<div dir="${rcptDir}" style="font-size: 10px; font-family: ${rcptFont}; color: #000;">
         <p style="text-align: center;">
         ${
@@ -1843,7 +1852,8 @@ if (auth == undefined) {
              </p>
             </div>`;
 
-      let JsonReceipt= {
+      // used for thermal print       
+      JsonReceipt = {
         "store": {
           "logo": logo,
           "name": validator.unescape(settings.store),
@@ -1887,7 +1897,6 @@ if (auth == undefined) {
         if (cart.length > 0) {
           //@ts-ignore
           printJS({ printable: receipt, type: "raw-html" });
-
           $(".loading").hide();
           return;
         } else {
@@ -1896,7 +1905,7 @@ if (auth == undefined) {
         }
       }
 
-      let data = {
+      let data = { 
         order: orderNumber,
         ref_number: refNumber,
         discount: discount.toFixed(2),
@@ -4406,6 +4415,11 @@ $("#searchProductHistogram").on("click", function () {
   const year =$("#histogramYearFilter").val();
   searchProductHistogram(productId, year);
 });
+
+$("#viewEvaluationHistogram").on("click", function () {
+  const year =$("#histogramEVALYearFilter").val();
+  viewEvaluationHistogram(year);
+});
   
 
 //Functions list ----------------------
@@ -4464,7 +4478,7 @@ $.fn.serializeObject = function () {
 //@ts-expect-error
 $.fn.print = function() {
   console.log("printing ....")
-  //printJS({ printable: receipt, type: "raw-html" });
+  printJS({ printable: receipt, type: "raw-html" });
 };
 
 //@ts-expect-error
@@ -4475,13 +4489,13 @@ $.fn.viewTransaction = function (index) {
   const rcptFont = isRtlReceipt ? 'Tahoma, Arial, sans-serif' : "'Courier New', Courier, monospace";
   const rcptPriceAlign = isRtlReceipt ? 'left' : 'right';
   const rcptDetailsAlign = isRtlReceipt ? 'right' : 'left';
-  //let transaction_index = index;
+  let transaction_index = index;
 
   let discount = allTransactions[index].discount;
-  // let customer =
-  //   allTransactions[index].customer == 0
-  //     ? "Walk in Customer"
-  //     : allTransactions[index].customer.username;
+  let customer =
+    allTransactions[index].customer == 0
+      ? "Walk in Customer"
+      : allTransactions[index].customer.username;
   let refNumber =
     allTransactions[index].ref_number != ""
       ? allTransactions[index].ref_number
@@ -5295,10 +5309,8 @@ function loadTransactions() {
                                 <td>${trans.profit ? moneyFormat(trans.profit) : 0}</td>
                                 <td>${trans.till}</td>
                                 <td>${trans.user}</td>
-                                <td>${
-                                  trans.paid == ""
-                                    ? '<button class="btn btn-info btn-sm"><i class="fa fa-search-plus"></i></button>'
-                                    : '<span class="btn-group"><button onClick="$(this).viewTransaction(' +
+                                <td>${                                  
+                                    '<span class="btn-group"><button onClick="$(this).viewTransaction(' +
                                       index +
                                       ')" class="btn btn-warning btn-sm"><i class="fa fa-search-plus"></i></button><button onClick="$(this).deleteTransaction(' + index + ')" class="btn btn-danger btn-sm"><i class="fa fa-trash"></i></button></span>'
                                 }</td>
@@ -5778,7 +5790,6 @@ function authenticate() {
  * Search and display histogram for a product
  */
 function searchProductHistogram(productId, year) {
-  
   // Show loading state
   $("#histogramEmptyState").html(
     '<i class="fa fa-spinner fa-spin fa-2x" style="margin-bottom:16px;"></i><p>Loading chart...</p>'
@@ -5813,11 +5824,48 @@ function searchProductHistogram(productId, year) {
 }
 
 /**
+ * Calculate Total evaluation per year
+ */
+function viewEvaluationHistogram(year) {
+  // Show loading state
+  $("#histogramEvalEmptyState").html(
+    '<i class="fa fa-spinner fa-spin fa-2x" style="margin-bottom:16px;"></i><p>Loading chart...</p>'
+  );
+  $("#histogramEvalEmptyState").hide();
+
+  // Fetch histogram data from API
+  fetch( api +`reports/evaluation-histogram?year=${encodeURIComponent(year) }`)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then((data) => {
+      // Check if data contains histogram
+      if (data.histogramData && Array.isArray(data.histogramData)) {
+        renderEvalualtionHistogramChart(data);
+        //updateEvaluationHistogramStats(data);
+      } else {
+        throw new Error("No histogram data received");
+      }
+    })
+    .catch((error) => {
+      console.error("Error fetching histogram data:", error);
+      $("#histogramEmptyState").html(
+        `<i class="fa fa-exclamation-triangle fa-2x" style="margin-bottom:16px; color:#dc3545;"></i><br>
+         <p style="font-size:14px; color:#dc3545;">Failed to load histogram: ${error.message}</p>`
+      );
+      $("#histogramStatsRow").hide();
+    });
+}
+
+/**
  * Render the histogram chart using Chart.js
  * @param {Object} data - Histogram data from API
  */
 function renderHistogramChart(data) {
-  console.log("Rendering histogram chart with data:", data);
+  //console.log("Rendering histogram chart with data:", data);
   const ctx = document.getElementById("salesHistogramChart").getContext("2d");
   const histogramData = data.histogramData || [];
 
@@ -5960,12 +6008,193 @@ function renderHistogramChart(data) {
 }
 
 /**
+ * Render the histogram chart using Chart.js
+ * @param {Object} data - Histogram data from API
+ */
+function renderEvalualtionHistogramChart(data) {
+  //console.log("Rendering evaluation histogram chart with data:", data);
+  const ctx = document.getElementById("evaluationHistogramChart").getContext("2d");
+  const histogramData = data.histogramData || [];
+   
+  // Prepare chart data
+  const labels = histogramData.map((month) => month.monthName);
+  const currentInventoryValue = histogramData.map((month) => month.currentInventoryValue);
+  const retailInventoryValue = histogramData.map((month) => month.retailInventoryValue);
+  const quantityData = histogramData.map((month) => month.productsCount);
+
+  // Destroy existing chart if it exists
+  if (histogramChart) {
+    histogramChart.destroy();
+  }
+
+  // Create new chart
+  histogramChart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: `Inventroy (${(settings && validator.unescape(settings.symbol)) || ''})`,
+          data: currentInventoryValue,
+          backgroundColor: "rgba(75, 192, 192, 0.6)",
+          borderColor: "rgba(75, 192, 192, 1)",
+          borderWidth: 2,
+          borderRadius: 4,
+          yAxisID: "y",
+          order: 2,
+        },
+        {
+          label: `Retail (${(settings && validator.unescape(settings.symbol)) || ''})`,
+          data: retailInventoryValue,
+          backgroundColor: "rgba(235, 4, 197, 0.6)",
+          borderColor: "rgba(75, 192, 192, 1)",
+          borderWidth: 2,
+          borderRadius: 4,
+          yAxisID: "y",
+          order: 2,
+        },
+        {
+          label: "Products Count",
+          data: quantityData,
+          //type: "bar",
+          borderColor: "rgba(255, 99, 132, 1)",
+          backgroundColor: "rgba(39, 11, 122, 0.6)",
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          yAxisID: "y1",
+          order: 1,
+          pointBackgroundColor: "rgba(255, 99, 132, 1)",
+          pointBorderColor: "#fff",
+          pointBorderWidth: 2,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      interaction: {
+        mode: "index",
+        intersect: false,
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: "top",
+          labels: {
+            usePointStyle: true,
+            padding: 15,
+            font: {
+              size: 12,
+            },
+          },
+        },
+        tooltip: {
+          backgroundColor: "rgba(0, 0, 0, 0.8)",
+          padding: 12,
+          cornerRadius: 4,
+          titleFont: {
+            size: 13,
+            weight: "bold",
+          },
+          bodyFont: {
+            size: 12,
+          },
+          callbacks: {
+            label: function (context) {
+              let label = context.dataset.label || "";
+              if (label) {
+                label += ": ";
+              }
+              if (context.yAxisID === "y") {
+                label += parseFloat(context.parsed.y).toFixed(2);
+              } else {
+                label += context.parsed.y;
+              }
+              return label;
+            },
+          },
+        },
+      },
+      scales: {
+        y: {
+          type: "linear",
+          display: true,
+          position: "left",
+          title: {
+            display: true,
+            text: `Total value (${(settings && validator.unescape(settings.symbol)) || ''})`,
+            font: {
+              size: 12,
+              weight: "bold",
+            },
+          },
+          ticks: {
+            callback: function (value) {
+              return value.toFixed(2);
+            },
+          },
+          grid: {
+            color: "rgba(0, 0, 0, 0.05)",
+          },
+        },
+        y1: {
+          type: "linear",
+          display: true,
+          position: "right",
+          title: {
+            display: true,
+            text: "Products Quantity",
+            font: {
+              size: 12,
+              weight: "bold",
+            },
+          },
+          grid: {
+            drawOnChartArea: false,
+          },
+        },
+      },
+    },
+  });
+
+
+  // Show chart and hide empty state
+  $("#evaluationHistogramChart").show();
+  $("#histogramEvalEmptyState").hide();
+
+}
+
+function updateEvaluationHistogramStats(data) {
+  
+  // Update period
+  const periodText = `${data.histogramData[0]?.monthName} to ${data.histogramData[data.histogramData.length - 1]?.monthName}`;
+  $("#histogramEvalPeriod").text(periodText);
+
+  // Update currentInventoryValue  
+  $("#histogramCurrentInvetoryValue").text(moneyFormat(data.currentInventoryValue.toFixed(2)));
+
+  // Update retailInventoryValue  
+  $("#histogramRetailInvetoryValue").text(moneyFormat(data.retailInventoryValue.toFixed(2)));
+
+  // Update total quantity
+  $("#histogramProductsQty").text(data.totalQuantity);
+
+  // Show stats row
+  $("#evalStatsRow").show();
+
+}
+
+/**
  * Update statistics cards with histogram data
  * @param {Object} data - Histogram data from API
  */
 function updateHistogramStats(data) {
   // Update product ID display
-  $("#histogramProductId").text(`(Product Name: ${data.productName})`);
+  if(data.productName)
+    $("#histogramProductId").text(`(Product Name: ${data.productName})`);
 
   // Update period
   const periodText = `${data.histogramData[0]?.monthName} to ${data.histogramData[data.histogramData.length - 1]?.monthName}`;
@@ -5985,3 +6214,4 @@ function updateHistogramStats(data) {
   // Show stats row
   $("#histogramStatsRow").show();
 }
+

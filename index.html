@@ -142,7 +142,7 @@
                 </button> 
             </div>
 
-            <!-- ══ TRANSACTIONS VIEW ══ -->
+            <!-- ══ SALES VIEW ══ -->
             <div id="transactions_view">
                 <div class="container">
                     
@@ -158,11 +158,16 @@
                                 <i class="fa fa-bar-chart"></i> <span data-i18n="annual_sales">Annual Sales</span>
                             </a>
                         </li>
+                        <li role="presentation">
+                            <a href="#totalEvaluation" id="totalEvaluationLink" data-toggle="tab">
+                                <i class="fa fa-bar-chart"></i> <span data-i18n="inventory_evaluation"> Inventory Evaluation</span>
+                            </a>
+                        </li>
                          
                     </ul>
 
                     <div class="tab-content inv-tab-content">
-                        <!-- ══ TAB 1: Transactions Report ══ -->
+                        <!-- ══ TAB 1: Sales Report ══ -->
                         <div class="tab-pane active" id="TransactionsReport">
                          <!-- Totals boxes -->   
                             <div class="row text-center m-t-20" id="totals">
@@ -222,7 +227,7 @@
                         </div>
 
                         <!-- ══ TAB 2: Sold Products Report ══ -->
-                          <div class="tab-pane" id="soldProducts">
+                        <div class="tab-pane" id="soldProducts">
                             <div class="pv-topbar" style="margin-top:16px; margin-bottom:12px;">
                                 <div class="pv-topbar-select">
                                     <input type="text" id="productIdSearch" class="form-control" placeholder="Enter Product ID..." maxlength="50">
@@ -233,7 +238,7 @@
                                     <option value="2026">2026</option>
                                     <option value="2025">2025</option>
                                 </select>
-                                <button id="searchProductHistogram" type="button" class="btn btn-success">
+                                <button id="searchProductHistogram" type="button" class="btn btn-primary">
                                 <i class="fa fa-search"></i> <span data-i18n="search">Search</span>
                                 </button>
                                     
@@ -289,9 +294,72 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- ══ TAB 3: Total Evaluation Report ══ -->
+                        <div class="tab-pane" id="totalEvaluation">
+                            <div class="pv-topbar" style="margin-top:16px; margin-bottom:12px;">
+                                <div>
+                                <select id="histogramEVALYearFilter" class="form-control" style="display:inline-block; width:auto; margin-right:8px;">
+                                    <option value="" data-i18n="all_years_opt">— Select Year —</option>
+                                    <option value="2026">2026</option>
+                                    <option value="2025">2025</option>
+                                </select>
+                                <button id="viewEvaluationHistogram" type="button" class="btn btn-primary">
+                                <i class="fa fa-search"></i> <span data-i18n="view">View</span>
+                                </button>
+                                    
+                                </div>
+                            </div>
+                            <!-- Stats Cards -->
+                            <div class="row" id="evalStatsRow" style="display:none; margin-bottom:16px;">
+                                <div class="col-md-3">
+                                    <div class="card-box" style="padding:12px; text-align:center; background:#e3e1de;">
+                                        <div style="font-size:12px; color:var(--c-muted); margin-bottom:6px;" data-i18n="evaluation_period">Evaluation period</div>
+                                        <div id="histogramEvalPeriod" style="font-size:14px; font-weight:600;">—</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card-box" style="padding:12px; text-align:center; background:#d4edda;">
+                                        <div style="font-size:12px; color:var(--c-muted); margin-bottom:6px;">Current Inventory Value</div>
+                                        <div id="histogramCurrentInvetoryValue" style="font-size:16px; font-weight:600; color:#155724;">0.00</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card-box" style="padding:12px; text-align:center; background:#cfe2ff;">
+                                        <div style="font-size:12px; color:var(--c-muted); margin-bottom:6px;">Retail Inventory Value</div>
+                                        <div id="histogramRetailInvetoryValue" style="font-size:16px; font-weight:600; color:#0c5460;">0.00</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card-box" style="padding:12px; text-align:center; background:#fff3cd;">
+                                        <div style="font-size:12px; color:var(--c-muted); margin-bottom:6px;">Products Quantity</div>
+                                        <div id="histogramProductsQty" style="font-size:16px; font-weight:600; color:#856404;">0</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="card-box">
+                                        <div class="card-title">
+                                            <h4>
+                                                <i class="fa fa-bar-chart"></i> 
+                                                <span>Inventory Evaluation</span>
+                                                <span id="histogramEvaluationYearTotal" style="color:var(--c-muted); font-size:13px; margin-left:12px;">—</span>
+                                            </h4>
+                                        </div>
+                                        <div class="card-body">
+                                            <div id="histogramEvalEmptyState" class="text-center" style="padding:60px 20px; color:var(--c-muted);">
+                                                <i class="fa fa-bar-chart fa-3x" style="margin-bottom:16px; opacity:0.5;"></i><br>
+                                                <p style="font-size:14px;">Select Year to view inventory evaluation histogram</p>
+                                            </div>
+                                            <canvas id="evaluationHistogramChart" style="display:none; max-height:400px;"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         
-
-
                     </div><!-- /tab-content -->
                 </div>
             </div>
@@ -1385,7 +1453,7 @@
 
                             <!-- Action buttons -->
                             <div class="pos-actions">
-                                <button onclick="$(this).submitDueOrder(3);" type="button"
+                                <button onclick="$(this).submitDueOrder(0);" type="button"
                                     class="btn btn-print " title="Print">
                                     <i class="fa fa-print"></i>
                                 </button>
@@ -1681,7 +1749,7 @@
             <div class="modal-dialog modal-sm">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <button class="btn btn-sm btn-success" onclick="$(this).print()" data-i18n="print_btn">Print</button>
+                        <button class="btn btn-sm btn-primary" onclick="$(this).print()" data-i18n="pdf_save">Save PDF</button>
                         <button type="button" class="close" data-dismiss="modal">×</button>
                     </div>
                     <div id="viewTransaction"></div>
@@ -1864,7 +1932,7 @@
     <!-- Bottom status bar -->
     <div class="status-bar">
       <span id="statusText"></span>
-      <span id="printerConnectionStatus"></span>
+      <span id="printerConnectionStatus" class="greenback"></span>
     </div>
 
     <script src="assets/dist/js/bundle.min.js"></script>

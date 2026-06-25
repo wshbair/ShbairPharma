@@ -17,7 +17,8 @@ async function printReceipt(jsonReceipt) {
   const isConnected = await printer.isPrinterConnected();
 
   if (!isConnected) {
-    $("#printerConnectionStatus").text(`Printer: ${isConnected ? 'Connected' : "Offline"}`)
+    $("#printerConnectionStatus").text(`Printer: ${isConnected ? 'Connected' : "Offline"}`);
+    $("#printerConnectionStatus").addClass('greenback')
     return;
   } else 
     $("#printerConnectionStatus").text(`Printing ...`);
@@ -104,20 +105,20 @@ async function printReceipt(jsonReceipt) {
   printer.setTextNormal();
   printer.tableCustom([
     { text: "Paid", align: "LEFT", width: 0.7 },
-    { text: jsonReceipt.order.payment.paid, align: "RIGHT", width: 0.3 },
+    { text: jsonReceipt.order.payment?.paid || "", align: "RIGHT", width: 0.3 },
   ]);
   printer.tableCustom([
     { text: "Change", align: "LEFT", width: 0.7 },
-    { text: jsonReceipt.order.payment.change, align: "RIGHT", width: 0.3 },
+    { text: jsonReceipt.order.payment?.change || "", align: "RIGHT", width: 0.3 },
   ]);
   printer.tableCustom([
     { text: "Method", align: "LEFT", width: 0.7 },
-    { text: jsonReceipt.order.payment.method, align: "RIGHT", width: 0.3 },
+    { text: jsonReceipt.order.payment?.method || "", align: "RIGHT", width: 0.3 },
   ]);
 
-  if(jsonReceipt.order.payment.method !== "Cash") {
+  if(jsonReceipt.order.payment?.method !== "Cash") {
         printer.tableCustom([
-            { text: "Wallet (Mahfazaty)", align: "LEFT", width: 0.7 },
+            { text: "PayPal", align: "LEFT", width: 0.7 },
             { text: jsonReceipt.order.mobileNumber, align: "RIGHT", width: 0.3 },
         ]);
     }
@@ -155,7 +156,7 @@ async function printerStatus() {
   });
   const isConnected = await printer.isPrinterConnected();
   if(isConnected)
-    return "Connected"
+    return "Online"
   else 
     return "Offline"
 }

@@ -4,7 +4,7 @@ let bodyParser = require("body-parser");
 app.use(bodyParser.json());
 module.exports = app;
 
-const { transactionsDB } = require("./db");
+const { transactionsDB, inventoryDB } = require("./db");
 
 /**
  * GET endpoint: Get the welcome message for the Reports API.
@@ -190,6 +190,107 @@ app.get("/product-sales-histogram", async (req, res) => {
         histogramData.reduce((sum, month) => sum + month.sales, 0).toFixed(2)
       ),
       totalQuantity: histogramData.reduce((sum, month) => sum + month.quantity, 0),
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error("Histogram generation error:", err);
+    return res.status(500).json({
+      error: "Internal Server Error",
+      message: "Failed to generate histogram data",
+      details: err.message,
+    });
+  }
+});
+
+
+/**
+ * GET endpoint: Get total evaluation per month per year.
+ * Groups sales data by month to show evaluation trends.
+ *
+ * @param {Object} req request object with year query parameter.
+ * @param {Object} res response object.
+ * @returns {void}
+ */
+app.get("/evaluation-histogram", async (req, res) => {
+  try {
+    const { year } = req.query;
+
+    if (!year) {
+      return res.status(400).json({
+        error: "Bad Request",
+        message: "Year parameter is required",
+      });
+    }
+
+    // Calculate date range for the past year
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setFullYear(Number(year), 0);
+    endDate.setFullYear(Number(year), 11);
+
+
+    // Query products containing the product from the past year
+    const products = await inventoryDB.find({
+      entryDate: {
+        $gte: startDate.toISOString(),
+        $lte: endDate.toISOString(),
+      }
+    });
+    // Initialize histogram data for all months in the past year
+    const histogramData = [];
+    const monthMap = {};
+    // Create entries for all months
+    for (let month = 0; month < 12; month++) {
+      const monthDate = new Date(Number(year), month, 1);
+      const yearMonth = `${year}-${String(month + 1).padStart(2, "0")}`;
+      monthMap[yearMonth] = {
+        month: yearMonth,
+        monthName: monthDate.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+        }),
+        productsCount: 0,
+        currentInventoryValue: 0,
+        retailInventoryValue:0
+      };
+    }
+
+
+    // Process products and aggregate price and sale_price data by month
+    if (Array.isArray(products)) {
+      products.forEach((product) => {
+        const txDate = new Date(product.entryDate);
+        const yearMonth = `${txDate.getFullYear()}-${String(txDate.getMonth() + 1).padStart(2, "0")}`;
+        if (monthMap[yearMonth]) {
+          monthMap[yearMonth].productsCount += 1;
+          monthMap[yearMonth].currentInventoryValue +=
+            (parseFloat(product.costPrice) || 0) * (parseFloat(product.quantity) || 0);
+          monthMap[yearMonth].retailInventoryValue +=
+              (parseFloat(product.price) || 0) * (parseFloat(product.quantity) || 0);
+
+        }
+      });
+    }
+
+    // Convert to array and round values
+    Object.values(monthMap).forEach((month) => {
+      month.currentInventoryValue = parseFloat(month.currentInventoryValue.toFixed(2));
+      month.retailInventoryValue = parseFloat(month.retailInventoryValue.toFixed(2));
+      histogramData.push(month);
+    });
+    return res.json({
+      period: {
+        startDate: startDate.toISOString().split("T")[0],
+        endDate: endDate.toISOString().split("T")[0],
+      },
+      histogramData: histogramData,
+      currentInventoryValue: parseFloat(
+        histogramData.reduce((sum, month) => sum + month.currentInventoryValue, 0).toFixed(2)
+      ),
+      retailInventoryValue: parseFloat(
+        histogramData.reduce((sum, month) => sum + month.retailInventoryValue, 0).toFixed(2)
+      ),
+      totalQuantity: histogramData.reduce((sum, month) => sum + month.productsCount, 0),
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
