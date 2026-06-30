@@ -29,7 +29,7 @@ var translations = {
     // POS – Cart
     new_btn: 'New',
     scan_barcode: 'Scan product barcode or enter SKU...',
-    search_products: 'Search by name or SKU...',
+    search_products: 'Search by name ...',
     items: 'Items',
     subtotal: 'Subtotal',
     discount: 'Discount',

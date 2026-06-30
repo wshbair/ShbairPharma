@@ -235,6 +235,7 @@ if (auth == undefined) {
             allCategories = data;
             loadCategoryList();
             renderPosCategoryPills();
+            renderPosCategorySelect();
             $("#category,#categories").html(`<option value="0" data-i18n="select_category">Select</option>`);
             allCategories.forEach((category) => {
               $("#category,#categories").append(
@@ -309,6 +310,7 @@ if (auth == undefined) {
         
     // Start the optimized initialization
     initializeApp();
+    
 
     $("#paymentText").on("input", function () {
       //@ts-expect-error
@@ -368,7 +370,7 @@ if (auth == undefined) {
       return `<div class="col-lg-2 box ${item.category}"
                   onclick="$(this).addToCart(${item._id}, ${item.quantity}, ${item.stock})">
                 <div class="widget-panel widget-style-2 ${item_isExpired || item_stockStatus < 1 ? "widget-style-danger" : ""}" title="${item.name}">
-                  <div id="image"><img src="${item_img}" id="product_img" alt=""></div>
+                  
                   <div class="text-muted m-t-5 text-center">
                     <div class="name" id="product_name">
                       <span class="${item_isExpired ? "text-danger" : ""}">${item.name}</span>
@@ -433,6 +435,7 @@ if (auth == undefined) {
       });
       $("#posCategoryPills").html(html);
     }
+    
 
     function renderPosRecent() {
       if (!posRecentItems.length) { $("#posRecentStrip").hide(); return; }
@@ -467,18 +470,34 @@ if (auth == undefined) {
     }
 
     // Category pill clicks
-    $(document).on("click", ".pos-cat-pill", function () {
-      const cat = $(this).data("cat");
-      $("#search").val("");
-      if (!cat) {
+    // $(document).on("click", ".pos-cat-pill", function () {
+    //   const cat = $(this).data("cat");
+    //   $("#search").val("");
+    //   if (!cat) {
+    //     renderPosIdle();
+    //     return;
+    //   }
+    //   $(".pos-cat-pill").removeClass("active");
+    //   $(this).addClass("active");
+    //   posActiveCategory = cat;
+    //   const filtered = allProducts.filter(function (p) { return p.category === cat; });
+    //   renderPosProducts(filtered, false);
+    // });
+
+    // Category select change
+    $(document).on("change", "#posCategorySelect", function () {
+    const cat = $(this).val();
+    $("#search").val("");
+    if (!cat) {
+        posActiveCategory = "";
         renderPosIdle();
         return;
-      }
-      $(".pos-cat-pill").removeClass("active");
-      $(this).addClass("active");
-      posActiveCategory = cat;
-      const filtered = allProducts.filter(function (p) { return p.category === cat; });
-      renderPosProducts(filtered, false);
+    }
+    posActiveCategory = cat;
+    const filtered = allProducts.filter(function (p) {
+        return p.category === cat;
+    });
+    renderPosProducts(filtered, false);
     });
 
     // Fetch all products into allProducts (for management view) with expiry notifications
@@ -1436,9 +1455,8 @@ if (auth == undefined) {
       let grossTotal;
       let total_items = 0;
       $.each(cart, function (index, data) {
-        let margin = data.profit_margin || 0;
         total += data.quantity * data.price;
-        totalCost += data.quantity * data.cost_price; // data.price * 100 / (100 + margin);
+        totalCost += data.quantity * data.cost_price;
         total_items += parseFloat(data.quantity);
       });
       $("#total").text(total_items);
@@ -1446,9 +1464,10 @@ if (auth == undefined) {
       total = (total) - Number($("#inputDiscount").val().toString()) ;
       $("#price").text(moneyFormat(subTotal.toFixed(2)));
 
-      if (Number($("#inputDiscount").val().toString()) >= total) {
-        $("#inputDiscount").val(0);
-      }
+      if (Number($("#inputDiscount").val().toString()) >= total && total > 0) {
+        $("#inputDiscount").addClass("error")
+      } else 
+        $("#inputDiscount").removeClass("error")
 
       if (settings.charge_tax) {
         totalVat = (total * vat) / 100;
@@ -1939,7 +1958,7 @@ if (auth == undefined) {
         processData: false,
         success: function (data) {
           cart = [];
-          $("#inputDiscount").val(0);
+          $("#inputDiscount").val("");
           receipt = DOMPurify.sanitize(receipt,{ ALLOW_UNKNOWN_PROTOCOLS: true });
           $("#viewTransaction").html("");
           $("#viewTransaction").html(receipt);
@@ -4803,8 +4822,8 @@ function loadProductList() {
     //render product list
     product_list +=
       `<tr ${isExpired(expiryDate) ? 'style="background-color: #ffdad7"': ""} >`+
-        `<td>${counter} </td>
-        <td><img id=${product._id}> ${product.barcode} </td>
+        `<td>${product._id} </td>
+        <td>${product.barcode} </td>
         <td>${product.name} ${product.expiryAlert}</td>
         <td>${moneyFormat(product.price)}</td>
         <td>${moneyFormat(product.costPrice)}</td>
@@ -5805,6 +5824,7 @@ function searchProductHistogram(productId, year) {
       return response.json();
     })
     .then((data) => {
+      
       // Check if data contains histogram
       if (data.histogramData && Array.isArray(data.histogramData)) {
         renderHistogramChart(data);
@@ -6193,8 +6213,7 @@ function updateEvaluationHistogramStats(data) {
  */
 function updateHistogramStats(data) {
   // Update product ID display
-  if(data.productName)
-    $("#histogramProductId").text(`(Product Name: ${data.productName})`);
+  $("#histogramProductId").text(`(Product Name: ${data.productName})`);
 
   // Update period
   const periodText = `${data.histogramData[0]?.monthName} to ${data.histogramData[data.histogramData.length - 1]?.monthName}`;
@@ -6213,5 +6232,15 @@ function updateHistogramStats(data) {
 
   // Show stats row
   $("#histogramStatsRow").show();
+}
+
+function renderPosCategorySelect() {
+    let html = `<option value="">Select Category</option>`;
+    allCategories.forEach(function (c) {
+        html += `<option value="${c.name}">${c.name.charAt(0).toUpperCase() + c.name.slice(1)}</option>`;
+    });
+    $("#posCategorySelect").html(html);
+
+    
 }
 

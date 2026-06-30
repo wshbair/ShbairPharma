@@ -351,8 +351,13 @@ body {
 #inputDiscount {
     height: 34px !important; font-size: 13px !important; width: 130px;
     border-radius: var(--radius-sm) !important; border-color: var(--c-border) !important;
-    text-align: right;
+    text-align: left;
 }
+
+#inputDiscount.error {
+    border-color: red !important;
+}
+ 
 
 /* POS action buttons */
 .pos-actions {
@@ -480,13 +485,19 @@ body {
 }
 #search {
     flex: 1;
-    height: 36px !important;
+    height: 50px !important;
     border-radius: var(--radius-sm) !important;
-    border-color: var(--c-border) !important; font-size: 13px;
+    border-color: var(--c-border) !important; font-size: 23px;
 }
 #search:focus {
     border-color: var(--c-primary) !important;
     box-shadow: 0 0 0 3px rgba(13,115,119,.1) !important;
+}
+
+#posCategorySelect {
+   height: 50px !important; 
+   font-size: 23px;
+   font-style:var(--c-info)
 }
 
 /* Category pills */
@@ -630,7 +641,7 @@ body {
 #image { height: auto !important; }
 #product_img { max-height: 30px; max-width: 30px; border-radius: 6px; }
 .widget-panel.widget-style-2 .name {
-    font-size: 13px; font-weight: 600; color: var(--c-text);
+    font-size: 1vw; font-weight: 400; color: var(--c-text);
     line-height: 1.1; margin-bottom: 4px;
     overflow: hidden; display: -webkit-box;
     -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;

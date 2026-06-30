@@ -5,6 +5,7 @@ app.use(bodyParser.json());
 module.exports = app;
 
 const { transactionsDB, inventoryDB } = require("./db");
+const { forEach } = require("lodash");
 
 /**
  * GET endpoint: Get the welcome message for the Reports API.
@@ -109,7 +110,7 @@ app.get("/daily", async (req, res) => {
 app.get("/product-sales-histogram", async (req, res) => {
   try {
     const { productId, year } = req.query;
-
+    
     if (!productId || !year) {
       return res.status(400).json({
         error: "Bad Request",
@@ -117,12 +118,15 @@ app.get("/product-sales-histogram", async (req, res) => {
       });
     }
 
+    const productInfo = await inventoryDB.findOneAsync({
+      _id: parseInt(productId)
+    })
+   
     // Calculate date range for the past year
     const endDate = new Date();
     const startDate = new Date();
     startDate.setFullYear(Number(year), 0);
     endDate.setFullYear(Number(year), 11);
-
 
     // Query transactions containing the product from the past year
     const transactions = await transactionsDB.find({
@@ -133,11 +137,19 @@ app.get("/product-sales-histogram", async (req, res) => {
       status: 1, // Only completed transactions
       "items.id": Number(productId),
     });
-    //console.log(transactions);
+    
+    // Filter items in each transaction
+    //@ts-expect-error
+    const filteredTransactions = transactions.map(transaction => ({
+      ...transaction,
+      items: transaction.items.filter(item => item.id === Number(productId))
+    }));
+
+
     // Initialize histogram data for all months in the past year
     const histogramData = [];
     const monthMap = {};
-    let productName = "";
+    let productName = productInfo.name;
     // Create entries for all months
     for (let month = 0; month < 12; month++) {
       const monthDate = new Date(Number(year), month, 1);
@@ -156,17 +168,16 @@ app.get("/product-sales-histogram", async (req, res) => {
 
 
     // Process transactions and aggregate sales data by month
-    if (Array.isArray(transactions)) {
-      transactions.forEach((transaction) => {
+    if (Array.isArray(filteredTransactions)) {
+      filteredTransactions.forEach((transaction) => {
         const txDate = new Date(transaction.date);
         const yearMonth = `${txDate.getFullYear()}-${String(txDate.getMonth() + 1).padStart(2, "0")}`;
         if (monthMap[yearMonth]) {
           // Find the product in the transaction items
           const productItems = transaction.items.filter((item) => item.id === Number(productId));
           productItems.forEach((item) => {
-            monthMap[yearMonth].sales += Number(item.price) || 0;
+            monthMap[yearMonth].sales += Number(item.price) * Number(item.quantity) || 0;
             monthMap[yearMonth].quantity += Number(item.quantity) || 0;
-            productName = item.product_name;
           });
 
           monthMap[yearMonth].transactionCount += 1;

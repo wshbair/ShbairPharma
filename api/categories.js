@@ -28,9 +28,15 @@ app.get("/", function (req, res) {
  * @returns {void}
  */
 app.get("/all", function (req, res) {
-    categoriesDB.find({}, function (err, docs) {
-        res.send(docs);
-    });
+    categoriesDB.find({})
+        //@ts-expect-error
+        .sort({ name: 1 }) // 1 for ascending (A-Z), -1 for descending (Z-A)
+        .exec(function (err, docs) {
+            if (err) {
+                return res.status(500).send(err);
+            }
+            res.send(docs);
+        });
 });
 
 /**

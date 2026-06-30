@@ -1423,7 +1423,7 @@
                                     </div>
                                     <div>
                                         <div class="cart-summary-label" data-i18n="discount">Discount</div>
-                                        <input class="form-control" type="number" id="inputDiscount" min="0"
+                                        <input class="form-control" type="" id="inputDiscount" min="0"
                                             placeholder="0.00" oninput="$(this).calculateCart();">
                                     </div>
                                     <div>
@@ -1489,11 +1489,16 @@
                             
                             <!-- Search bar -->
                             <div class="products-header">
-                                <input type="text" id="search" class="form-control" data-i18n-placeholder="search_products" placeholder="Search by name or SKU...">
+                                <input type="text" id="search" class="form-control" data-i18n-placeholder="search_products" placeholder="Search by name ...">
                             </div>
 
+                            <!-- Category dropdown -->
+                            <select id="posCategorySelect" class="form-control">
+                            </select>
+
                             <!-- Category pills -->
-                            <div id="posCategoryPills" class="pos-cat-pills"></div>
+                            <!-- <div id="posCategoryPills" class="pos-cat-pills"></div> -->
+
 
                             
 
@@ -1934,7 +1939,6 @@
       <span id="statusText"></span>
       <span id="printerConnectionStatus" class="greenback"></span>
     </div>
-
     <script src="assets/dist/js/bundle.min.js"></script>
 </body>
 </html>
