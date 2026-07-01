@@ -472,6 +472,7 @@ app.post("/product/name", function (req, res) {
         },
     );
 });
+
 /**
  * PATCH /product/:id/costs
  * Update only quantity and/or costPrice of a product without touching other fields.
@@ -553,6 +554,59 @@ app.post("/restock/:productId", function (req, res) {
                 res.sendStatus(200);
             }
         );
+    });
+
+    /**
+     * PATCH endpoint: Set or unset the `pinned` flag for a product.
+     * This allows a product to be pinned so it always appears in parent-top-sales.
+     */
+    app.patch("/product/:id/pin", function (req, res) {
+        const id = parseInt(validator.escape(String(req.params.id)));
+        if (!id) return res.status(400).json({ error: "Product ID required" });
+        // Log incoming request for debugging
+        console.log(`[inventory] ${req.method} /product/${id}/pin payload:`, req.body);
+
+        // Accept booleans or truthy string/number values
+        let pinVal = req.body.pin;
+        let pinned = false;
+        if (pinVal === true || pinVal === "true" || pinVal === "1" || pinVal === 1) pinned = true;
+
+        inventoryDB.update({ _id: id }, { $set: { pinned: pinned } }, {}, function (err, numReplaced) {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({ error: "Internal Server Error" });
+            }
+            if (!numReplaced) {
+                console.log(`[inventory] product ${id} not found when attempting to set pinned=${pinned}`);
+                return res.status(404).json({ error: "Product not found" });
+            }
+            console.log(`[inventory] product ${id} pinned set to ${pinned}`);
+            res.sendStatus(200);
+        });
+    });
+});
+
+// Backwards-compatible POST fallback for clients that cannot use PATCH
+app.post("/product/:id/pin", function (req, res) {
+    const id = parseInt(validator.escape(String(req.params.id)));
+    if (!id) return res.status(400).json({ error: "Product ID required" });
+    console.log(`[inventory] ${req.method} /product/${id}/pin payload:`, req.body);
+
+    let pinVal = req.body.pin;
+    let pinned = false;
+    if (pinVal === true || pinVal === "true" || pinVal === "1" || pinVal === 1) pinned = true;
+
+    inventoryDB.update({ _id: id }, { $set: { pinned: pinned } }, {}, function (err, numReplaced) {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ error: "Internal Server Error" });
+        }
+        if (!numReplaced) {
+            console.log(`[inventory] product ${id} not found when attempting to set pinned=${pinned}`);
+            return res.status(404).json({ error: "Product not found" });
+        }
+        console.log(`[inventory] product ${id} pinned set to ${pinned}`);
+        res.sendStatus(200);
     });
 });
 

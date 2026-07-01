@@ -32,6 +32,7 @@ let index = 0;
 let allUsers = [];
 let allProducts = [];
 let allCategories = [];
+let mostSoldProducts = [];
 let allProviders = [];
 let invoiceItems = [];
 let posRecentItems = [];   // products added to cart this session
@@ -234,7 +235,7 @@ if (auth == undefined) {
           requestAnimationFrame(() => {
             allCategories = data;
             loadCategoryList();
-            renderPosCategoryPills();
+            //renderPosCategoryPills();
             renderPosCategorySelect();
             $("#category,#categories").html(`<option value="0" data-i18n="select_category">Select</option>`);
             allCategories.forEach((category) => {
@@ -281,10 +282,11 @@ if (auth == undefined) {
           }),
           promiseGet(api + "inventory/products").then(data => {
             allProducts = [...data];
-          })
+          }),
         ]).then(async () => {
           $("#statusText").text(`Ready`)
           $("#printerConnectionStatus").text(`Printer: ${await printerStatus()}`)
+          renderPinnedProducts()
         }).catch(err => console.error('Error loading parallel data:', err));
 
       } catch (err) {
@@ -362,11 +364,7 @@ if (auth == undefined) {
       let item_isExpired = isExpired(item.expirationDate);
       const dayToExpire = daysToExpire(item.expirationDate)
       let item_stockStatus = getStockStatus(item.quantity, item.minStock);
-      let item_img = default_item_img;
-      if (item.img !== "") {
-        let candidate = path.join(img_path, item.img);
-        item_img = checkFileExists(candidate) ? candidate : default_item_img;
-      }
+
       return `<div class="col-lg-2 box ${item.category}"
                   onclick="$(this).addToCart(${item._id}, ${item.quantity}, ${item.stock})">
                 <div class="widget-panel widget-style-2 ${item_isExpired || item_stockStatus < 1 ? "widget-style-danger" : ""}" title="${item.name}">
@@ -375,12 +373,6 @@ if (auth == undefined) {
                     <div class="name" id="product_name">
                       <span class="${item_isExpired ? "text-danger" : ""}">${item.name}</span>
                     </div>
-                    <span class="stock"> Exp. in ${dayToExpire} days</span><br>
-                    <span class="${item_stockStatus < 1 ? "text-danger" : ""}">
-                      <span class="stock" data-i18n="stock">Stock </span>
-                      <span class="count">${item.stock == 1 ? item.quantity : "N/A"}</span>
-                    </span>
-
                   </div>
                   <span class="text-success text-center">
                     <b>${moneyFormat(item.price)}</b>
@@ -411,6 +403,20 @@ if (auth == undefined) {
       let html = "";
       data.forEach((item) => { html += buildProductCard(item); });
       $("#parent").html(html);
+    }
+
+    // ── Render Pinned Products ────────────────────────────────────────────
+    function renderPinnedProducts() {
+      let html = `<div class="top-tile" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 15px 20px; border-radius: 8px 8px 0 0; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+        <h5 style="color: #fff; margin: 0; font-size: 16px;">
+            <i class="fa fa-star" style="margin-right: 10px;"></i>Top Selling Products
+        </h5>
+    </div>`;
+      allProducts.forEach((item) => { 
+        if(item.pinned && item.pinned === true) {
+          html += buildPinnedProductCard(item); }
+      });
+      $("#parent-top-sales").html(html);
     }
 
     // ── POS IDLE STATE ────────────────────────────────────────────
@@ -490,7 +496,7 @@ if (auth == undefined) {
     $("#search").val("");
     if (!cat) {
         posActiveCategory = "";
-        renderPosIdle();
+        renderPinnedProducts();
         return;
     }
     posActiveCategory = cat;
@@ -2370,7 +2376,7 @@ if (auth == undefined) {
       $("#invoices_view").hide();
       $(this).hide();
       $("#search").val("");
-      renderPosIdle();
+      renderPinnedProducts();
     });
 
     $("#viewRefOrders").on("click", function () {
@@ -3689,6 +3695,27 @@ if (auth == undefined) {
     };
 
     //@ts-expect-error
+    $.fn.pinProduct = function (id) {
+      // toggle pinned flag for product
+      var prod = (allProducts || []).find(function (p) { return p._id == id; });
+      var newPinned = !(prod && prod.pinned);
+
+      $.ajax({
+        url: api + "inventory/product/" + id + "/pin",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({ pin: newPinned }),
+        success: function () {
+          loadProducts(loadProductList);
+        },
+        error: function (jqXHR) {
+          var msg = (jqXHR.responseJSON && jqXHR.responseJSON.message) || "Failed to update pin status.";
+          try { notiflix.Report.failure("Error", msg, "Ok"); } catch (e) { console.error(msg); }
+        }
+      });
+    };
+
+    //@ts-expect-error
     $.fn.deleteUser = function (id) {
       const diagOptions = {
         title: "Are you sure?",
@@ -4824,31 +4851,31 @@ function loadProductList() {
       `<tr ${isExpired(expiryDate) ? 'style="background-color: #ffdad7"': ""} >`+
         `<td>${product._id} </td>
         <td>${product.barcode} </td>
-        <td>${product.name} ${product.expiryAlert}</td>
+        <td>${product.pinned ? '<i class="fa fa-star text-warning" title="Pinned" style="margin-right:6px"></i>' : ''}${product.name} ${product.expiryAlert}</td>
         <td>${moneyFormat(product.price)}</td>
         <td>${moneyFormat(product.costPrice)}</td>
-
-          <td>${product.stock == 1 ? product.quantity : "N/A"} ${product.stockAlert}
-        </td>
+        <td>${product.stock == 1 ? product.quantity : "N/A"} ${product.stockAlert}</td>
         <td>${product.category}</td>
         <td>${product.invoiceId || "N/A"}${product.invoiceHistory && product.invoiceHistory.length > 1 ? ` <span class="badge" title="${product.invoiceHistory.length} restocks" style="cursor:default;">${product.invoiceHistory.length}</span>` : ""}</td>
         <td> <b>Exp.</b>: ${product.expirationDate || "N/A"} <br> <b>Ent.</b> ${product.entryDate} </td>
-        <td class="nobr"><span class="btn-group"><button onClick="$(this).editProduct(${index})" class="btn btn-warning btn-sm"><i class="fa fa-edit"></i></button><button onClick="$(this).deleteProduct(${
-          product._id
-        })" class="btn btn-danger btn-sm"><i class="fa fa-trash"></i></button></span></td></tr>`;
+        <td class="nobr">
+          <span class="btn-group">
+            <button onClick="$(this).editProduct(${index})" class="btn btn-warning btn-sm">
+            <i class="fa fa-edit"></i>
+            </button>
+            <button onClick="$(this).deleteProduct(${product._id})" class="btn btn-danger btn-sm">
+            <i class="fa fa-trash"></i>
+            </button>
+            <button onClick="$(this).pinProduct(${product._id})" class="btn btn-${product.pinned ? 'success' : 'primary'} btn-sm">
+            <i class="${product.pinned ? 'fa fa-star' : 'fa fa-star-o'}" alt="Pin Product"></i>
+            </button>
+          </span>
+        </td>
+        
+        </tr>`;
 
     if (counter == products.length) {
       $("#product_list").html(product_list);
-
-      // products.forEach((product) => {
-      //   let bcode = product.barcode || product._id;
-      //   //@ts-ignore
-      //   $("#" + product._id + "").JsBarcode(bcode, {
-      //     width: 1,
-      //     height: 25,
-      //     fontSize: 13,
-      //   });
-      // });
     }
   });
 
@@ -6242,5 +6269,24 @@ function renderPosCategorySelect() {
     $("#posCategorySelect").html(html);
 
     
+}
+
+function buildPinnedProductCard(item) {
+      item.price = parseFloat(item.price).toFixed(2);
+      let item_isExpired = isExpired(item.expirationDate);
+      const dayToExpire = daysToExpire(item.expirationDate)
+      let item_stockStatus = getStockStatus(item.quantity, item.minStock);
+      return `<div class="col-lg-2 box ${item.category}"
+                  onclick="$(this).addToCart(${item._id}, ${item.quantity}, ${item.stock})">
+                <div class="widget-panel widget-style-3 ${item_isExpired || item_stockStatus < 1 ? "widget-style-danger" : ""}" title="${item.name}">
+                  
+                  <div class="text-muted m-t-5 text-center">
+                    <div class="name" id="product_name">
+                      <span class="${item_isExpired ? "text-danger" : ""}">${item.name}</span>
+                    </div>
+                  </div>
+                  
+                </div>
+              </div>`;
 }
 
