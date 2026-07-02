@@ -108,7 +108,7 @@ ipcMain.on("app-reload", (event, arg) => {
 });
 
 ipcMain.on("restart-app", () => {
-    autoUpdater.quitAndInstall();
+    //autoUpdater.quitAndInstall();
     app.quit()
     
 });
