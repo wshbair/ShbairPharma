@@ -29,6 +29,7 @@ const path = require("path");
 const contextMenu = require("electron-context-menu");
 let { Menu, template } = require("./assets/js/native_menu/menu");
 const menuController = require('./assets/js/native_menu/menuController.js');
+const { autoUpdater } = require("electron-updater");
 const isPackaged = app.isPackaged;
 const isProduction = process.env.NODE_ENV === 'production' || isPackaged;
 //@ts-expect-error
@@ -107,7 +108,7 @@ ipcMain.on("app-reload", (event, arg) => {
 });
 
 ipcMain.on("restart-app", () => {
-    //autoUpdater.quitAndInstall();
+    autoUpdater.quitAndInstall();
     app.quit()
     
 });

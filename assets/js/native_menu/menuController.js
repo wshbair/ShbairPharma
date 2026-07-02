@@ -67,7 +67,7 @@ function checkForUpdates() {
   });
 
   autoUpdater.checkForUpdates();
-  autoUpdater.autoDownload = false;
+  autoUpdater.autoDownload = true;
 
   const handleUpdateAvailable = (info) => {
     const message = `Current version: ${pkg.version}\nNew Version: ${info.version}`;
