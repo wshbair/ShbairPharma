@@ -13,7 +13,14 @@
     "appId": "com.shbair.pharmacy",
     "directories": {
       "buildResources": "assets"
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "wshbair",
+        "repo": "ShbairPharma"
+      }
+    ]
   },
   "dependencies": {
     "@electron/remote": "^2.0.9",
