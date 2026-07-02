@@ -368,12 +368,16 @@ if (auth == undefined) {
       return `<div class="col-lg-2 box ${item.category}"
                   onclick="$(this).addToCart(${item._id}, ${item.quantity}, ${item.stock})">
                 <div class="widget-panel widget-style-2 ${item_isExpired || item_stockStatus < 1 ? "widget-style-danger" : ""}" title="${item.name}">
-                  
                   <div class="text-muted m-t-5 text-center">
                     <div class="name" id="product_name">
                       <span class="${item_isExpired ? "text-danger" : ""}">${item.name}</span>
                     </div>
+                    <span class="stock"> Exp. in ${dayToExpire} days</span>
                   </div>
+                   <span class="${item_stockStatus < 1 ? "text-danger" : ""}">
+                      <span class="stock" data-i18n="stock">Stock </span>
+                      <span class="count">${item.stock == 1 ? item.quantity : "N/A"}</span>
+                    </span>
                   <span class="text-success text-center">
                     <b>${moneyFormat(item.price)}</b>
                   </span>
@@ -2313,13 +2317,13 @@ if (auth == undefined) {
           $("#customer").append(
             $("<option>", {
               text: custData.name,
-              value: `{"id": ${custData._id}, "name": ${custData.name}}`,
+              value: `{"id": ${custData._id}, "name": "${custData.name}"}`,
               selected: "selected",
             }),
           );
 
           $("#customer")
-            .val(`{"id": ${custData._id}, "name": ${custData.name}}`)
+            .val(`{"id": ${custData._id}, "name": "${custData.name}"}`)
             .trigger("chosen:updated");
         },
         error: function (data) {
