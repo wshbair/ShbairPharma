@@ -590,7 +590,6 @@ app.post("/restock/:productId", function (req, res) {
 app.post("/product/:id/pin", function (req, res) {
     const id = parseInt(validator.escape(String(req.params.id)));
     if (!id) return res.status(400).json({ error: "Product ID required" });
-    console.log(`[inventory] ${req.method} /product/${id}/pin payload:`, req.body);
 
     let pinVal = req.body.pin;
     let pinned = false;
@@ -602,10 +601,8 @@ app.post("/product/:id/pin", function (req, res) {
             return res.status(500).json({ error: "Internal Server Error" });
         }
         if (!numReplaced) {
-            console.log(`[inventory] product ${id} not found when attempting to set pinned=${pinned}`);
             return res.status(404).json({ error: "Product not found" });
         }
-        console.log(`[inventory] product ${id} pinned set to ${pinned}`);
         res.sendStatus(200);
     });
 });

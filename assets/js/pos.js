@@ -407,9 +407,9 @@ if (auth == undefined) {
 
     // ── Render Pinned Products ────────────────────────────────────────────
     function renderPinnedProducts() {
-      let html = `<div class="top-tile" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 15px 20px; border-radius: 8px 8px 0 0; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
-        <h5 style="color: #fff; margin: 0; font-size: 16px;">
-            <i class="fa fa-star" style="margin-right: 10px;"></i>Top Selling Products
+      let html = `<div class="top-tile" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 15px 20px; border-radius: 8px 8px 0 0; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">
+        <h5 style="color: #fff; margin: 0; font-size: 14px;">
+            <i class="fa fa-star" style="margin-right: 5px;"></i>Top Selling Products
         </h5>
     </div>`;
       allProducts.forEach((item) => { 
