@@ -238,7 +238,7 @@ app.post("/delete", function (req, res) {
   let transaction = req.body;
   transactionsDB.remove(
     {
-      _id: transaction.orderId,
+      _id: transaction.order,
     },
     function (err, numRemoved) {
       if (err) {
@@ -248,6 +248,8 @@ app.post("/delete", function (req, res) {
           message: "An unexpected error occurred.",
         });
       } else {
+        //@ts-expect-error
+        Inventory.returnBackInventory(transaction.items)
         res.sendStatus(200);
       }
     },
@@ -340,92 +342,92 @@ app.post("/delete", function (req, res) {
 //     }
 // });
 
-/**
- * GET endpoint: Get top 20 most sold products for the main dashboard.
- * 
- * @param {Object} req request object with optional date range.
- * @param {Object} res response object.
- * @returns {void}
- */
-app.get("/most-sold", async function (req, res) {
-    try {
-        const { start, end } = req.query;
+// /**
+//  * GET endpoint: Get top 20 most sold products for the main dashboard.
+//  * 
+//  * @param {Object} req request object with optional date range.
+//  * @param {Object} res response object.
+//  * @returns {void}
+//  */
+// app.get("/most-sold", async function (req, res) {
+//     try {
+//         const { start, end } = req.query;
 
-        // Set date range (default to last 30 days if not specified)
-        const endDate = end ? new Date(end.toString()) : new Date();
-        const startDate = start ? new Date(start.toString()) : new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000); // Last 30 days
+//         // Set date range (default to last 30 days if not specified)
+//         const endDate = end ? new Date(end.toString()) : new Date();
+//         const startDate = start ? new Date(start.toString()) : new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000); // Last 30 days
 
-        // Query for completed transactions in date range
-        const query = {
-            date: {
-                $gte: startDate.toISOString(),
-                $lte: endDate.toISOString(),
-            },
-            status: 1, // Only completed transactions
-        };
+//         // Query for completed transactions in date range
+//         const query = {
+//             date: {
+//                 $gte: startDate.toISOString(),
+//                 $lte: endDate.toISOString(),
+//             },
+//             status: 1, // Only completed transactions
+//         };
 
-        // Fetch transactions
-        const transactions = await transactionsDB.find(query);
+//         // Fetch transactions
+//         const transactions = await transactionsDB.find(query);
 
-        // Aggregate product quantities
-        const productSales = {};
+//         // Aggregate product quantities
+//         const productSales = {};
 
-        transactions.forEach(transaction => {
-            if (transaction.items && Array.isArray(transaction.items)) {
-                transaction.items.forEach(item => {
-                    if (!item.id) return;
+//         transactions.forEach(transaction => {
+//             if (transaction.items && Array.isArray(transaction.items)) {
+//                 transaction.items.forEach(item => {
+//                     if (!item.id) return;
                     
-                    const productId = item.id.toString();
-                    const quantity = parseFloat(item.quantity) || 0;
+//                     const productId = item.id.toString();
+//                     const quantity = parseFloat(item.quantity) || 0;
 
-                    if (!productSales[productId]) {
-                        productSales[productId] = {
-                            id: item.id,
-                            name: item.product_name || 'Unknown',
-                            barcode: item.barcode || '',
-                            quantity: 0,
-                            price: parseFloat(item.price) || 0,
-                        };
-                    }
+//                     if (!productSales[productId]) {
+//                         productSales[productId] = {
+//                             id: item.id,
+//                             name: item.product_name || 'Unknown',
+//                             barcode: item.barcode || '',
+//                             quantity: 0,
+//                             price: parseFloat(item.price) || 0,
+//                         };
+//                     }
 
-                    productSales[productId].quantity += quantity;
-                });
-            }
-        });
+//                     productSales[productId].quantity += quantity;
+//                 });
+//             }
+//         });
 
-        // Convert to array, sort by quantity, and get top 20
-        const topProducts = Object.values(productSales)
-            .sort((a, b) => b.quantity - a.quantity)
-            .slice(0, 20);
+//         // Convert to array, sort by quantity, and get top 20
+//         const topProducts = Object.values(productSales)
+//             .sort((a, b) => b.quantity - a.quantity)
+//             .slice(0, 20);
 
-        // Get product details
-        const productsList = [];
-        for (const prod of topProducts) {
-            const prodInfo = await inventoryDB.findOneAsync({
-                _id: prod.id
-            });
-            productsList.push(prodInfo);
-        }
+//         // Get product details
+//         const productsList = [];
+//         for (const prod of topProducts) {
+//             const prodInfo = await inventoryDB.findOneAsync({
+//                 _id: prod.id
+//             });
+//             productsList.push(prodInfo);
+//         }
 
 
 
-        return res.status(200).json({
-            success: true,
-            data: productsList,
-            period: {
-                from: startDate.toISOString(),
-                to: endDate.toISOString(),
-            }
-        });
+//         return res.status(200).json({
+//             success: true,
+//             data: productsList,
+//             period: {
+//                 from: startDate.toISOString(),
+//                 to: endDate.toISOString(),
+//             }
+//         });
 
-    } catch (err) {
-        console.error('Error fetching top sold products:', err);
-        return res.status(500).json({
-            success: false,
-            error: "Failed to fetch top products",
-        });
-    }
-});
+//     } catch (err) {
+//         console.error('Error fetching top sold products:', err);
+//         return res.status(500).json({
+//             success: false,
+//             error: "Failed to fetch top products",
+//         });
+//     }
+// });
 
 /**
  * GET endpoint: Get details of a specific transaction by transaction ID.

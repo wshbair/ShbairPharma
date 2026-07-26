@@ -645,3 +645,36 @@ app.decrementInventory = function (products) {
     });
     });
 };
+
+//@ts-expect-error
+app.returnBackInventory = function (products) {
+    async.eachSeries(products, function (transactionProduct, callback) {
+        inventoryDB.findOne(
+            {
+                _id: parseInt(transactionProduct.id),
+            },
+            function (err, product) {
+                if (!product || !product.quantity) {
+                    callback();
+                } else {
+                    let updatedQuantity = Number((parseFloat(product.quantity) + parseFloat(transactionProduct.quantity)).toFixed(2));
+                    inventoryDB.update(
+                        {
+                            _id: parseInt(product._id),
+                        },
+                        {
+                            $set: {
+                                quantity: updatedQuantity,
+                            },
+                        },
+                        {},
+                        callback,
+                    );
+                }
+            },
+        );
+        inventoryDB.compactDatafile((err) => {
+        if (err) console.error('Compaction failed:', err);
+    });
+    });
+};

@@ -86,9 +86,9 @@
                     <button id="productModal" type="button" class="btn btn-default">
                         <i class="glyphicon glyphicon-barcode"></i> <span data-i18n="products">Products</span>
                     </button>
-                    <button id="viewRefOrders" data-toggle="modal" data-target="#holdOrdersModal" type="button" class="btn btn-default ">
+                   <!--  <button id="viewRefOrders" data-toggle="modal" data-target="#holdOrdersModal" type="button" class="btn btn-default ">
                     <i class="fa fa-shopping-basket"></i> <span data-i18n="hold_orders">Hold Orders</span>
-                </button>
+                </button> -->
                 </div>
                 <div class="nav-spacer"></div>
                 
@@ -111,8 +111,11 @@
                 <button id="transactions" type="button" class="btn btn-default p_three">
                     <i class="glyphicon glyphicon-credit-card"></i> <span data-i18n="sales">Sales</span>
                 </button>
-                 <button id="viewCustomerOrders" data-toggle="modal" data-target="#customerModal" type="button" onclick="$(this).getCustomerOrders()" class="btn btn-default ">
+                <!-- <button id="viewCustomerOrders" data-toggle="modal" data-target="#customerModal" type="button" onclick="$(this).getCustomerOrders()" class="btn btn-default ">
                     <i class="fa fa-shopping-cart"></i> <span data-i18n="orders">Orders</span>
+                </button> -->
+                <button id="customerOrdersPageBtn" type="button" class="btn btn-default ">
+                    <i class="fa fa-money"></i> <span>Credits</span>
                 </button>
 
                 <div class="nav-sep"></div>
@@ -769,6 +772,170 @@
 
                     </div><!-- /tab-content -->
                 </div><!-- /.container -->
+            </div>
+
+            <!-- ══ CUSTOMER CREDIT VIEW ══ -->
+            <div id="customers_view" style="display:none;">
+                <div class="container">
+                    <ul class="nav nav-tabs inv-view-tabs" id="customerCreditTabs" role="tablist">
+                        <li role="presentation" class="active">
+                            <a href="#customerCreditListTab" data-toggle="tab">
+                                <i class="fa fa-users"></i> Customers
+                            </a>
+                        </li>
+                        <li role="presentation">
+                            <a href="#customerCreditAddTab" id="customerCreditAddTabLink" data-toggle="tab">
+                                <i class="fa fa-plus-circle"></i> New Customer
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content inv-tab-content">
+                        <div class="tab-pane active" id="customerCreditListTab">
+                            <div style="margin-top:16px; margin-bottom:16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                                <select id="customerCreditListFilter" class="form-control" style="max-width:300px;">
+                                    <option value="">— Select a Customer —</option>
+                                </select>
+                                <button id="refreshCustomerCreditBtn" class="btn btn-default">
+                                    <i class="fa fa-refresh"></i> Refresh
+                                </button>
+                            </div>
+
+                            <div id="customer_credit_empty_state" class="pv-empty-state">
+                                <i class="fa fa-users"></i>
+                                <p>Select a customer to manage their orders and payments</p>
+                            </div>
+
+                            <div id="customer_credit_detail" style="display:none;">
+                                <div class="pv-profile-card">
+                                    <div class="pv-avatar"><i class="fa fa-user"></i></div>
+                                    <div class="pv-profile-body">
+                                        <div class="pv-profile-name" id="customer_credit_info_name">—</div>
+                                        <div class="pv-profile-meta">
+                                            <span><i class="fa fa-phone"></i> <span id="customer_credit_info_phone">—</span></span>
+                                            <span><i class="fa fa-envelope-o"></i> <span id="customer_credit_info_email">—</span></span>
+                                        </div>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+                                        <div class="pv-balance-chip">
+                                            <div class="pv-balance-label">Remaining Balance</div>
+                                            <div class="pv-balance-value" id="customer_credit_info_balance">—</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row m-b-16">
+                                    <div class="col-md-3">
+                                        <div class="invoice-stat-card invoice-stat-total">
+                                            <div class="invoice-stat-label">Orders</div>
+                                            <div class="invoice-stat-value" id="customer_credit_stat_orders">0</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="invoice-stat-card invoice-stat-amount">
+                                            <div class="invoice-stat-label">Total Ordered</div>
+                                            <div class="invoice-stat-value" id="customer_credit_stat_total">0.00</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="invoice-stat-card invoice-stat-paid">
+                                            <div class="invoice-stat-label">Paid</div>
+                                            <div class="invoice-stat-value" id="customer_credit_stat_paid">0.00</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="invoice-stat-card invoice-stat-pending">
+                                            <div class="invoice-stat-label">Due</div>
+                                            <div class="invoice-stat-value" id="customer_credit_stat_due">0.00</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-7">
+                                        <div class="card-box">
+                                            <div class="card-title">
+                                                <h4><i class="fa fa-shopping-cart"></i> Customer Orders</h4>
+                                            </div>
+                                            <div class="card-body" style="overflow-x:auto;">
+                                                <table class="table table-hover table-bordered" id="customerCreditOrderTable">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Order</th>
+                                                            <th>Date</th>
+                                                            <th>Total</th>
+                                                            <th>Paid</th>
+                                                            <th>Due</th>
+                                                            <th>Status</th>
+                                                            <th>Action</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="customer_credit_orders_list"></tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <div class="card-box">
+                                            <div class="card-title">
+                                                <h4>
+                                                    <i class="fa fa-money"></i> Payment History
+                                                    <button id="addCustomerCreditPaymentBtn" class="btn btn-primary btn-sm pull-right" style="margin-top:-4px;">Add</button>
+                                                </h4>
+                                            </div>
+                                            <div class="card-body" style="overflow-x:auto;">
+                                                <table class="table table-hover table-bordered" id="customerCreditPaymentTable">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Date</th>
+                                                            <th>Amount</th>
+                                                            <th>Method</th>
+                                                            <th>Note</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="customer_credit_payments_list"></tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane" id="customerCreditAddTab">
+                            <div class="card-box" style="margin-top:16px; max-width:560px;">
+                                <div class="card-title">
+                                    <h4>
+                                        <i class="fa fa-plus-circle"></i> New Customer
+                                    </h4>
+                                </div>
+                                <div class="card-body">
+                                    <form id="saveCustomerCreditCustomer">
+                                        <div class="form-group">
+                                            <label>Name</label>
+                                            <input id="customerCreditName" type="text" required name="name" placeholder="Customer name" class="form-control">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Phone</label>
+                                            <input id="customerCreditPhone" type="text" name="phone" placeholder="0599 000 000" class="form-control">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Email</label>
+                                            <input id="customerCreditEmail" type="email" name="email" placeholder="Email address" class="form-control">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Address</label>
+                                            <textarea id="customerCreditAddress" name="address" rows="2" placeholder="Customer address" class="form-control"></textarea>
+                                        </div>
+                                        <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--c-border);">
+                                            <button type="submit" class="btn btn-primary">Save Customer</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- ══ INVOICES VIEW ══ -->
@@ -1462,8 +1629,7 @@
                                     <i class="fa fa-ban"></i> <span data-i18n="cancel">Cancel</span>
                                 </button>
                                 <button type="button" id="hold" class="btn btn-info " style="position:relative;">
-                                    <i class="fa fa-hand-paper-o"></i> <span data-i18n="hold_btn">Hold</span>
-                                    <span id="holdBadge" class="hold-badge" style="display:none;">0</span>
+                                    <i class="fa fa-hand-paper-o"></i> <span data-i18n="hold_btn">Credit Purchase</span>
                                 </button>
                                 <button type="button" id="payButton" class="btn btn-success ">
                                     <i class="fa fa-money"></i> <span data-i18n="pay_now">Pay Now</span>
@@ -1748,6 +1914,52 @@
                             <div class="customerOrderKeyboard"></div><br>
                             <div class="row" id="renderCustomerOrders"><p>please wait <span class="dot"></span></p></div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="customerCreditOrderDetailsModal" class="modal fade bs-example-modal-lg" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                        <h4 class="modal-title" id="customerCreditOrderDetailsTitle">Order Details</h4>
+                    </div>
+                    <div class="modal-body" id="customerCreditOrderDetailsBody"></div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="creditPaymentModal" class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                        <h4 class="modal-title">Record Payment</h4>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="creditOrderId">
+                        <div class="form-group">
+                            <label>Payment Amount</label>
+                            <input type="number" id="creditPaymentAmount" class="form-control" min="0" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label>Payment Method</label>
+                            <select id="creditPaymentMethod" class="form-control">
+                                <option value="cash">Cash</option>
+                                <option value="bank">Bank Transfer</option>
+                                <option value="card">Card</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Notes</label>
+                            <textarea id="creditPaymentNotes" class="form-control"></textarea>
+                        </div>
+                        <button id="submitCreditPayment" type="button" class="btn btn-success btn-block">Save Payment</button>
                     </div>
                 </div>
             </div>

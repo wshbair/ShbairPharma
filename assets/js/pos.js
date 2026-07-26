@@ -65,6 +65,8 @@ let api =  "http://" + host + ":" + port + "/api/";
 const bcrypt = require("bcrypt");
 let holdOrderList = [];
 let customerOrderList = [];
+let customerCreditOrders = [];
+let customerCreditSelectedCustomer = null;
 let ownUserEdit = null;
 let totalPrice = 0;
 let orderTotal = 0;
@@ -91,7 +93,8 @@ const permissions = [
   "perm_transactions",
   "perm_users",
   "perm_settings",
-];
+]
+
 notiflix.Notify.init({
   position: "right-top",
   cssAnimationDuration: 600,
@@ -100,6 +103,8 @@ notiflix.Notify.init({
   closeButton: true,  // Changed from 'closeButton' to 'showCloseButton'
   timeout: 5000 
 });
+
+
 const {
   DATE_FORMAT,
   moneyFormat,
@@ -158,7 +163,7 @@ $(function () {
 
   cb(start, end);
   allowOnlyNumbers('.number-input');
-});
+})
 
 auth = storage.get("auth");
 user = storage.get("user");
@@ -471,13 +476,13 @@ if (auth == undefined) {
       }
     }
 
-    function updateHoldBadge(count) {
-      if (count > 0) {
-        $("#holdBadge").text(count).show();
-      } else {
-        $("#holdBadge").hide();
-      }
-    }
+    // function updateHoldBadge(count) {
+    //   if (count > 0) {
+    //     $("#holdBadge").text(count).show();
+    //   } else {
+    //     $("#holdBadge").hide();
+    //   }
+    // }
 
     // Category pill clicks
     // $(document).on("click", ".pos-cat-pill", function () {
@@ -1683,14 +1688,7 @@ if (auth == undefined) {
       });
     });
 
-    $("#hold").on("click", function () {
-      if (cart.length != 0) {
-        //@ts-expect-error
-        $("#dueModal").modal("toggle");
-      } else {
-        notiflix.Report.warning("Oops!", "There is nothing to hold!", "Ok");
-      }
-    });
+
 
     //@ts-expect-error
     $.fn.submitDueOrder = function (status) {
@@ -1993,8 +1991,7 @@ if (auth == undefined) {
           $("#dueModal").modal("hide");
            //@ts-expect-error
           $("#paymentModel").modal("hide");
-           //@ts-expect-error
-          $(this).getHoldOrders();
+          //$(this).getHoldOrders();
            //@ts-expect-error
           $(this).getCustomerOrders();
            //@ts-expect-error
@@ -2017,27 +2014,36 @@ if (auth == undefined) {
       $("#change").text("");
       $("#payment,#paymentText").val("");
       $("#paymentText").val("");      
-};
+    };
+
+    $("#hold").on("click", function () {
+      if (cart.length != 0) {
+        //$("#dueModal").modal("toggle");
+        //@ts-expect-error
+       $(this).submitDueOrder(0)
+      } else {
+        notiflix.Report.warning("Oops!", "There is nothing to hold!", "Ok");
+      }
+    });
 
     $.get(api + "on-hold", function (data) {
       holdOrderList = data;
       holdOrderlocation.empty();
-      updateHoldBadge(data.length);
+      //updateHoldBadge(data.length);
        //@ts-expect-error
       $(this).renderHoldOrders(holdOrderList, holdOrderlocation, 1);
     });
 
-     //@ts-expect-error
-    $.fn.getHoldOrders = function () {
-      $.get(api + "on-hold", function (data) {
-        holdOrderList = data;
-        clearInterval(dotInterval);
-        holdOrderlocation.empty();
-        updateHoldBadge(data.length);
-         //@ts-expect-error
-        $(this).renderHoldOrders(holdOrderList, holdOrderlocation, 1);
-      });
-    };
+    // $.fn.getHoldOrders = function () {
+    //   $.get(api + "on-hold", function (data) {
+    //     holdOrderList = data;
+    //     clearInterval(dotInterval);
+    //     holdOrderlocation.empty();
+    //     //updateHoldBadge(data.length);
+    //      //@ts-expect-error
+    //     $(this).renderHoldOrders(holdOrderList, holdOrderlocation, 1);
+    //   });
+    // };
 
      //@ts-expect-error
     $.fn.renderHoldOrders = function (data, renderLocation, orderType) {
@@ -2257,8 +2263,7 @@ if (auth == undefined) {
             contentType: "application/json; charset=utf-8",
             cache: false,
             success: function (data) {
-              //@ts-expect-error
-              $(this).getHoldOrders();
+              //$(this).getHoldOrders();
               //@ts-expect-error
               $(this).getCustomerOrders();
 
@@ -2286,6 +2291,267 @@ if (auth == undefined) {
         $(this).renderHoldOrders(customerOrderList, customerOrderLocation, 2);
       });
     };
+
+    // Customer Credit Page
+    function loadCustomerCreditPage(callback) {
+      $.get(api + "customers/all", function (customers) {
+        const select = $("#customerCreditListFilter");
+        select.empty().append('<option value="">— Select a Customer —</option>');
+        customers.forEach(function (customer) {
+          select.append(`<option value="${customer._id}">${validator.escape(customer.name || customer._id)}</option>`);
+        });
+        if (callback) {
+          callback(customers);
+        }
+      });
+    }
+
+    function showCustomerCreditOrderDetails(order) {
+      const items = Array.isArray(order.items) ? order.items : [];
+      
+      const itemRows = items.length ? items.map(function (item) {
+        return `<tr><td>${validator.escape(item.product_name || item.name || "—")}</td><td>${item.id}</td><td>${(Number(item.quantity) || 0)}</td><td>${moneyFormat((Number(item.price) || 0).toFixed(2))}</td></tr>`;
+      }).join("") : '<tr><td colspan="4" class="text-center text-muted">No items</td></tr>';
+      
+      const paymentRows = Array.isArray(order.paymentHistory) && order.paymentHistory.length ? order.paymentHistory.map(function (payment) {
+        return `<tr><td>${payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString() : "—"}</td><td>${moneyFormat((Number(payment.amount) || 0).toFixed(2))}</td><td>${validator.escape(payment.paymentMethod || "—")}</td><td>${validator.escape(payment.reference || "—")}</td></tr>`;
+      }).join("") : '<tr><td colspan="4" class="text-center text-muted">No payments recorded</td></tr>';
+
+      $("#customerCreditOrderDetailsTitle").text("Order " + (order.order || order._id || "Details"));
+      $("#customerCreditOrderDetailsBody").html(`
+        <div class="row">
+          <div class="col-md-6">
+            <p><strong>Customer:</strong> ${validator.escape(order.customer && order.customer.name ? order.customer.name : "—")}</p>
+            <p><strong>Date:</strong> ${order.date ? new Date(order.date).toLocaleDateString() : "—"}</p>
+            <p><strong>Status:</strong> ${(order.paymentStatus || "pending").toUpperCase()}</p>
+          </div>
+          <div class="col-md-6">
+            <p><strong>Total:</strong> ${moneyFormat((Number(order.total) || 0).toFixed(2))}</p>
+            <p><strong>Paid:</strong> ${moneyFormat((Number(order.paidAmount || order.paid || 0) || 0).toFixed(2))}</p>
+            <p><strong>Due:</strong> ${moneyFormat((Number(order.dueAmount) || 0).toFixed(2))}</p>
+          </div>
+        </div>
+        <h4 style="margin-top:12px;">Items</h4>
+        <table class="table table-bordered table-striped table-hover">
+          <thead><tr><th>Item</th><th>Id</th><th>Qty</th><th>Price</th></tr></thead>
+          <tbody>${itemRows}</tbody>
+        </table>
+        <h4 style="margin-top:12px;">Payments</h4>
+        <table class="table table-bordered table-striped table-hover">
+          <thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Reference</th></tr></thead>
+          <tbody>${paymentRows}</tbody>
+        </table>
+      `);
+      //@ts-expect-error
+      $("#customerCreditOrderDetailsModal").modal("show");
+    }
+
+    function selectCustomerCredit(customerId) {
+      if (!customerId) {
+        customerCreditSelectedCustomer = null;
+        $("#customer_credit_empty_state").show();
+        $("#customer_credit_detail").hide();
+        return;
+      }
+
+      $.get(api + "customers/customer/" + customerId, function (customer) {
+        customerCreditSelectedCustomer = customer || { _id: customerId, name: customer.name};
+        $("#customer_credit_info_name").text(customer.name || "—");
+        $("#customer_credit_info_phone").text(customer.phone || "—");
+        $("#customer_credit_info_email").text(customer.email || "—");
+        $("#customer_credit_empty_state").hide();
+        $("#customer_credit_detail").show();
+
+        $.get(api + "customer-credit/orders", function (orders) {
+          const customerOrders = (orders || []).filter(function (order) {
+            const customerData = order.customer || {};
+            return String(customerData.id || customerData._id || customerData) === String(customerId);
+          });
+          customerCreditOrders = customerOrders;
+          const total = customerOrders.reduce(function (sum, order) { return sum + (Number(order.total) || 0); }, 0);
+          const paid = customerOrders.reduce(function (sum, order) { return sum + (Number(order.paidAmount || order.paid || 0) || 0); }, 0);
+          const due = customerOrders.reduce(function (sum, order) { return sum + (Number(order.dueAmount) || 0); }, 0);
+
+          $("#customer_credit_stat_orders").text(customerOrders.length);
+          $("#customer_credit_stat_total").text(moneyFormat(total.toFixed(2)));
+          $("#customer_credit_stat_paid").text(moneyFormat(paid.toFixed(2)));
+          $("#customer_credit_stat_due").text(moneyFormat(due.toFixed(2)));
+          $("#customer_credit_info_balance").text(moneyFormat(due.toFixed(2)));
+
+          const tbody = $("#customer_credit_orders_list");
+          tbody.empty();
+          if (!customerOrders.length) {
+            tbody.append('<tr><td colspan="7" class="text-center text-muted">No credit orders found</td></tr>');
+            $("#customer_credit_payments_list").empty();
+            return;
+          }
+
+          customerOrders.forEach(function (order) {
+            const actionWrap = $("<div>", { class: "btn-group btn-group-sm" });
+            actionWrap.append(
+              $("<button>", {
+                class: "btn btn-sm btn-info",
+                text: "Details",
+                click: function () {
+                  showCustomerCreditOrderDetails(order);
+                },
+              }),
+            );
+            const isFullyPaid = String(order.paymentStatus || "pending") === "paid" || (Number(order.dueAmount) || 0) <= 0;
+            if (!isFullyPaid) {
+              actionWrap.append(
+                $("<button>", {
+                  class: "btn btn-sm btn-success",
+                  text: "Pay",
+                  click: function () {
+                    $("#creditOrderId").val(order._id);
+                    $("#creditPaymentAmount").val((Number(order.dueAmount) || 0).toFixed(2));
+                    //@ts-expect-error
+                    $("#creditPaymentModal").modal("show");
+                  },
+                }),
+              );
+            }
+
+            const row = $("<tr>").append(
+              $("<td>", { text: order.order || order._id }),
+              $("<td>", { text: new Date(order.date).toLocaleDateString() }),
+              $("<td>", { text: moneyFormat((Number(order.total) || 0).toFixed(2)) }),
+              $("<td>", { text: moneyFormat((Number(order.paidAmount || order.paid || 0) || 0).toFixed(2)) }),
+              $("<td>", { text: moneyFormat((Number(order.dueAmount) || 0).toFixed(2)) }),
+              $("<td>").append($("<span>", { class: (order.paymentStatus === "paid" ? "label label-success" : order.paymentStatus === "partial" ? "label label-warning" : "label label-danger"), text: (order.paymentStatus || "pending").toUpperCase() })),
+              $("<td>").append(actionWrap),
+            );
+            tbody.append(row);
+          });
+
+          const payments = [].concat.apply([], customerOrders.map(function (order) { return (order.paymentHistory || []).map(function (payment) { return Object.assign({}, payment, { orderId: order._id, orderRef: order.order || order._id }); }); }));
+          const paymentsTbody = $("#customer_credit_payments_list");
+          paymentsTbody.empty();
+          if (!payments.length) {
+            paymentsTbody.append('<tr><td colspan="4" class="text-center text-muted">No payments recorded</td></tr>');
+            return;
+          }
+          payments.forEach(function (payment) {
+            paymentsTbody.append(`<tr><td>${new Date(payment.paymentDate).toLocaleDateString()}</td><td>${moneyFormat((Number(payment.amount) || 0).toFixed(2))}</td><td>${validator.escape(payment.paymentMethod || "—")}</td><td>${validator.escape(payment.reference || "—")}</td></tr>`);
+          });
+        });
+      });
+    }
+
+    $("#customerOrdersPageBtn").on("click", function () {
+      loadCustomerCreditPage();
+      $("#pos_view").hide();
+      $("#transactions_view").hide();
+      $("#products_view").hide();
+      $("#providers_view").hide();
+      $("#invoices_view").hide();
+      $("#expenses_view").hide();
+      $("#customers_view").show();
+      $("#pointofsale").hide();
+      $("#transactions").hide();
+       $("#customer_credit_detail").hide();
+      
+    });
+
+    $("#customerCreditListFilter").on("change", function () {
+      //@ts-expect-error
+      selectCustomerCredit(this.value);
+    });
+
+    $("#saveCustomerCreditCustomer").on("submit", function (e) {
+      e.preventDefault();
+      const custData = {
+        _id: String(Date.now()),
+        name: $("#customerCreditName").val(),
+        phone: $("#customerCreditPhone").val(),
+        email: $("#customerCreditEmail").val(),
+        address: $("#customerCreditAddress").val(),
+      };
+
+      $.ajax({
+        url: api + "customers/customer",
+        type: "POST",
+        data: JSON.stringify(custData),
+        contentType: "application/json; charset=utf-8",
+        cache: false,
+        processData: false,
+        success: function () {
+          loadCustomerCreditPage(function (customers) {
+            const created = customers.find(function (customer) {
+              return String(customer._id) === String(custData._id);
+            });
+            if (created) {
+              $("#customerCreditListFilter").val(created._id);
+              selectCustomerCredit(created._id);
+            }
+          });
+          //@ts-ignore
+          $("#saveCustomerCreditCustomer")[0].reset();
+          //@ts-expect-error
+          $('#customerCreditTabs a[href="#customerCreditListTab"]').tab("show");
+          notiflix.Report.success("Customer saved", "The new customer is now available for credit orders.", "Ok");
+        },
+        error: function () {
+          notiflix.Report.failure("Error", "The customer could not be saved.", "Ok");
+        },
+      });
+    });
+
+    $("#refreshCustomerCreditBtn").on("click", function () {
+      if (customerCreditSelectedCustomer) {
+        selectCustomerCredit(customerCreditSelectedCustomer._id);
+      }
+    });
+
+    $("#addCustomerCreditPaymentBtn").on("click", function () {
+      if (!customerCreditOrders.length) {
+        notiflix.Report.warning("No orders", "Select a customer with existing credit orders first.", "Ok");
+        return;
+      }
+      const latestOrder = customerCreditOrders[0];
+      $("#creditOrderId").val(latestOrder._id);
+      $("#creditPaymentAmount").val((Number(latestOrder.dueAmount) || 0).toFixed(2));
+      //@ts-expect-error
+      $("#creditPaymentModal").modal("show");
+    });
+
+    $("#submitCreditPayment").on("click", function () {
+      const orderId = $("#creditOrderId").val();
+      const paymentAmount = parseFloat($("#creditPaymentAmount").val().toString()) || 0;
+      if (!orderId) {
+        return;
+      }
+      if (paymentAmount <= 0) {
+        notiflix.Report.warning("Invalid amount", "Enter a payment amount greater than zero.", "Ok");
+        return;
+      }
+
+      $.ajax({
+        url: api + "customer-credit/orders/" + orderId + "/payments",
+        type: "POST",
+        data: JSON.stringify({
+          amount: paymentAmount,
+          paymentDate: new Date().toISOString(),
+          paymentMethod: $("#creditPaymentMethod").val(),
+          reference: $("#creditPaymentReference").val(),
+          notes: $("#creditPaymentNotes").val(),
+        }),
+        contentType: "application/json; charset=utf-8",
+        cache: false,
+        processData: false,
+        success: function () {
+          //@ts-expect-error
+          $("#creditPaymentModal").modal("hide");
+          $("#creditPaymentAmount").val("");
+          $("#creditPaymentNotes").val("");
+          notiflix.Report.success("Payment recorded", "The order balance was updated successfully.", "Ok");
+        },
+        error: function () {
+          notiflix.Report.failure("Error", "The payment could not be saved.", "Ok");
+        },
+      });
+    });
 
     $("#saveCustomer").on("submit", function (e) {
       e.preventDefault();
@@ -2337,6 +2603,7 @@ if (auth == undefined) {
         },
       });
     });
+    // ── PAYMENT: Calculate change when payment input changes ────
 
     $("#confirmPayment").hide();
     $("#cardInfo").hide();
@@ -2344,6 +2611,7 @@ if (auth == undefined) {
       //@ts-expect-error
       $(this).calculateChange();
     });
+
     $("#confirmPayment").on("click", function () {
       if ($("#payment").val() == "") {
         notiflix.Report.warning(
@@ -2357,6 +2625,8 @@ if (auth == undefined) {
       }
     });
 
+    // ── NAVIGATION BUTTONS: Show/hide views when nav buttons are clicked ────
+
     $("#transactions").on("click", function () {
       loadTransactions();
       loadUserList();
@@ -2368,6 +2638,7 @@ if (auth == undefined) {
       $("#providers_view").hide();
       $("#invoices_view").hide();
       $("#expenses_view").hide();
+      $("#customers_view").hide();
       $(this).hide();
     });
 
@@ -2378,6 +2649,7 @@ if (auth == undefined) {
       $("#products_view").hide();
       $("#providers_view").hide();
       $("#invoices_view").hide();
+      $("#customers_view").hide();
       $(this).hide();
       $("#search").val("");
       renderPinnedProducts();
@@ -2723,7 +2995,7 @@ if (auth == undefined) {
     });
 
     $("#inp_cost").on("change", function(){
-      price = parseFloat($("#inp_cost").val().toString()) + (settings.defaultProfitMargin * parseFloat($("#inp_cost").val().toString())/100.0 )
+      const price = parseFloat($("#inp_cost").val().toString()) + (settings.defaultProfitMargin * parseFloat($("#inp_cost").val().toString())/100.0 )
       $("#inp_price").val(price.toFixed(2))
     })
 
@@ -3761,6 +4033,7 @@ if (auth == undefined) {
       $("#transactions_view").hide();
       $("#products_view").hide();
       $("#invoices_view").hide();
+      $("#customers_view").hide();
       $("#providers_view").show();
       //@ts-expect-error
       $('#provViewTabs a[href="#provTabAdd"]').tab("show");
@@ -3812,6 +4085,8 @@ if (auth == undefined) {
       $("#providers_view").hide();
       $("#invoices_view").hide();
       $("#expenses_view").hide();
+      $("#customers_view").hide();
+
 
     });
 
@@ -3827,6 +4102,8 @@ if (auth == undefined) {
       $("#pv_empty_state").show();
       $("#pv_detail").hide();
       $("#expenses_view").hide();
+      $("#customers_view").hide();
+
 
       // Reset view to blank state
       updateProviderInfo(null);
@@ -3851,6 +4128,8 @@ if (auth == undefined) {
       $("#pointofsale").hide();
       $("#transactions").hide();
       $("#expenses_view").hide();
+      $("#customers_view").hide();
+    
     });
 
     $("#productProviderFilter").on("change", function () {
@@ -4367,22 +4646,22 @@ if (auth == undefined) {
         }
       );
     });
-  }
+}
 
 $("#status").on("change", function () {
   by_status = parseInt($(this).find("option:selected").val().toString());
   loadTransactions();
-});
+})
 
 $("#tills").on("change", function () {
   by_till = parseInt($(this).find("option:selected").val().toString());
   loadTransactions();
-});
+})
 
 $("#users").on("change", function () {
   by_user = parseInt($(this).find("option:selected").val().toString());
   loadTransactions();
-});
+})
 
 $("#reportrange").on("apply.daterangepicker", function (ev, picker) {
   start = picker.startDate.format("DD MMM YYYY hh:mm A");
@@ -4390,7 +4669,7 @@ $("#reportrange").on("apply.daterangepicker", function (ev, picker) {
   start_date = picker.startDate.toDate().toJSON();
   end_date = picker.endDate.toDate().toJSON();
   loadTransactions();
-});
+})
 
 $("body").on("submit", "#account", function (e) {
   e.preventDefault();
@@ -4430,7 +4709,7 @@ $("body").on("submit", "#account", function (e) {
       },
     });
   }
-});
+})
 
 $("#quit").on("click", function () {
   const diagOptions = {
@@ -4450,11 +4729,11 @@ $("#quit").on("click", function () {
       ipcRenderer.send("app-quit", "");
     },
   );
-});
+})
 
 ipcRenderer.on("click-element", (event, elementId) => {
   document.getElementById(elementId).click();
-});
+})
 
 $("#searchProductHistogram").on("click", function () {
   const productId = $("#productIdSearch").val();
@@ -4464,18 +4743,17 @@ $("#searchProductHistogram").on("click", function () {
   }
   const year =$("#histogramYearFilter").val();
   searchProductHistogram(productId, year);
-});
+})
 
 $("#viewEvaluationHistogram").on("click", function () {
   const year =$("#histogramEVALYearFilter").val();
   viewEvaluationHistogram(year);
-});
+})
   
 
 //Functions list ----------------------
 //Allow only numbers in input field
 function allowOnlyNumbers(selector) {
-
   $(selector).on("keydown", function (e) {
 
     const allowedKeys = [
@@ -4523,13 +4801,13 @@ $.fn.serializeObject = function () {
     }
   });
   return o;
-};
+}
 
 //@ts-expect-error
 $.fn.print = function() {
   console.log("printing ....")
   printJS({ printable: receipt, type: "raw-html" });
-};
+}
 
 //@ts-expect-error
 $.fn.viewTransaction = function (index) {
@@ -4687,7 +4965,7 @@ $.fn.viewTransaction = function (index) {
   $("#viewTransaction").html(receipt);
   //@ts-expect-error
   $("#orderModal").modal("show");
-};
+}
 
 //@ts-expect-error
 $.fn.deleteTransaction = function(index) {
@@ -4696,7 +4974,7 @@ $.fn.deleteTransaction = function(index) {
 
   notiflix.Confirm.show(
     "Delete Transaction",
-    `Are you sure you want to delete transaction ${transaction.order}?`,
+    `Are you sure you want to delete transaction ${transaction.order}? if confirmed the invetory will be updated`,
     "Yes",
     "No",
     function () {
@@ -4704,7 +4982,7 @@ $.fn.deleteTransaction = function(index) {
         url: api + "delete",
         type: "POST",
         contentType: "application/json; charset=utf-8",
-        data: JSON.stringify({ orderId: transaction._id }),
+        data: JSON.stringify(transaction),
         success: function () {
           $("#transaction_list").empty();
           //@ts-expect-error
@@ -4720,7 +4998,7 @@ $.fn.deleteTransaction = function(index) {
     },
     function () {},
   );
-};
+}
 
 function loadUserList() {
   let counter = 0;
@@ -5917,6 +6195,7 @@ function viewEvaluationHistogram(year) {
  */
 function renderHistogramChart(data) {
   //console.log("Rendering histogram chart with data:", data);
+  //@ts-ignore
   const ctx = document.getElementById("salesHistogramChart").getContext("2d");
   const histogramData = data.histogramData || [];
 
@@ -5931,6 +6210,7 @@ function renderHistogramChart(data) {
   }
 
   // Create new chart
+  //@ts-ignore
   histogramChart = new Chart(ctx, {
     type: "bar",
     data: {
@@ -6064,6 +6344,7 @@ function renderHistogramChart(data) {
  */
 function renderEvalualtionHistogramChart(data) {
   //console.log("Rendering evaluation histogram chart with data:", data);
+  //@ts-ignore
   const ctx = document.getElementById("evaluationHistogramChart").getContext("2d");
   const histogramData = data.histogramData || [];
    
@@ -6079,6 +6360,7 @@ function renderEvalualtionHistogramChart(data) {
   }
 
   // Create new chart
+  //@ts-ignore
   histogramChart = new Chart(ctx, {
     type: "bar",
     data: {
@@ -6218,25 +6500,25 @@ function renderEvalualtionHistogramChart(data) {
 
 }
 
-function updateEvaluationHistogramStats(data) {
+// function updateEvaluationHistogramStats(data) {
   
-  // Update period
-  const periodText = `${data.histogramData[0]?.monthName} to ${data.histogramData[data.histogramData.length - 1]?.monthName}`;
-  $("#histogramEvalPeriod").text(periodText);
+//   // Update period
+//   const periodText = `${data.histogramData[0]?.monthName} to ${data.histogramData[data.histogramData.length - 1]?.monthName}`;
+//   $("#histogramEvalPeriod").text(periodText);
 
-  // Update currentInventoryValue  
-  $("#histogramCurrentInvetoryValue").text(moneyFormat(data.currentInventoryValue.toFixed(2)));
+//   // Update currentInventoryValue  
+//   $("#histogramCurrentInvetoryValue").text(moneyFormat(data.currentInventoryValue.toFixed(2)));
 
-  // Update retailInventoryValue  
-  $("#histogramRetailInvetoryValue").text(moneyFormat(data.retailInventoryValue.toFixed(2)));
+//   // Update retailInventoryValue  
+//   $("#histogramRetailInvetoryValue").text(moneyFormat(data.retailInventoryValue.toFixed(2)));
 
-  // Update total quantity
-  $("#histogramProductsQty").text(data.totalQuantity);
+//   // Update total quantity
+//   $("#histogramProductsQty").text(data.totalQuantity);
 
-  // Show stats row
-  $("#evalStatsRow").show();
+//   // Show stats row
+//   $("#evalStatsRow").show();
 
-}
+// }
 
 /**
  * Update statistics cards with histogram data

@@ -11,6 +11,7 @@ const moneyFormat = require("./utils").moneyFormat;
         // hide common views
         $('#transactions_view, #products_view, #providers_view, #invoices_view, #pos_view, #providers_view, #invoices_view').hide();
         $('#expenses_view').show();
+        $('#customers_view').hide();
         //@ts-expect-error
         $("#expensesList").DataTable().destroy();
         // load expenses list        

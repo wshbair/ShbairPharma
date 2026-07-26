@@ -1417,6 +1417,5 @@ html[dir="rtl"] #providers_view .card-title { flex-direction: row-reverse; }
     border-radius: 5px;
     -moz-border-radius: 5px;
     background-clip: padding-box;
-    margin-bottom: 20px;
     background-color: #ffffff;
 }

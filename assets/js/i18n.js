@@ -36,7 +36,7 @@ var translations = {
     total_tax_prefix: 'TOTAL (inc ',
     total_tax_suffix: '% Tax)',
     cancel: 'Cancel',
-    hold_btn: 'Hold',
+    hold_btn: 'Credit Purchase',
     pay_now: 'Pay Now',
 
     // Cart table headers
