@@ -1082,6 +1082,7 @@ if (auth == undefined) {
             $("#newPayment").modal("hide");
             //notiflix.Report.success("Saved", "Payment recorded.", "Ok");
             if (currentProvider) { loadPaymentList(currentProvider._id); loadInvoiceList(currentProvider._id); }
+            playNotificationSound();
           },
           error: function (err) {
             const msg = (err.responseJSON && err.responseJSON.message) || "Unknown error.";
@@ -2292,6 +2293,75 @@ if (auth == undefined) {
       });
     };
 
+    let customerCreditEditingCustomerId = null;
+
+    function resetCustomerCreditForm() {
+      customerCreditEditingCustomerId = null;
+      $("#customerCreditCustomerId").val("");
+      $("#customerCreditName").val("");
+      $("#customerCreditPhone").val("");
+      $("#customerCreditEmail").val("");
+      $("#customerCreditAddress").val("");
+      $("#customerCreditCancelEditBtn").hide();
+      $(".card-title h4", "#customerCreditAddTab").first().html('<i class="fa fa-plus-circle"></i> Add / Edit Customer');
+    }
+
+    function populateCustomerCreditForm(customer) {
+      customerCreditEditingCustomerId = customer && customer._id ? String(customer._id) : null;
+      $("#customerCreditCustomerId").val(customerCreditEditingCustomerId || "");
+      $("#customerCreditName").val(customer && customer.name ? customer.name : "");
+      $("#customerCreditPhone").val(customer && customer.phone ? customer.phone : "");
+      $("#customerCreditEmail").val(customer && customer.email ? customer.email : "");
+      $("#customerCreditAddress").val(customer && customer.address ? customer.address : "");
+      $("#customerCreditCancelEditBtn").show();
+      $(".card-title h4", "#customerCreditAddTab").first().html('<i class="fa fa-edit"></i> Add / Edit Customer');
+    }
+
+    function renderCustomerCreditCustomers(customers) {
+      const tbody = $("#customer_credit_customer_list");
+      tbody.empty();
+      if (!customers.length) {
+        tbody.append('<tr><td colspan="5" class="text-center text-muted">No customers found</td></tr>');
+        return;
+      }
+
+      customers.forEach(function (customer) {
+        const row = $("<tr>");
+        row.append($("<td>", { text: customer.name || "—" }));
+        row.append($("<td>", { text: customer.phone || "—" }));
+        row.append($("<td>", { text: customer.email || "—" }));
+        row.append($("<td>", { text: customer.address || "—" }));
+
+        const actionWrap = $("<div>", { class: "btn-group btn-group-sm" });
+        actionWrap.append(
+          $("<button>", {
+            class: "btn btn-sm btn-info",
+            text: "View",
+            click: function () {
+              $("#customerCreditListFilter").val(customer._id);
+              selectCustomerCredit(customer._id);
+              // @ts-expect-error
+              $('#customerCreditTabs a[href="#customerCreditCreditTab"]').tab("show");
+            },
+          }),
+        );
+        actionWrap.append(
+          $("<button>", {
+            class: "btn btn-sm btn-warning",
+            text: "Edit",
+            click: function () {
+              populateCustomerCreditForm(customer);
+              // @ts-expect-error
+              $('#customerCreditTabs a[href="#customerCreditAddTab"]').tab("show");
+            },
+          }),
+        );
+
+        row.append($("<td>").append(actionWrap));
+        tbody.append(row);
+      });
+    }
+
     // Customer Credit Page
     function loadCustomerCreditPage(callback) {
       $.get(api + "customers/all", function (customers) {
@@ -2300,6 +2370,7 @@ if (auth == undefined) {
         customers.forEach(function (customer) {
           select.append(`<option value="${customer._id}">${validator.escape(customer.name || customer._id)}</option>`);
         });
+        renderCustomerCreditCustomers(customers);
         if (callback) {
           callback(customers);
         }
@@ -2323,10 +2394,12 @@ if (auth == undefined) {
           <div class="col-md-6">
             <p><strong>Customer:</strong> ${validator.escape(order.customer && order.customer.name ? order.customer.name : "—")}</p>
             <p><strong>Date:</strong> ${order.date ? new Date(order.date).toLocaleDateString() : "—"}</p>
+            <p><strong>Sub Total (before discount):</strong> ${moneyFormat((Number(order.subtotal) || 0).toFixed(2))}</p>
             <p><strong>Status:</strong> ${(order.paymentStatus || "pending").toUpperCase()}</p>
+
           </div>
           <div class="col-md-6">
-            <p><strong>Total:</strong> ${moneyFormat((Number(order.total) || 0).toFixed(2))}</p>
+            <p><strong>Discount:</strong> ${moneyFormat((Number(order.discount) || 0).toFixed(2))}</p>
             <p><strong>Paid:</strong> ${moneyFormat((Number(order.paidAmount || order.paid || 0) || 0).toFixed(2))}</p>
             <p><strong>Due:</strong> ${moneyFormat((Number(order.dueAmount) || 0).toFixed(2))}</p>
           </div>
@@ -2347,7 +2420,7 @@ if (auth == undefined) {
     }
 
     function selectCustomerCredit(customerId) {
-      if (!customerId) {
+       if (!customerId) {
         customerCreditSelectedCustomer = null;
         $("#customer_credit_empty_state").show();
         $("#customer_credit_detail").hide();
@@ -2416,7 +2489,8 @@ if (auth == undefined) {
             const row = $("<tr>").append(
               $("<td>", { text: order.order || order._id }),
               $("<td>", { text: new Date(order.date).toLocaleDateString() }),
-              $("<td>", { text: moneyFormat((Number(order.total) || 0).toFixed(2)) }),
+              $("<td>", { text: moneyFormat((Number(order.subtotal) || 0).toFixed(2)) }),
+              $("<td>", { text: moneyFormat((Number(order.discount) || 0).toFixed(2)) }),
               $("<td>", { text: moneyFormat((Number(order.paidAmount || order.paid || 0) || 0).toFixed(2)) }),
               $("<td>", { text: moneyFormat((Number(order.dueAmount) || 0).toFixed(2)) }),
               $("<td>").append($("<span>", { class: (order.paymentStatus === "paid" ? "label label-success" : order.paymentStatus === "partial" ? "label label-warning" : "label label-danger"), text: (order.paymentStatus || "pending").toUpperCase() })),
@@ -2455,14 +2529,16 @@ if (auth == undefined) {
     });
 
     $("#customerCreditListFilter").on("change", function () {
-      //@ts-expect-error
-      selectCustomerCredit(this.value);
+      const selectedValue = $(this).val();
+      selectCustomerCredit(selectedValue);
     });
 
     $("#saveCustomerCreditCustomer").on("submit", function (e) {
       e.preventDefault();
+      const editingId = $("#customerCreditCustomerId").val();
+      const isEditing = Boolean(editingId);
       const custData = {
-        _id: String(Date.now()),
+        _id: editingId || String(Date.now()),
         name: $("#customerCreditName").val(),
         phone: $("#customerCreditPhone").val(),
         email: $("#customerCreditEmail").val(),
@@ -2471,31 +2547,35 @@ if (auth == undefined) {
 
       $.ajax({
         url: api + "customers/customer",
-        type: "POST",
+        type: isEditing ? "PUT" : "POST",
         data: JSON.stringify(custData),
         contentType: "application/json; charset=utf-8",
         cache: false,
         processData: false,
         success: function () {
           loadCustomerCreditPage(function (customers) {
-            const created = customers.find(function (customer) {
-              return String(customer._id) === String(custData._id);
+            const customer = customers.find(function (item) {
+              return String(item._id) === String(custData._id);
             });
-            if (created) {
-              $("#customerCreditListFilter").val(created._id);
-              selectCustomerCredit(created._id);
+            if (customer) {
+              $("#customerCreditListFilter").val(customer._id);
+              selectCustomerCredit(customer._id);
             }
           });
-          //@ts-ignore
-          $("#saveCustomerCreditCustomer")[0].reset();
-          //@ts-expect-error
+          resetCustomerCreditForm();
+          // @ts-expect-error
           $('#customerCreditTabs a[href="#customerCreditListTab"]').tab("show");
-          notiflix.Report.success("Customer saved", "The new customer is now available for credit orders.", "Ok");
+          notiflix.Report.success(isEditing ? "Customer updated" : "Customer saved", isEditing ? "The customer information was updated successfully." : "The new customer is now available for credit orders.", "Ok");
+          playNotificationSound();
         },
         error: function () {
           notiflix.Report.failure("Error", "The customer could not be saved.", "Ok");
         },
       });
+    });
+
+    $("#customerCreditCancelEditBtn").on("click", function () {
+      resetCustomerCreditForm();
     });
 
     $("#refreshCustomerCreditBtn").on("click", function () {
@@ -2546,6 +2626,7 @@ if (auth == undefined) {
           $("#creditPaymentAmount").val("");
           $("#creditPaymentNotes").val("");
           notiflix.Report.success("Payment recorded", "The order balance was updated successfully.", "Ok");
+          playNotificationSound();
         },
         error: function () {
           notiflix.Report.failure("Error", "The payment could not be saved.", "Ok");

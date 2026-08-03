@@ -97,10 +97,10 @@ app.post('/orders/:orderId/payments', function (req, res) {
   const orderId = req.params.orderId;
   const paymentAmount = Number(req.body.amount) || 0;
   const paymentDate = esc(req.body.paymentDate || new Date().toISOString());
-  const paymentMethod = esc(req.body.paymentMethod || 'cash');
+  const paymentMethod = esc(req.body.paymentMethod || 'Cash');
   const reference = esc(req.body.reference || '');
   const notes = esc(req.body.notes || '');
-
+  console.log(`Processing payment for order ${orderId}: amount=${paymentAmount}, date=${paymentDate}, method=${paymentMethod}, reference=${reference}, notes=${notes}`);
   if (paymentAmount <= 0) {
     return res.status(400).json({ error: 'Bad Request', message: 'Payment amount must be greater than zero.' });
   }
@@ -132,6 +132,7 @@ app.post('/orders/:orderId/payments', function (req, res) {
           status: getCreditOrderStatus(cappedPaid, totalAmount) == 'paid' ? 1: 0,
           dueAmount: dueAmount,
           paymentStatus: getCreditOrderStatus(cappedPaid, totalAmount),
+          payment_type: paymentMethod,
           paymentHistory: (order.paymentHistory || []).concat([{
             paymentId: `PAY-${Date.now()}`,
             amount: paymentAmount,

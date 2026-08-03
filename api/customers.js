@@ -34,18 +34,28 @@ app.get("/", function (req, res) {
  * @returns {void}
  */
 app.get("/customer/:customerId", function (req, res) {
-    if (!req.params.customerId) {
-        res.status(500).send("ID field is required.");
-    } else {
-        customersDB.findOne(
-            {
-                _id: req.params.customerId,
-            },
-            function (err, customer) {
-                res.send(customer);
-            },
-        );
+    const customerId = req.params.customerId;
+    //console.log("Fetching customer with ID:", customerId);
+    if (!customerId) {
+        res.status(400).send("ID field is required.");
+        return;
     }
+
+    const query = {
+        $or: [
+            { _id: customerId },
+            { _id: parseInt(customerId, 10) },
+        ],
+    };
+
+    customersDB.findOne(query, function (err, customer) {
+        if (err) {
+            console.error(err);
+            res.status(500).json({ error: "Internal Server Error", message: "Failed to load customer." });
+            return;
+        }
+        res.send(customer);
+    });
 });
 
 /**
@@ -117,24 +127,49 @@ app.delete("/customer/:customerId", function (req, res) {
  * @returns {void}
  */
 app.put("/customer", function (req, res) {
-    let customerId = validator.escape(req.body._id);
+    const rawCustomerId = req.body && (req.body._id || req.body.id);
+    if (rawCustomerId === undefined || rawCustomerId === null || rawCustomerId === "") {
+        res.status(400).json({ error: "Bad Request", message: "ID field is required." });
+        return;
+    }
 
-    customersDB.update(
-        {
-            _id: customerId,
-        },
-        req.body,
-        {},
-        function (err, numReplaced, customer) {
-            if (err) {
-                console.error(err);
-                res.status(500).json({
-                    error: "Internal Server Error",
-                    message: "An unexpected error occurred.",
-                });
-            } else {
+    const customerId = String(rawCustomerId);
+    const query = {
+        $or: [
+            { _id: customerId },
+            { _id: parseInt(customerId, 10) },
+        ],
+    };
+
+    customersDB.findOne(query, function (findErr, existingCustomer) {
+        if (findErr) {
+            console.error(findErr);
+            res.status(500).json({ error: "Internal Server Error", message: "Failed to find customer." });
+            return;
+        }
+
+        if (!existingCustomer) {
+            res.status(404).json({ error: "Not Found", message: "Customer not found." });
+            return;
+        }
+
+        const sanitizedCustomer = Object.assign({}, req.body, { _id: existingCustomer._id });
+        customersDB.update(
+            { _id: existingCustomer._id },
+            { $set: sanitizedCustomer },
+            {},
+            function (err, numReplaced) {
+                if (err) {
+                    console.error(err);
+                    res.status(500).json({
+                        error: "Internal Server Error",
+                        message: "An unexpected error occurred.",
+                    });
+                    return;
+                }
+
                 res.sendStatus(200);
-            }
-        },
-    );
+            },
+        );
+    });
 });

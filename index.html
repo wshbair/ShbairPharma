@@ -778,20 +778,48 @@
             <div id="customers_view" style="display:none;">
                 <div class="container">
                     <ul class="nav nav-tabs inv-view-tabs" id="customerCreditTabs" role="tablist">
-                        <li role="presentation" class="active">
-                            <a href="#customerCreditListTab" data-toggle="tab">
-                                <i class="fa fa-users"></i> Customers
+                         <li role="presentation" class="active">
+                            <a href="#customerCreditCreditTab" id="customerCreditCreditTabLink" data-toggle="tab">
+                                <i class="fa fa-money"></i> Credits
                             </a>
                         </li>
+                        <li role="presentation" >
+                            <a href="#customerCreditListTab" data-toggle="tab">
+                                <i class="fa fa-users"></i> Customers List
+                            </a>
+                        </li>
+                       
                         <li role="presentation">
                             <a href="#customerCreditAddTab" id="customerCreditAddTabLink" data-toggle="tab">
-                                <i class="fa fa-plus-circle"></i> New Customer
+                                <i class="fa fa-plus-circle"></i> Add / Edit Customer
                             </a>
                         </li>
                     </ul>
 
                     <div class="tab-content inv-tab-content">
-                        <div class="tab-pane active" id="customerCreditListTab">
+                        <div class="tab-pane" id="customerCreditListTab">
+                            <div class="card-box" style="margin-top:16px; margin-bottom:16px;">
+                                <div class="card-title">
+                                    <h4><i class="fa fa-users"></i> Customers</h4>
+                                </div>
+                                <div class="card-body" style="overflow-x:auto;">
+                                    <table class="table table-hover table-bordered" id="customerCreditCustomerTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Phone</th>
+                                                <th>Email</th>
+                                                <th>Address</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="customer_credit_customer_list"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane active" id="customerCreditCreditTab">
                             <div style="margin-top:16px; margin-bottom:16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                                 <select id="customerCreditListFilter" class="form-control" style="max-width:300px;">
                                     <option value="">— Select a Customer —</option>
@@ -802,8 +830,8 @@
                             </div>
 
                             <div id="customer_credit_empty_state" class="pv-empty-state">
-                                <i class="fa fa-users"></i>
-                                <p>Select a customer to manage their orders and payments</p>
+                                <i class="fa fa-money"></i>
+                                <p>Select a customer to view their credit orders and payments</p>
                             </div>
 
                             <div id="customer_credit_detail" style="display:none;">
@@ -863,7 +891,8 @@
                                                         <tr>
                                                             <th>Order</th>
                                                             <th>Date</th>
-                                                            <th>Total</th>
+                                                            <th>Sub Total</th>
+                                                            <th>Discount</th>
                                                             <th>Paid</th>
                                                             <th>Due</th>
                                                             <th>Status</th>
@@ -906,11 +935,12 @@
                             <div class="card-box" style="margin-top:16px; max-width:560px;">
                                 <div class="card-title">
                                     <h4>
-                                        <i class="fa fa-plus-circle"></i> New Customer
+                                        <i class="fa fa-plus-circle"></i> Add / Edit Customer
                                     </h4>
                                 </div>
                                 <div class="card-body">
                                     <form id="saveCustomerCreditCustomer">
+                                        <input id="customerCreditCustomerId" type="hidden" name="id">
                                         <div class="form-group">
                                             <label>Name</label>
                                             <input id="customerCreditName" type="text" required name="name" placeholder="Customer name" class="form-control">
@@ -929,6 +959,7 @@
                                         </div>
                                         <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--c-border);">
                                             <button type="submit" class="btn btn-primary">Save Customer</button>
+                                            <button type="button" id="customerCreditCancelEditBtn" class="btn btn-default" style="margin-left:8px; display:none;">Cancel Edit</button>
                                         </div>
                                     </form>
                                 </div>
@@ -1950,9 +1981,10 @@
                         <div class="form-group">
                             <label>Payment Method</label>
                             <select id="creditPaymentMethod" class="form-control">
-                                <option value="cash">Cash</option>
-                                <option value="bank">Bank Transfer</option>
-                                <option value="card">Card</option>
+                                <option value="Cash">Cash</option>
+                                <option value="PalPay"> PalPay</option>
+                                <option value="Other"> Other</option>
+
                             </select>
                         </div>
                         <div class="form-group">
