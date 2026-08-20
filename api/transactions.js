@@ -170,6 +170,7 @@ app.get("/by-date", async (req, res) => {
     });
   }
 });
+
 /**
  * POST endpoint: Create a new transaction.
  *
@@ -177,6 +178,22 @@ app.get("/by-date", async (req, res) => {
  * @param {Object} res response object.
  * @returns {void}
  */
+app.shouldDecrementInventoryForTransaction = function (transaction) {
+  if (!transaction || !Array.isArray(transaction.items) || transaction.items.length === 0) {
+    return false;
+  }
+
+  const status = Number(transaction.status ?? 0);
+  const paid = Number(transaction.paid ?? 0);
+  const total = Number(transaction.total ?? 0);
+
+  if (status === 1) {
+    return true;
+  }
+
+  return Number.isFinite(paid) && Number.isFinite(total) && paid >= total;
+};
+
 app.post("/new", function (req, res) {
   let newTransaction = req.body;
 
@@ -190,8 +207,8 @@ app.post("/new", function (req, res) {
     } else {
       res.sendStatus(200);
 
-      if (newTransaction.paid >= newTransaction.total) {
-        //@ts-expect-error 
+      if (app.shouldDecrementInventoryForTransaction(newTransaction)) {
+        //@ts-expect-error
         Inventory.decrementInventory(newTransaction.items);
       }
     }
@@ -255,7 +272,6 @@ app.post("/delete", function (req, res) {
     },
   );
 });
-
 
 /**
  * GET endpoint: Get details of a specific transaction by transaction ID.
