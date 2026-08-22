@@ -259,12 +259,12 @@ if (auth == undefined) {
 
         // PHASE 2: Load non-critical data in parallel (won't block UI)        
         Promise.all([
-          // promiseGet(api + "providers/all").then(data => {
-          //   allProviders = data;
-          //   requestAnimationFrame(() => {
-          //     loadProviders();
-          //   });
-          // }),
+          promiseGet(api + "providers/all").then(data => {
+            allProviders = data;
+            requestAnimationFrame(() => {
+              loadProviders();
+            });
+          }),
           promiseGet(api + "customers/all").then(customers => {
             requestAnimationFrame(() => {
               updateCustomerSelect(customers);
@@ -322,7 +322,7 @@ if (auth == undefined) {
     $("#paymentText").on("input", function () {
       //@ts-expect-error
      $(this).paymentChange()
-      } );
+    });
 
     if (settings && validator.unescape(settings.symbol)) {
       $("#price_curr, #payment_curr, #change_curr").text(validator.unescape(settings.symbol));
@@ -451,7 +451,6 @@ if (auth == undefined) {
       $("#posCategoryPills").html(html);
     }
     
-
     function renderPosRecent() {
       if (!posRecentItems.length) { $("#posRecentStrip").hide(); return; }
       const sym = (settings && validator.unescape(settings.symbol)) || '';
@@ -467,6 +466,7 @@ if (auth == undefined) {
       $("#posRecentStrip").show();
     }
 
+    // ── Add product to recent list ────────────────────────────────────────────
     function addToPosRecent(product) {
       posRecentItems = posRecentItems.filter(function (p) { return p._id !== product._id; });
       posRecentItems.unshift(product);
@@ -570,6 +570,7 @@ if (auth == undefined) {
       });
     }
 
+    //load providers in the providers view table
     function loadProviderList() {
       let rows = "";
       allProviders.forEach((provider, index) => {
@@ -1688,8 +1689,6 @@ if (auth == undefined) {
         $(`.list-group-item[data-payment-type="${type}"]`).trigger("click");
       });
     });
-
-
 
     //@ts-expect-error
     $.fn.submitDueOrder = function (status) {
