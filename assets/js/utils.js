@@ -225,6 +225,13 @@ const sanitizeHost = (raw) => {
   return v;
 }
 
+// Convert jQuery AJAX to Promise-based
+const promiseGet = (url) => {
+  return new Promise((resolve, reject) => {
+    $.get(url, resolve).fail(reject);
+  });
+}
+
 module.exports = {
   DATE_FORMAT,
   moneyFormat,
@@ -242,6 +249,7 @@ module.exports = {
   allowOnlyNumbers,
   detectLanIp,
   generateLicenseKey,
-  sanitizeHost
+  sanitizeHost,
+  promiseGet
 };
 

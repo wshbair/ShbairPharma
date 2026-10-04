@@ -20,7 +20,8 @@ const remote = require("@electron/remote");
 const app = remote.app;
 const utils = require("./utils");
 const { t, getCurrentLang } = require("./i18n");
-const {printReceipt, printerStatus} = require("./printer")
+const {printReceipt, printerStatus} = require("./printer");
+const { buildProductCard } = require("./product");
 
 // Populate login footer with live version and current year
 $("#app_version").text(app.getVersion());
@@ -122,6 +123,13 @@ const {
   checkFileExists,
   setContentSecurityPolicy,
   playNotificationSound,
+  allowOnlyNumbers,
+  promiseGet,
+  decodeHtmlEntities,
+  extractUniqueCategories,
+  generateLicenseKey,
+  detectLanIp,
+  sanitizeHost
 } = require("./utils");
 
 //set the content security policy of the app
@@ -170,7 +178,7 @@ $(function () {
   );
 
   cb(start, end);
-  utils.allowOnlyNumbers('.number-input');
+  allowOnlyNumbers('.number-input');
 })
 
 auth = storage.get("auth");
@@ -231,12 +239,7 @@ if (auth == undefined) {
     // ── OPTIMIZED ASYNC LOADING ──────────────────────────────────
     $(".loading").show();
     
-    // Convert jQuery AJAX to Promise-based
-    function promiseGet(url) {
-      return new Promise((resolve, reject) => {
-        $.get(url, resolve).fail(reject);
-      });
-    }
+
 
     // Load critical data first (categories) then parallel load everything else
     async function initializeApp() {
@@ -371,33 +374,7 @@ if (auth == undefined) {
       $(".p_five").hide();
     }
 
-    // ── Build product card  ────────────────────────────────────────────
-    function buildProductCard(item) {
-      item.price = parseFloat(item.price).toFixed(2);
-      let item_isExpired = isExpired(item.expirationDate);
-      const dayToExpire = daysToExpire(item.expirationDate)
-      let item_stockStatus = getStockStatus(item.quantity, item.minStock);
-
-      return `<div class="col-lg-2 box ${item.category}"
-                  onclick="$(this).addToCart(${item._id}, ${item.quantity}, ${item.stock})">
-                <div class="widget-panel widget-style-2 ${item_isExpired || item_stockStatus < 1 ? "widget-style-danger" : ""}" title="${item.name}">
-                  <div class="text-muted m-t-5 text-center">
-                    <div class="name" id="product_name">
-                      <span class="${item_isExpired ? "text-danger" : ""}">${item.name}</span>
-                    </div>
-                    <span class="stock"> Exp. in ${dayToExpire} days</span>
-                  </div>
-                   <span class="${item_stockStatus < 1 ? "text-danger" : ""}">
-                      <span class="stock" data-i18n="stock">Stock </span>
-                      <span class="count">${item.stock == 1 ? item.quantity : "N/A"}</span>
-                    </span>
-                  <span class="text-success text-center">
-                    <b>${moneyFormat(item.price)}</b>
-                  </span>
-                </div>
-              </div>`;
-    }
-
+ 
     // ── Render POS Products ────────────────────────────────────────────
     function renderPosProducts(data, isSearch) {
       if (!data || data.length === 0) {
@@ -761,7 +738,24 @@ if (auth == undefined) {
         html = '<tr><td colspan="7" class="text-center" style="color:var(--c-muted);padding:20px;" data-i18n="inv_no_results">No invoices match your search.</td></tr>';
       }
 
+      const $invoiceTable = $("#inv_list_table");
+      //@ts-expect-error
+      if ($.fn.DataTable.isDataTable($invoiceTable[0])) {
+        //@ts-expect-error
+        $invoiceTable.DataTable().clear().destroy();
+      }
       $("#inv_list_body").html(html);
+      //@ts-expect-error
+      $invoiceTable.DataTable({
+        dom: "lfrtip",
+        pageLength: 5,
+        lengthMenu: [5, 10, 25, 50, 100],
+        paging: true,
+        searching: true,
+        ordering: true,
+        autoWidth: false,
+        columnDefs: [{ orderable: false, targets: 6 }],
+      });
       $("#inv_list_count").text(invoices.length);
       $("#inv_stat_total").text(invoices.length);
       $("#inv_stat_amount").text(sym + totalAmt.toFixed(2));
@@ -879,14 +873,28 @@ if (auth == undefined) {
     });
 
     // Load and render invoice list for a selected provider
+    function destroyProviderInvoiceTable() {
+      const $table = $("#providerInvoiceTable");
+      //@ts-expect-error
+      if ($.fn.DataTable.isDataTable($table[0])) {
+        //@ts-expect-error
+        $table.DataTable().clear().destroy();
+      }
+    }
+
     function loadInvoiceList(providerId) {
+      destroyProviderInvoiceTable();
+      $("#invoice_list").empty();
+
       if (!providerId) {
-        $("#invoice_list").empty();
         $("#providerInvoiceTable").hide();
-        $("#invoice_list_placeholder").show();
+        $("#invoice_list_placeholder").text("Select a provider to view invoices.").show();
         $("#invoice_stats_row").hide();
         return;
       }
+
+      $("#providerInvoiceTable").hide();
+      $("#invoice_list_placeholder").html('<i class="fa fa-spinner fa-spin fa-2x"></i>').show();
 
       $.get(api + "invoice/invoice/provider/" + providerId, function (data) {
         currentProviderInvoiceData = data;
@@ -896,15 +904,15 @@ if (auth == undefined) {
         const now = new Date();
         let html = '';
 
-        if (data.invoices && data.invoices.length > 0) {
-          data.invoices.forEach(function (inv) {
+        const invoices = data.invoices || [];
+        if (invoices.length > 0) {
+          invoices.forEach(function (inv) {
             const date = inv.invoiceDate
               ? new Date(inv.invoiceDate).toLocaleDateString()
               : '-';
             const dueDate = inv.dueDate
               ? new Date(inv.dueDate).toLocaleDateString()
               : '-';
-            const amount = parseFloat(inv.totalAmount || 0).toFixed(2);
             const net    = parseFloat(inv.netAmount   || 0).toFixed(2);
 
             const isOverdue =
@@ -923,14 +931,13 @@ if (auth == undefined) {
 
             const fileBtn = inv.invoiceFile
               ? `<button onclick="$(this).viewInvoiceFile('${inv.invoiceFile}')" class="btn btn-info btn-xs" title="View Bill"><i class="fa fa-file-image-o"></i> View</button> `
-              : `<button class="btn btn-default btn-xs" disabled title="No file attached"><i class="fa fa-file-o"></i></button> `;
+              : ``;
 
  
             html += `<tr>
               <td><strong>${inv.invoiceId}</strong></td>
               <td>${date}</td>
               <td>${dueDate}</td>
-              <td>${sym}${amount}</td>
               <td>${sym}${net}</td>
               <td>${statusBadge}</td>
               <td class="nobr">
@@ -940,23 +947,31 @@ if (auth == undefined) {
               </td>
             </tr>`;
           });
-        } else {
-          html = `<tr><td colspan="7" class="text-center" style="color:var(--c-muted);padding:20px;" data-i18n="no_invoices_msg">No invoices found for this provider.</td></tr>`;
         }
 
         $("#invoice_list").html(html);
         $("#invoice_list_placeholder").hide();
         $("#providerInvoiceTable").show();
+        //@ts-expect-error
+        $("#providerInvoiceTable").DataTable({
+          dom: "lfrtip",
+          pageLength: 10,
+          lengthMenu: [5, 10, 25, 50, 100],
+          paging: true,
+          searching: true,
+          ordering: true,
+          autoWidth: false,
+          columnDefs: [{ orderable: false, targets: 5 }],
+          language: { emptyTable: "No invoices found for this provider." },
+        });
         // Re-apply translations to dynamically created elements
         //@ts-expect-error
         if (typeof applyLanguage === 'function') applyLanguage(currentLang);
       }).fail(function () {
         currentProviderInvoiceData = null;
-        $("#invoice_list").html(
-          `<tr><td colspan="7" class="text-center text-danger">Failed to load invoices.</td></tr>`
-        );
-        $("#invoice_list_placeholder").hide();
-        $("#providerInvoiceTable").show();
+        $("#invoice_list").empty();
+        $("#providerInvoiceTable").hide();
+        $("#invoice_list_placeholder").text("Failed to load invoices.").show();
       });
     }
 
@@ -1438,7 +1453,7 @@ if (auth == undefined) {
     $.fn.addProductToCart = function (data) {
       item = {
         id: data._id,
-        product_name: utils.decodeHtmlEntities(data.name),
+        product_name: decodeHtmlEntities(data.name),
         barcode: data.barcode,
         price: data.price,
         cost_price: data.costPrice,
@@ -2326,14 +2341,16 @@ if (auth == undefined) {
     }
 
     function renderCustomerCreditCustomers(customers) {
-      const tbody = $("#customer_credit_customer_list");
-      tbody.empty();
-      if (!customers.length) {
-        tbody.append('<tr><td colspan="5" class="text-center text-muted">No customers found</td></tr>');
-        return;
+      const $table = $("#customerCreditCustomerTable");
+      //@ts-expect-error
+      if ($.fn.DataTable.isDataTable($table[0])) {
+        //@ts-expect-error
+        $table.DataTable().clear().destroy();
       }
 
-      customers.forEach(function (customer) {
+      const tbody = $("#customer_credit_customer_list");
+      tbody.empty();
+      (customers || []).forEach(function (customer) {
         const row = $("<tr>");
         row.append($("<td>", { text: customer.name || "—" }));
         row.append($("<td>", { text: customer.phone || "—" }));
@@ -2367,6 +2384,19 @@ if (auth == undefined) {
 
         row.append($("<td>").append(actionWrap));
         tbody.append(row);
+      });
+
+      //@ts-expect-error
+      $table.DataTable({
+        dom: "lfrtip",
+        pageLength: 10,
+        lengthMenu: [5, 10, 25, 50, 100],
+        paging: true,
+        searching: true,
+        ordering: true,
+        autoWidth: false,
+        columnDefs: [{ orderable: false, targets: 4 }],
+        language: { emptyTable: "No customers found" },
       });
     }
 
@@ -3888,7 +3918,7 @@ if (auth == undefined) {
       const reader = new FileReader();
       reader.onload = function(e) {
         const csvText = e.target.result;
-        const categoriesList = utils.extractUniqueCategories(csvText);
+        const categoriesList = extractUniqueCategories(csvText);
         $.ajax({
           url: api + "categories/category/batch",
           type: "POST",
@@ -3959,7 +3989,7 @@ if (auth == undefined) {
           return $(this).val() == allProducts[index].category;
         })
         .prop("selected", true);
-      $("#productName").val(utils.decodeHtmlEntities(allProducts[index].name));
+      $("#productName").val(decodeHtmlEntities(allProducts[index].name));
       $("#product_price").val(allProducts[index].price);
       $("#quantity").val(allProducts[index].quantity);
       $("#barcode").val(allProducts[index].barcode || allProducts[index]._id);
@@ -4054,7 +4084,6 @@ if (auth == undefined) {
             type: "DELETE",
             success: function (result) {
               loadProducts(loadProductList);
-              //notiflix.Report.success("Done!", "Product deleted", "Ok");
             },
           });
         },
@@ -4102,7 +4131,6 @@ if (auth == undefined) {
             type: "DELETE",
             success: function (result) {
               loadUserList();
-              //notiflix.Report.success("Done!", "User deleted", "Ok");
             },
           });
         },
@@ -4506,11 +4534,11 @@ if (auth == undefined) {
   $("#srv_port").on("input", updateServerConnectionUrl);
 
   $("#srv_license_regen").on("click", function () {
-      $("#srv_license").val(utils.generateLicenseKey());
+      $("#srv_license").val(generateLicenseKey());
   });
 
   $("#test_connection").on("click", function () {
-    const ip = utils.sanitizeHost($("#ip").val());
+    const ip = sanitizeHost($("#ip").val());
     $("#ip").val(ip);
     const tport = String($("#server_port").val() || "");
     const license = String($("#term_license").val() || "");
@@ -4604,7 +4632,7 @@ if (auth == undefined) {
       e.preventDefault();
       //@ts-expect-error
       let formData = $(this).serializeObject();
-      formData.ip = utils.sanitizeHost(formData.ip);
+      formData.ip = sanitizeHost(formData.ip);
       $("#ip").val(formData.ip);
 
       if (formData.till == 0 || formData.till == 1) {
@@ -6108,10 +6136,10 @@ function updateServerConnectionUrl() {
 function loadServerFormDefaults() {
   const macaddress = require("macaddress");
   macaddress.one(function (err, mac) { $("#srv_mac").val(mac); });
-  $("#srv_ip").val(utils.detectLanIp());
+  $("#srv_ip").val(detectLanIp());
   const storedPort = (platform && platform.port) || process.env.PORT || 4500;
   const storedBind = (platform && platform.bind) || "0.0.0.0";
-  const storedLicense = (platform && platform.license) || utils.generateLicenseKey();
+  const storedLicense = (platform && platform.license) || generateLicenseKey();
   if (!$("#srv_port").val()) $("#srv_port").val(storedPort);
   $("#srv_bind").val(storedBind);
   $("#srv_license").val(storedLicense);
