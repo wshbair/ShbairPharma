@@ -41,7 +41,6 @@ const csvUpload = multer({
 
 
 function parseDate(str) {
-    console.log("parseDate called with:", str);
     if(str == "")
         return new Date().toISOString().split("T")[0];
     try {
