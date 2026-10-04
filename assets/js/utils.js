@@ -163,6 +163,68 @@ const decodeHtmlEntities = (str) => {
                .replace(/&gt;/g, '>');
 }
 
+//Allow only numbers in input field
+const allowOnlyNumbers = (selector) => {
+  $(selector).on("keydown", function (e) {
+
+    const allowedKeys = [
+      "Backspace",
+      "Delete",
+      "Tab",
+      "Escape",
+      "Enter",
+      "ArrowLeft",
+      "ArrowRight",
+      "ArrowUp",
+      "ArrowDown"
+    ];
+
+    if (allowedKeys.includes(e.key) ||
+      (
+        (e.ctrlKey || e.metaKey) &&
+        ["a", "c", "v", "x"].includes(e.key.toLowerCase())
+      )
+    ) {
+      return;
+    }
+
+    if (!/^\d$/.test(e.key)) {
+      e.preventDefault();
+    }
+
+  });
+}
+
+
+const detectLanIp = () => {
+  try {
+    const os = require("os");
+    const ifaces = os.networkInterfaces();
+    for (const name of Object.keys(ifaces)) {
+      for (const iface of ifaces[name]) {
+        if (iface.family === "IPv4" && !iface.internal) return iface.address;
+      }
+    }
+  } catch (e) { /* fall through */ }
+  return "127.0.0.1";
+}
+
+const generateLicenseKey = () => {
+  try {
+    return require("crypto").randomBytes(16).toString("hex");
+  } catch (e) {
+    return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+  }
+}
+
+const sanitizeHost = (raw) => {
+  let v = String(raw || "").trim();
+  v = v.replace(/^https?:\/\//i, "");   // strip scheme if pasted
+  v = v.replace(/\/.*$/, "");            // strip any path
+  v = v.replace(/:\d+$/, "");            // strip trailing :port
+  return v;
+}
+
 module.exports = {
   DATE_FORMAT,
   moneyFormat,
@@ -176,6 +238,10 @@ module.exports = {
   extractUniqueCategories,
   playNotificationSound,
   filterFile,
-  decodeHtmlEntities
+  decodeHtmlEntities,
+  allowOnlyNumbers,
+  detectLanIp,
+  generateLicenseKey,
+  sanitizeHost
 };
 

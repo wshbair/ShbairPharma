@@ -351,10 +351,17 @@ var translations = {
     sub_total_col: 'Sub Total',
     inventory_evaluation: 'Inventory Evaluation',
     evaluation_period: 'Evaluation Period',
-    pdf_save: 'Save PDF '
+    pdf_save: 'Save PDF ',
+
+    // stock movements
+    stock_movements: 'Stock Movements',
+    product_sales: 'Product Sales',
   },
 
   ar: {
+    // Stock movement
+    stock_movements: 'حركة المستودع',
+    product_sales: 'مبيعات المنتجات',
     inventory_evaluation: 'موجدات الصيدليه',
     evaluation_period: 'فترة التقيم',
     // Splash

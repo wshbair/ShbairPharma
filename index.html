@@ -561,77 +561,98 @@
 
                         <!-- ══ TAB 5: Stock Movements ══ -->
                         <div class="tab-pane" id="prodTabMovements">
-                            <div class="pv-topbar" style="margin-top:16px; margin-bottom:12px;">
-                                <div class="pv-topbar-select">
-                                    <input type="number" min="1" id="stockMovementProductId" class="form-control" placeholder="Product ID">
+                            <div class="card-box">
+                                <div class="card-title">
+                                    <h4>
+                                        <i class="fa fa-exchange"></i>
+                                        <span id="stock_movements" data-i18n="stock_movements">Stock Movements</span>
+                                    </h4>
                                 </div>
-                                <div class="pv-topbar-select">
-                                    <select id="stockMovementAction" class="form-control">
-                                        <option value="">All movement types</option>
-                                        <option value="sale">Sale</option>
-                                        <option value="stock_return">Stock return</option>
-                                        <option value="restock">Restock</option>
-                                        <option value="product_added">Product added</option>
-                                        <option value="product_updated">Product updated</option>
-                                        <option value="product_deleted">Product deleted</option>
-                                    </select>
+                                <div class="card-body">
+                                    <div class="pv-topbar" style="margin-top:16px; margin-bottom:12px;">
+                                
+                                        <div class="pv-topbar-select">
+                                            <input type="number" min="1" id="stockMovementProductId" class="form-control" placeholder="Product ID">
+                                        </div>
+                                        <div class="pv-topbar-select">
+                                            <select id="stockMovementAction" class="form-control">
+                                                <option value="">All movement types</option>
+                                                <option value="sale">Sale</option>
+                                                <option value="stock_return">Stock return</option>
+                                                <option value="restock">Restock</option>
+                                                <option value="product_added">Product added</option>
+                                                <option value="product_updated">Product updated</option>
+                                                <option value="product_deleted">Product deleted</option>
+                                            </select>
+                                        </div>
+                                        <div><input type="date" id="stockMovementStart" class="form-control" aria-label="From date"></div>
+                                        <div><input type="date" id="stockMovementEnd" class="form-control" aria-label="To date"></div>
+                                        <div>
+                                            <button id="stockMovementFilterBtn" type="button" class="btn btn-primary"><i class="fa fa-filter"></i> Filter</button>
+                                            <button id="stockMovementRefreshBtn" type="button" class="btn btn-default" title="Refresh movements"><i class="fa fa-refresh"></i></button>
+                                        </div>
+                                    </div>
+                                    <div id="stockMovementStatus" class="text-muted" role="status" style="margin-bottom:8px;"></div>
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-hover" id="stockMovementTable">
+                                            <thead><tr>
+                                                <th>Date</th>
+                                                <th>Movement</th>
+                                                <th>Product</th>
+                                                <th>Change</th>
+                                                <th>Before</th>
+                                                <th>After</th>
+                                                <th>Reference</th>
+                                                <th>Till</th>
+                                                <th>Source</th>
+                                            </tr></thead>
+                                            <tbody id="stockMovementList"></tbody>
+                                        </table>
+                                    </div>   
                                 </div>
-                                <div><input type="date" id="stockMovementStart" class="form-control" aria-label="From date"></div>
-                                <div><input type="date" id="stockMovementEnd" class="form-control" aria-label="To date"></div>
-                                <div>
-                                    <button id="stockMovementFilterBtn" type="button" class="btn btn-primary"><i class="fa fa-filter"></i> Filter</button>
-                                    <button id="stockMovementRefreshBtn" type="button" class="btn btn-default" title="Refresh movements"><i class="fa fa-refresh"></i></button>
-                                </div>
-                            </div>
-                            <div id="stockMovementStatus" class="text-muted" role="status" style="margin-bottom:8px;"></div>
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-hover" id="stockMovementTable">
-                                    <thead><tr>
-                                        <th>Date</th>
-                                        <th>Movement</th>
-                                        <th>Product</th>
-                                        <th>Change</th>
-                                        <th>Before</th>
-                                        <th>After</th>
-                                        <th>Reference</th>
-                                        <th>Till</th>
-                                        <th>Source</th>
-                                    </tr></thead>
-                                    <tbody id="stockMovementList"></tbody>
-                                </table>
-                            </div>
-                            <div class="text-center">
-                                <button id="stockMovementLoadMoreBtn" type="button" class="btn btn-default" style="display:none;">Load older movements</button>
                             </div>
                         </div>
 
                         <!-- ══ TAB 6: Sales by product ══ -->
                         <div class="tab-pane" id="prodTabSales">
-                            <div class="pv-topbar" style="margin-top:16px; margin-bottom:12px;">
-                                <div class="pv-topbar-select" style="position:relative; min-width:280px;">
-                                    <input type="search" id="salesProductSearch" class="form-control" placeholder="Search product name or barcode" autocomplete="off" aria-label="Search product name or barcode">
-                                    <div id="salesProductDropdown" class="inv-product-dropdown" role="listbox" style="display:none;"></div>
+
+                            <div class="card-box">
+                                <div class="card-title">
+                                    <h4>
+                                        <i class="fa fa-line-chart"></i>
+                                        <span id="product_sales" data-i18n="product_sales">Product Sales</span>
+                                    </h4>
+                                </div>
+                                <div class="card-body">
+                                    <div class="pv-topbar" style="margin-top:16px; margin-bottom:12px;">
+                                        <div class="pv-topbar-select" style="position:relative; min-width:280px;">
+                                            <input type="search" id="salesProductSearch" class="form-control" placeholder="Search product name or barcode" autocomplete="off" aria-label="Search product name or barcode">
+                                            <div id="salesProductDropdown" class="inv-product-dropdown" role="listbox" style="display:none;"></div>
+                                        </div>
+                                    </div>
+                                    <div id="productSalesHeading" class="text-muted" style="margin-bottom:8px;">Select a product to view its sales.</div>
+                                    <div id="productSalesStatus" class="text-muted" role="status" style="margin-bottom:8px;"></div>
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-hover" id="productSalesTable">
+                                            <thead><tr>
+                                                <th>Sale date</th>
+                                                <th>Customer</th>
+                                                <th>Quantity</th>
+                                                <th>Unit price</th>
+                                                <th>Item total</th>
+                                                <th>Sale total</th>
+                                                <th>Payment</th>
+                                                <th>Cashier</th>
+                                                <th>Till</th>
+                                                <th>View Receipt</th>
+                                            </tr></thead>
+                                            <tbody id="productSalesList"></tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
-                            <div id="productSalesHeading" class="text-muted" style="margin-bottom:8px;">Select a product to view its sales.</div>
-                            <div id="productSalesStatus" class="text-muted" role="status" style="margin-bottom:8px;"></div>
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-hover" id="productSalesTable">
-                                    <thead><tr>
-                                        <th>Sale date</th>
-                                        <th>Customer</th>
-                                        <th>Quantity</th>
-                                        <th>Unit price</th>
-                                        <th>Item total</th>
-                                        <th>Sale total</th>
-                                        <th>Payment</th>
-                                        <th>Cashier</th>
-                                        <th>Till</th>
-                                        <th>Receipt / Reference</th>
-                                    </tr></thead>
-                                    <tbody id="productSalesList"></tbody>
-                                </table>
-                            </div>
+
+                            
                             
                         </div>
 

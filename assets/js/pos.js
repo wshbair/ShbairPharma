@@ -170,7 +170,7 @@ $(function () {
   );
 
   cb(start, end);
-  allowOnlyNumbers('.number-input');
+  utils.allowOnlyNumbers('.number-input');
 })
 
 auth = storage.get("auth");
@@ -4319,9 +4319,6 @@ if (auth == undefined) {
       loadStockMovements(true);
     });
 
-    $("#stockMovementLoadMoreBtn").on("click", function () {
-      loadStockMovements(false);
-    });
 
     $("#prodTabSalesLink").on("click", function () {
       //@ts-expect-error
@@ -4509,11 +4506,11 @@ if (auth == undefined) {
   $("#srv_port").on("input", updateServerConnectionUrl);
 
   $("#srv_license_regen").on("click", function () {
-      $("#srv_license").val(generateLicenseKey());
+      $("#srv_license").val(utils.generateLicenseKey());
   });
 
   $("#test_connection").on("click", function () {
-    const ip = sanitizeHost($("#ip").val());
+    const ip = utils.sanitizeHost($("#ip").val());
     $("#ip").val(ip);
     const tport = String($("#server_port").val() || "");
     const license = String($("#term_license").val() || "");
@@ -4607,7 +4604,7 @@ if (auth == undefined) {
       e.preventDefault();
       //@ts-expect-error
       let formData = $(this).serializeObject();
-      formData.ip = sanitizeHost(formData.ip);
+      formData.ip = utils.sanitizeHost(formData.ip);
       $("#ip").val(formData.ip);
 
       if (formData.till == 0 || formData.till == 1) {
@@ -4934,40 +4931,6 @@ $("#viewEvaluationHistogram").on("click", function () {
   viewEvaluationHistogram(year);
 })
   
-
-//Functions list ----------------------
-//Allow only numbers in input field
-function allowOnlyNumbers(selector) {
-  $(selector).on("keydown", function (e) {
-
-    const allowedKeys = [
-      "Backspace",
-      "Delete",
-      "Tab",
-      "Escape",
-      "Enter",
-      "ArrowLeft",
-      "ArrowRight",
-      "ArrowUp",
-      "ArrowDown"
-    ];
-
-    if (
-      allowedKeys.includes(e.key) ||
-      (
-        (e.ctrlKey || e.metaKey) &&
-        ["a", "c", "v", "x"].includes(e.key.toLowerCase())
-      )
-    ) {
-      return;
-    }
-
-    if (!/^\d$/.test(e.key)) {
-      e.preventDefault();
-    }
-
-  });
-}
 
 //Serialize Object
 //@ts-expect-error
@@ -5657,7 +5620,6 @@ function loadStockMovements(reset) {
   if (endDate) params.end = endDate + "T23:59:59.999Z";
 
   stockMovementLoading = true;
-  $("#stockMovementFilterBtn, #stockMovementRefreshBtn, #stockMovementLoadMoreBtn").prop("disabled", true);
   $("#stockMovementStatus").text("Loading movements...");
 
   $.get(api + "stockmovment", params)
@@ -5698,17 +5660,15 @@ function loadStockMovements(reset) {
       stockMovementSkip += records.length;
       const loadedCount = $("#stockMovementList tr").length;
       $("#stockMovementStatus").text(loadedCount ? loadedCount + " movements loaded" : "No movements found");
-      $("#stockMovementLoadMoreBtn").toggle(records.length === stockMovementPageSize);
       initializeStockMovementTable($stockTable);
     })
     .fail(function () {
       $("#stockMovementStatus").text("Could not load stock movements.");
-      $("#stockMovementLoadMoreBtn").toggle(stockMovementSkip > 0);
       initializeStockMovementTable($stockTable);
     })
     .always(function () {
       stockMovementLoading = false;
-      $("#stockMovementFilterBtn, #stockMovementRefreshBtn, #stockMovementLoadMoreBtn").prop("disabled", false);
+      $("#stockMovementFilterBtn, #stockMovementRefreshBtn").prop("disabled", false);
     });
 }
 
@@ -5728,6 +5688,7 @@ function loadProductSales(product, page) {
   productSalesPage = page === undefined ? 0 : page;
   const requestId = ++productSalesRequestId;
   const $salesTable = $("#productSalesTable");
+  const matchedSales = [];
   //@ts-expect-error
   if ($.fn.DataTable.isDataTable($salesTable[0])) {
     //@ts-expect-error
@@ -5760,6 +5721,20 @@ function loadProductSales(product, page) {
           const saleDate = moment(transaction.date).isValid()
             ? moment(transaction.date).format("YYYY-MM-DD HH:mm:ss")
             : "-";
+          const reference = transaction.ref_number || transaction.order || transaction._id || "-";
+          matchedSales.push({
+            date: saleDate,
+            reference: reference,
+            product: item.product_name || product.name || "Product",
+            quantity: quantity,
+            unitPrice: unitPrice,
+            itemTotal: Number((quantity * unitPrice).toFixed(2)),
+            saleTotal: Number(transaction.total) || 0,
+            payment: transaction.payment_type || "-",
+            customer: customer,
+            cashier: transaction.user || "-",
+            till: transaction.till || "-",
+          });
           const values = [
             saleDate,
             customer,
@@ -5772,19 +5747,19 @@ function loadProductSales(product, page) {
             transaction.till || "-",
           ];
           const $row = $("<tr>");
-          const reference = transaction.ref_number || transaction.order || transaction._id || "-";
           const $receiptLink = $("<button>", {
             type: "button",
-            class: "btn btn-link btn-xs productSalesReceiptLink",
+            class: "btn-warning btn-sm productSalesReceiptLink",
             title: "View receipt " + reference,
             "aria-label": "View receipt " + reference,
-          }).append($("<i>", { class: "fa fa-file-text-o", "aria-hidden": "true" }))
+          }).append($("<i>", { class: " fa fa-search-plus", "aria-hidden": "true" }))
             .data("transaction", transaction);
           $("<td>").text(values[0]).appendTo($row);
-          $("<td>").append($receiptLink).appendTo($row);
+          
           values.slice(1).forEach(function (value) {
             $("<td>").text(value == null || value === "" ? "-" : String(value)).appendTo($row);
           });
+          $("<td>").append($receiptLink).appendTo($row);
           $("#productSalesList").append($row);
           saleCount++;
         });
@@ -5795,6 +5770,232 @@ function loadProductSales(product, page) {
         dom: "lfrtBip", 
         pageLength: 10,
         lengthMenu: [5, 10, 25, 50, 100],
+        buttons: [
+          // ── CSV Product Report ──────────────────────────────────────────
+          {
+            text: '<i class="fa fa-download"></i> CSV',
+            className: "btn btn-success",
+            action: function () {
+              const sym           = (settings && validator.unescape(settings.symbol)) || '';
+              const source = matchedSales;
+      
+              function q(v) { return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"'; }
+              function csvRow(arr) { return arr.map(q).join(","); }
+
+              const rows = [];
+              rows.push(["Product Sales Report"]);
+              rows.push(["Product", product.name || "Product"]);
+              rows.push(["Generated", moment().format("YYYY-MM-DD HH:mm:ss")]);
+              rows.push(["Matched sales", source.length]);
+              rows.push([]);
+              rows.push([
+                "Sale Date", "Receipt / Reference", "Product", "Quantity",
+                "Unit Price", "Item Total", "Sale Total", "Payment",
+                "Customer", "Cashier", "Till",
+              ]);
+              source.forEach(function (sale) {
+                rows.push([
+                  sale.date,
+                  sale.reference,
+                  sale.product,
+                  sale.quantity,
+                  sym + sale.unitPrice.toFixed(2),
+                  sym + sale.itemTotal.toFixed(2),
+                  sym + sale.saleTotal.toFixed(2),
+                  sale.payment,
+                  sale.customer,
+                  sale.cashier,
+                  sale.till,
+                ]);
+              });
+      
+              const csvContent = "\uFEFF" + rows.map(csvRow).join("\r\n");
+              const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+              const url  = URL.createObjectURL(blob);
+              const link = document.createElement("a");
+              link.setAttribute("href", url);
+              link.setAttribute("download", "product_sales_" + moment().format("YYYY-MM-DD") + ".csv");
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              URL.revokeObjectURL(url);
+            },
+          },
+      
+          // ── PDF Product Report ──────────────────────────────────────────
+          {
+            text: '<i class="fa fa-file-pdf-o"></i> PDF',
+            className: "btn btn-danger",
+            action: function () {
+              //@ts-expect-error
+              if (!pdfMake.vfs["Tahoma.ttf"]) {
+                const appRoot = app.getAppPath();
+                //@ts-expect-error
+                pdfMake.vfs["Tahoma.ttf"]      = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma.ttf")).toString("base64");
+                //@ts-expect-error
+                pdfMake.vfs["Tahoma-Bold.ttf"] = fs.readFileSync(path.join(appRoot, "assets/fonts/Tahoma-Bold.ttf")).toString("base64");
+                //@ts-expect-error                
+                pdfMake.vfs["Roboto-Regular.ttf"]   = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-Regular.ttf")).toString("base64");
+                //@ts-expect-error
+                pdfMake.vfs["Roboto-Medium.ttf"]    = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-Medium.ttf")).toString("base64");
+                //@ts-expect-error
+                pdfMake.vfs["Roboto-Italic.ttf"]    = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-Italic.ttf")).toString("base64");
+                //@ts-expect-error
+                pdfMake.vfs["Roboto-MediumItalic.ttf"] = fs.readFileSync(path.join(appRoot, "assets/fonts/Roboto-MediumItalic.ttf")).toString("base64");
+                //@ts-expect-error  
+                pdfMake.fonts = {
+                  Roboto: { normal: "Roboto-Regular.ttf", bold: "Roboto-Medium.ttf", italics: "Roboto-Italic.ttf", bolditalics: "Roboto-MediumItalic.ttf" },
+                  Tahoma: { normal: "Tahoma.ttf", bold: "Tahoma-Bold.ttf", italics: "Tahoma.ttf", bolditalics: "Tahoma-Bold.ttf" },
+                };
+              }
+      
+              function cell(value, extra) {
+                const str = String(value == null ? "" : value);
+                const isArabic = /[\u0600-\u06FF]/.test(str);
+                return Object.assign({
+                  text: str, fontSize: 7,
+                  font:      isArabic ? "Tahoma" : "Roboto",
+                  alignment: isArabic ? "right"  : "left",
+                }, extra || {});
+              }
+      
+              const sym           = (settings && validator.unescape(settings.symbol)) || '';
+              const source = matchedSales;
+              const matchedQuantity = source.reduce(function (total, sale) { return total + sale.quantity; }, 0);
+              const matchedValue = source.reduce(function (total, sale) { return total + sale.itemTotal; }, 0);
+
+              const summaryBody = [
+                [
+                  { text: "Product", style: "summaryLabel" },
+                  { text: product.name || "Product", style: "summaryValue" },
+                  { text: "Product ID", style: "summaryLabel" },
+                  { text: String(product._id), style: "summaryValue" },
+                  { text: "Matched Sales", style: "summaryLabel" },
+                  { text: String(source.length), style: "summaryValue" },
+                ],
+                [
+                  { text: "Current Page", style: "summaryLabel" },
+                  { text: String(productSalesPage + 1), style: "summaryValue" },
+                  { text: "Matched Quantity", style: "summaryLabel" },
+                  { text: String(matchedQuantity), style: "summaryValue" },
+                  { text: "Matched Value", style: "summaryLabel" },
+                  { text: sym + matchedValue.toFixed(2), style: "summaryValue" },
+                ],
+              ];
+      
+              const tableHeaders = [
+                "Sale Date", "Receipt / Reference", "Product", "Quantity",
+                "Unit Price", "Item Total", "Sale Total", "Payment",
+                "Customer", "Cashier", "Till",
+              ];
+              const tableRows = source.map(function (sale) {
+                return [
+                  sale.date,
+                  sale.reference,
+                  sale.product,
+                  sale.quantity,
+                  sym + sale.unitPrice.toFixed(2),
+                  sym + sale.itemTotal.toFixed(2),
+                  sym + sale.saleTotal.toFixed(2),
+                  sale.payment,
+                  sale.customer,
+                  sale.cashier,
+                  sale.till,
+                ].map(function (v) { return cell(v); });
+              });
+      
+              const docDefinition = {
+                pageOrientation: "portrait",
+                pageMargins: [28, 50, 28, 36],
+      
+                header: function (currentPage) {
+                  if (currentPage === 1) return null;
+                  return { text: "ShbairPharma — Product Sales Report", alignment: "center", fontSize: 7, color: "#888", margin: [0, 14, 0, 0] };
+                },
+                footer: function (currentPage, pageCount) {
+                  return {
+                    columns: [
+                      { text: "Generated: " + moment().format("YYYY-MM-DD HH:mm:ss"), fontSize: 7, color: "#888", alignment: "left",  margin: [28, 0, 0, 0] },
+                      { text: "Page " + currentPage + " of " + pageCount,             fontSize: 7, color: "#888", alignment: "right", margin: [0,  0, 28, 0] },
+                    ],
+                  };
+                },
+      
+                content: [
+                  // Title block
+                  { text: "ShbairPharma",        style: "brand" },
+                  { text: "Product Sales Report", style: "reportTitle" },
+                  { text: moment().format("YYYY-MM-DD HH:mm:ss"), style: "generatedDate" },
+                  { text: " ", margin: [0, 4] },
+      
+                  // Filter bar
+                  {
+                    table: {
+                      widths: ["*"],
+                      body: [[{ text: "Product: " + (product.name || product._id), style: "filterCell" }]],
+                    },
+                    layout: { hLineWidth: () => 0, vLineWidth: () => 0, fillColor: () => "#eef3f9" },
+                    margin: [0, 0, 0, 14],
+                  },
+      
+                  // Summary stats
+                  { text: "Summary", style: "sectionTitle" },
+                  {
+                    table: {
+                      widths: ["auto", "*", "auto", "*", "auto", "*"],
+                      body: summaryBody,
+                    },
+                    layout: {
+                      hLineWidth: () => 1, vLineWidth: () => 1,
+                      hLineColor: () => "#c9d8e8", vLineColor: () => "#c9d8e8",
+                      fillColor:  function (i) { return i % 2 === 0 ? "#eef3f9" : "#f8fafc"; },
+                      paddingLeft: () => 8, paddingRight: () => 8,
+                      paddingTop:  () => 6, paddingBottom: () => 6,
+                    },
+                    margin: [0, 4, 0, 18],
+                  },
+      
+                  // Products table
+                  { text: "Matched Sales  (" + source.length + " records)", style: "sectionTitle" },
+                  {
+                    table: {
+                      headerRows: 1,
+                      widths: ["auto", "*", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "auto", "auto"],
+                      body: [
+                        tableHeaders.map(function (h) { return { text: h, style: "tableHeader" }; }),
+                        ...tableRows,
+                      ],
+                    },
+                    layout: {
+                      hLineWidth: function (i, node) { return (i === 0 || i === node.table.body.length) ? 1 : 0.5; },
+                      vLineWidth: () => 0,
+                      hLineColor: () => "#c9d8e8",
+                      fillColor:  function (i) { return i === 0 ? null : (i % 2 === 0 ? "#f4f7fb" : null); },
+                      paddingLeft: () => 5, paddingRight: () => 5,
+                      paddingTop:  () => 3, paddingBottom: () => 3,
+                    },
+                    margin: [0, 4, 0, 0],
+                  },
+                ],
+      
+                styles: {
+                  brand:        { fontSize: 17, bold: true, alignment: "center", color: "#1a2436", margin: [0, 0, 0, 4] },
+                  reportTitle:  { fontSize: 12, bold: true, alignment: "center", color: "#0d7377", margin: [0, 0, 0, 4] },
+                  generatedDate:{ fontSize: 7,              alignment: "center", color: "#888",    margin: [0, 0, 0, 8] },
+                  sectionTitle: { fontSize: 9, bold: true,  color: "#2d4154",                      margin: [0, 0, 0, 4] },
+                  filterCell:   { fontSize: 8,              alignment: "center", color: "#444",    margin: [4, 6, 4, 6] },
+                  summaryLabel: { fontSize: 8,              color: "#555",       margin: [0, 0, 0, 0] },
+                  summaryValue: { fontSize: 9, bold: true,  color: "#1a2436", alignment: "right",  margin: [0, 0, 0, 0] },
+                  tableHeader:  { fillColor: "#2d4154", color: "white", fontSize: 7, bold: true, alignment: "center", margin: [0, 3, 0, 3] },
+                },
+              };
+              //@ts-expect-error
+              pdfMake
+                .createPdf(docDefinition)
+                .download("product_sales_" + moment().format("YYYY-MM-DD") + ".pdf");
+            },
+          },
+        ]
       });
       const firstSale = productSalesTotal === 0 ? 0 : productSalesPage * productSalesPageSize + 1;
       const lastSale = Math.min(productSalesPage * productSalesPageSize + saleCount, productSalesTotal);
@@ -5898,27 +6099,6 @@ function loadCategoryList() {
   }
 }
 
-function detectLanIp() {
-  try {
-    const os = require("os");
-    const ifaces = os.networkInterfaces();
-    for (const name of Object.keys(ifaces)) {
-      for (const iface of ifaces[name]) {
-        if (iface.family === "IPv4" && !iface.internal) return iface.address;
-      }
-    }
-  } catch (e) { /* fall through */ }
-  return "127.0.0.1";
-}
-
-function generateLicenseKey() {
-  try {
-    return require("crypto").randomBytes(16).toString("hex");
-  } catch (e) {
-    return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
-  }
-}
-
 function updateServerConnectionUrl() {
   const ip = $("#srv_ip").val();
   const port = $("#srv_port").val();
@@ -5928,22 +6108,14 @@ function updateServerConnectionUrl() {
 function loadServerFormDefaults() {
   const macaddress = require("macaddress");
   macaddress.one(function (err, mac) { $("#srv_mac").val(mac); });
-  $("#srv_ip").val(detectLanIp());
+  $("#srv_ip").val(utils.detectLanIp());
   const storedPort = (platform && platform.port) || process.env.PORT || 4500;
   const storedBind = (platform && platform.bind) || "0.0.0.0";
-  const storedLicense = (platform && platform.license) || generateLicenseKey();
+  const storedLicense = (platform && platform.license) || utils.generateLicenseKey();
   if (!$("#srv_port").val()) $("#srv_port").val(storedPort);
   $("#srv_bind").val(storedBind);
   $("#srv_license").val(storedLicense);
   updateServerConnectionUrl();
-}
-
-function sanitizeHost(raw) {
-  let v = String(raw || "").trim();
-  v = v.replace(/^https?:\/\//i, "");   // strip scheme if pasted
-  v = v.replace(/\/.*$/, "");            // strip any path
-  v = v.replace(/:\d+$/, "");            // strip trailing :port
-  return v;
 }
 
 function loadTransactions() {
@@ -6436,17 +6608,10 @@ function loadSoldProducts() {
   let sold_list = "";
   let items = 0;
   let products = 0;
-  //$("#product_sales").empty();
 
   sold.forEach((item, index) => {
     items = items + parseInt(item.qty);
-    products++;
-    
-
-    // let product = allProducts.filter(function (selected) {
-    //   return selected._id == item.id;
-    // });
-    
+    products++;    
     counter++;
     
     if (counter == sold.length) {
