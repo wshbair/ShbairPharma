@@ -37,6 +37,7 @@ module.exports = app;
 
 // ── Datastores (shared singletons — never open the same .db file twice) ──────
 const { inventoryDB, invoicesDB } = require("./db");
+const stockmovment = require("./stockmovment");
 
 // ── Helper: safe escape (handles undefined/null) ─────────────────────────────
 function esc(val) {
@@ -274,12 +275,28 @@ app.post("/invoice/:invoiceId/link-products", function (req, res) {
     }
 
     async.eachSeries(productIds, function (productId, callback) {
-        inventoryDB.update(
-            { _id: parseInt(productId) },
-            { $set: { invoiceId: req.params.invoiceId } },
-            {},
-            callback
-        );
+        const id = parseInt(productId);
+        inventoryDB.findOne({ _id: id }, function (findErr, before) {
+            if (findErr) return callback(findErr);
+            inventoryDB.update(
+                { _id: id },
+                { $set: { invoiceId: req.params.invoiceId } },
+                {},
+                function (updateErr, numReplaced) {
+                    if (updateErr || !numReplaced) return callback(updateErr);
+                    const after = Object.assign({}, before, { invoiceId: req.params.invoiceId });
+                    stockmovment.recordMovement({
+                        action: "product_updated",
+                        before: before,
+                        after: after,
+                        source: req.originalUrl,
+                        reference: req.params.invoiceId,
+                        actor: stockmovment.getActor(req),
+                        details: { field: "invoiceId" },
+                    }, callback);
+                }
+            );
+        });
     }, function (err) {
         if (err) {
             console.error(err);

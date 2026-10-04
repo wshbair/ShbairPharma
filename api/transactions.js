@@ -194,6 +194,54 @@ app.shouldDecrementInventoryForTransaction = function (transaction) {
   return Number.isFinite(paid) && Number.isFinite(total) && paid >= total;
 };
 
+app.getProductSales = function (transactions, productId) {
+  return transactions
+    .filter(function (transaction) {
+      return app.shouldDecrementInventoryForTransaction(transaction);
+    })
+    .map(function (transaction) {
+      const matchedItems = transaction.items.filter(function (item) {
+        return Number(item.id) === Number(productId);
+      });
+      return Object.assign({}, transaction, { matchedItems: matchedItems });
+    })
+    .filter(function (transaction) {
+      return transaction.matchedItems.length > 0;
+    })
+    .sort(function (a, b) {
+      return new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime();
+    });
+};
+
+app.getProductSalesPage = function (sales, requestedSkip, requestedLimit) {
+  const parsedLimit = Number.parseInt(requestedLimit, 10) || 25;
+  const limit = Math.min(Math.max(parsedLimit, 1), 100);
+  const parsedSkip = Number.parseInt(requestedSkip, 10) || 0;
+  const skip = Math.max(parsedSkip, 0);
+  return {
+    records: sales.slice(skip, skip + limit),
+    total: sales.length,
+    limit: limit,
+    skip: skip,
+  };
+};
+
+app.get("/sales-by-product/:productId", function (req, res) {
+  const productId = Number(req.params.productId);
+  if (!Number.isFinite(productId) || productId <= 0) {
+    return res.status(400).json({ error: "Valid product ID required" });
+  }
+
+  transactionsDB.find({}, function (err, transactions) {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+    const sales = app.getProductSales(transactions, productId);
+    res.json(app.getProductSalesPage(sales, req.query.skip, req.query.limit));
+  });
+});
+
 app.post("/new", function (req, res) {
   let newTransaction = req.body;
 
@@ -209,7 +257,7 @@ app.post("/new", function (req, res) {
 
       if (app.shouldDecrementInventoryForTransaction(newTransaction)) {
         //@ts-expect-error
-        Inventory.decrementInventory(newTransaction.items);
+        Inventory.decrementInventory(newTransaction.items, newTransaction);
       }
     }
   });
@@ -266,7 +314,7 @@ app.post("/delete", function (req, res) {
         });
       } else {
         //@ts-expect-error
-        Inventory.returnBackInventory(transaction.items)
+        Inventory.returnBackInventory(transaction.items, transaction)
         res.sendStatus(200);
       }
     },

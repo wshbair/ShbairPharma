@@ -27,6 +27,7 @@ const transactionsDB  = new Datastore({ filename: dbFile("transactions.db"), aut
 const usersDB  = new Datastore({ filename: dbFile("users.db"), autoload: true });
 const providersDB  = new Datastore({ filename: dbFile("providers.db"), autoload: true });
 const expensesDB  = new Datastore({ filename: dbFile("expenses.db"), autoload: true });
+const stockmovmentDB = new Datastore({ filename: dbFile("stockmovment.db"), autoload: true });
 
 
 inventoryDB.ensureIndex({ fieldName: "_id", unique: true });
@@ -41,6 +42,9 @@ providersDB.ensureIndex({  fieldName: "_id", unique: true });
 expensesDB.ensureIndex({  fieldName: "_id", unique: true });
 expensesDB.ensureIndex({  fieldName: "category" });
 expensesDB.ensureIndex({  fieldName: "expenseDate" });
+stockmovmentDB.ensureIndex({ fieldName: "timestamp" });
+stockmovmentDB.ensureIndex({ fieldName: "productId" });
+stockmovmentDB.ensureIndex({ fieldName: "action" });
 
 module.exports = { 
     inventoryDB, 
@@ -51,5 +55,6 @@ module.exports = {
     transactionsDB, 
     usersDB, 
     providersDB,
-    expensesDB
+    expensesDB,
+    stockmovmentDB
 };

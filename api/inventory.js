@@ -41,6 +41,7 @@ const csvUpload = multer({
 
 
 function parseDate(str) {
+    console.log("parseDate called with:", str);
     if(str == "")
         return new Date().toISOString().split("T")[0];
     try {
@@ -55,6 +56,19 @@ module.exports = app;
 
 // Use the shared singleton so inventory.db is opened exactly once
 const { inventoryDB } = require("./db");
+const stockmovment = require("./stockmovment");
+
+function recordInventoryMovement(action, before, after, source, req, reference, details, callback) {
+    stockmovment.recordMovement({
+        action: action,
+        before: before,
+        after: after,
+        source: source,
+        actor: req && req.body ? stockmovment.getActor(req) : (req || null),
+        reference: reference || null,
+        details: details || null,
+    }, callback);
+}
 
 /**
  * GET endpoint: Get the welcome message for the Inventory API.
@@ -231,28 +245,32 @@ app.post("/product", function (req, res) {
                     message: "An unexpected error occurred.",
                 });
             } else {
-                res.sendStatus(200);
+                recordInventoryMovement("product_added", null, product, req.originalUrl, req, Product.invoiceId, null, function () {
+                    res.sendStatus(200);
+                });
             }
         });
     } else {
-        inventoryDB.update(
-            {
-                _id: parseInt(validator.escape(req.body.id)),
-            },
-            Product,
-            {},
-            function (err, numReplaced, product) {
+        const productId = parseInt(validator.escape(req.body.id));
+        inventoryDB.findOne({ _id: productId }, function (findErr, before) {
+            if (findErr) {
+                console.error(findErr);
+                return res.status(500).json({ error: "Internal Server Error" });
+            }
+            inventoryDB.update({ _id: productId }, Product, {}, function (err, numReplaced) {
                 if (err) {
                     console.error(err);
-                    res.status(500).json({
+                    return res.status(500).json({
                         error: "Internal Server Error",
                         message: "An unexpected error occurred.",
                     });
-                } else {
-                    res.sendStatus(200);
                 }
-            },
-        );
+                if (!numReplaced) return res.sendStatus(200);
+                recordInventoryMovement("product_updated", before, Product, req.originalUrl, req, Product.invoiceId, null, function () {
+                    res.sendStatus(200);
+                });
+            });
+        });
     }
     });
 });
@@ -351,13 +369,15 @@ app.post("/products/csv", function (req, res) {
                     inventoryDB.findOne({ _id: parseInt(p._id) }, function (e, existing) {
                         if (existing) {
                             inventoryDB.update({ _id: parseInt(p._id) }, p, {}, function (e2) {
-                                if (!e2) { updated++; }
-                                cb();
+                                if (e2) return cb(e2);
+                                updated++;
+                                recordInventoryMovement("product_updated", existing, p, req.originalUrl, req, p.invoiceId, { import: "csv" }, cb);
                             });
                         } else {
                             inventoryDB.insert(p, function (e3) {
-                                if (!e3) { inserted++; }
-                                cb();
+                                if (e3) return cb(e3);
+                                inserted++;
+                                recordInventoryMovement("product_added", null, p, req.originalUrl, req, p.invoiceId, { import: "csv" }, cb);
                             });
                         }
                     });
@@ -392,22 +412,26 @@ app.post("/products/csv", function (req, res) {
  * @returns {void}
  */
 app.delete("/product/:productId", function (req, res) {
-    inventoryDB.remove(
-        {
-            _id: parseInt(req.params.productId),
-        },
-        function (err, numRemoved) {
+    const productId = parseInt(req.params.productId);
+    inventoryDB.findOne({ _id: productId }, function (findErr, before) {
+        if (findErr) {
+            console.error(findErr);
+            return res.status(500).json({ error: "Internal Server Error" });
+        }
+        inventoryDB.remove({ _id: productId }, function (err, numRemoved) {
             if (err) {
                 console.error(err);
-                res.status(500).json({
+                return res.status(500).json({
                     error: "Internal Server Error",
                     message: "An unexpected error occurred.",
                 });
-            } else {
-                res.sendStatus(200);
             }
-        },
-    );
+            if (!numRemoved || !before) return res.sendStatus(200);
+            recordInventoryMovement("product_deleted", before, null, req.originalUrl, req, null, null, function () {
+                res.sendStatus(200);
+            });
+        });
+    });
 });
 
 /**
@@ -493,13 +517,19 @@ app.patch("/product/:id/costs", function (req, res) {
         return res.status(400).json({ error: "No fields to update" });
     }
 
-    inventoryDB.update({ _id: id }, { $set: updates }, {}, function (err, n) {
-        if (err) {
-            console.error(err);
-            return res.status(500).json({ error: "Internal Server Error" });
-        }
-        if (!n) return res.status(404).json({ error: "Product not found" });
-        res.sendStatus(200);
+    inventoryDB.findOne({ _id: id }, function (findErr, before) {
+        if (findErr) return res.status(500).json({ error: "Internal Server Error" });
+        inventoryDB.update({ _id: id }, { $set: updates }, {}, function (err, n) {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({ error: "Internal Server Error" });
+            }
+            if (!n) return res.status(404).json({ error: "Product not found" });
+            const after = Object.assign({}, before, updates);
+            recordInventoryMovement("product_updated", before, after, req.originalUrl, req, null, null, function () {
+                res.sendStatus(200);
+            });
+        });
     });
 });
 
@@ -537,11 +567,11 @@ app.post("/restock/:productId", function (req, res) {
             {
                 $set: {
                     quantity:  newQty,
-                    invoiceId: invoiceId  || product.invoiceId,
-                    provider:  providerId || product.provider,
-                    costPrice: costPrice  || product.costPrice,
-                    price:     price      || product.price,
-                    expireDate: expireDate || product.expireDate
+                    invoiceId: invoiceId       || product.invoiceId,
+                    provider:  providerId      || product.provider,
+                    costPrice: costPrice       || product.costPrice,
+                    price:     price           || product.price,
+                    expirationDate: expireDate || product.expireDate
                 },
                 $push: { invoiceHistory: historyEntry },
             },
@@ -551,7 +581,18 @@ app.post("/restock/:productId", function (req, res) {
                     console.error(err2);
                     return res.status(500).json({ error: "Internal Server Error" });
                 }
-                res.sendStatus(200);
+                const after = Object.assign({}, product, {
+                    quantity: newQty,
+                    invoiceId: invoiceId || product.invoiceId,
+                    provider: providerId || product.provider,
+                    costPrice: costPrice || product.costPrice,
+                    price: price || product.price,
+                    expirationDate: expireDate || product.expireDate,
+                    invoiceHistory: (product.invoiceHistory || []).concat([historyEntry]),
+                });
+                recordInventoryMovement("restock", product, after, req.originalUrl, req, invoiceId, { quantityAdded: addQty, providerId: providerId }, function () {
+                    res.sendStatus(200);
+                });
             }
         );
     });
@@ -571,7 +612,9 @@ app.post("/restock/:productId", function (req, res) {
         let pinned = false;
         if (pinVal === true || pinVal === "true" || pinVal === "1" || pinVal === 1) pinned = true;
 
-        inventoryDB.update({ _id: id }, { $set: { pinned: pinned } }, {}, function (err, numReplaced) {
+        inventoryDB.findOne({ _id: id }, function (findErr, before) {
+            if (findErr) return res.status(500).json({ error: "Internal Server Error" });
+            inventoryDB.update({ _id: id }, { $set: { pinned: pinned } }, {}, function (err, numReplaced) {
             if (err) {
                 console.error(err);
                 return res.status(500).json({ error: "Internal Server Error" });
@@ -581,7 +624,11 @@ app.post("/restock/:productId", function (req, res) {
                 return res.status(404).json({ error: "Product not found" });
             }
             console.log(`[inventory] product ${id} pinned set to ${pinned}`);
-            res.sendStatus(200);
+            const after = Object.assign({}, before, { pinned: pinned });
+            recordInventoryMovement("product_updated", before, after, req.originalUrl, req, null, { field: "pinned" }, function () {
+                res.sendStatus(200);
+            });
+            });
         });
     });
 });
@@ -595,7 +642,9 @@ app.post("/product/:id/pin", function (req, res) {
     let pinned = false;
     if (pinVal === true || pinVal === "true" || pinVal === "1" || pinVal === 1) pinned = true;
 
-    inventoryDB.update({ _id: id }, { $set: { pinned: pinned } }, {}, function (err, numReplaced) {
+    inventoryDB.findOne({ _id: id }, function (findErr, before) {
+        if (findErr) return res.status(500).json({ error: "Internal Server Error" });
+        inventoryDB.update({ _id: id }, { $set: { pinned: pinned } }, {}, function (err, numReplaced) {
         if (err) {
             console.error(err);
             return res.status(500).json({ error: "Internal Server Error" });
@@ -603,7 +652,11 @@ app.post("/product/:id/pin", function (req, res) {
         if (!numReplaced) {
             return res.status(404).json({ error: "Product not found" });
         }
-        res.sendStatus(200);
+        const after = Object.assign({}, before, { pinned: pinned });
+        recordInventoryMovement("product_updated", before, after, req.originalUrl, req, null, { field: "pinned" }, function () {
+            res.sendStatus(200);
+        });
+        });
     });
 });
 
@@ -614,7 +667,7 @@ app.post("/product/:id/pin", function (req, res) {
  * @returns {void}
  */
 //@ts-expect-error
-app.decrementInventory = function (products) {
+app.decrementInventory = function (products, transaction) {
     async.eachSeries(products, function (transactionProduct, callback) {
         inventoryDB.findOne(
             {
@@ -635,7 +688,18 @@ app.decrementInventory = function (products) {
                             },
                         },
                         {},
-                        callback,
+                        function (updateErr) {
+                            if (updateErr) return callback(updateErr);
+                            const after = Object.assign({}, product, { quantity: updatedQuantity });
+                            recordInventoryMovement("sale", product, after, "transactions", transaction && {
+                                id: transaction.user_id || null,
+                                name: transaction.username || null,
+                            }, transaction && (transaction.ref_number || transaction._id), {
+                                transactionId: transaction && transaction._id,
+                                userId: transaction && transaction.user_id,
+                                quantitySold: Number(transactionProduct.quantity),
+                            }, callback);
+                        },
                     );
                 }
             },
@@ -647,7 +711,7 @@ app.decrementInventory = function (products) {
 };
 
 //@ts-expect-error
-app.returnBackInventory = function (products) {
+app.returnBackInventory = function (products, transaction) {
     async.eachSeries(products, function (transactionProduct, callback) {
         inventoryDB.findOne(
             {
@@ -668,7 +732,18 @@ app.returnBackInventory = function (products) {
                             },
                         },
                         {},
-                        callback,
+                        function (updateErr) {
+                            if (updateErr) return callback(updateErr);
+                            const after = Object.assign({}, product, { quantity: updatedQuantity });
+                            recordInventoryMovement("stock_return", product, after, "transactions", transaction && {
+                                id: transaction.user_id || null,
+                                name: transaction.username || null,
+                            }, transaction && (transaction.ref_number || transaction._id), {
+                                transactionId: transaction && transaction._id,
+                                userId: transaction && transaction.user_id,
+                                quantityReturned: Number(transactionProduct.quantity),
+                            }, callback);
+                        },
                     );
                 }
             },

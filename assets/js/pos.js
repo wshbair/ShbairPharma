@@ -32,7 +32,6 @@ let index = 0;
 let allUsers = [];
 let allProducts = [];
 let allCategories = [];
-let mostSoldProducts = [];
 let allProviders = [];
 let invoiceItems = [];
 let posRecentItems = [];   // products added to cart this session
@@ -86,6 +85,15 @@ let by_till = 0;
 let by_user = 0;
 let by_status = 1;
 let histogramChart = null;
+const stockMovementPageSize = 100;
+let stockMovementSkip = 0;
+let stockMovementLoading = false;
+let productSalesSearchTimer;
+let selectedSalesProduct = null;
+const productSalesPageSize = 25;
+let productSalesPage = 0;
+let productSalesTotal = 0;
+let productSalesRequestId = 0;
 const default_item_img = path.join("assets","images","logo.png");
 const permissions = [
   "perm_products",
@@ -641,6 +649,7 @@ if (auth == undefined) {
           const label = [date, net, status].filter(Boolean).join(' · ');
           return `<option value="${inv.invoiceId}">${label}</option>`;
         }).join('');
+        console.log("Invoice options HTML:", opts);
         $("#invoiceIdList").html(opts);
       });
     }
@@ -3454,6 +3463,7 @@ if (auth == undefined) {
                     costPrice:  item.cost,
                     price:      item.price,
                     entryDate:  invDate,
+                    expirationDate: item.expiry,
                   }),
                   success: function () { done++; processEditItem(idx + 1); },
                   error:   function () { errors++; processEditItem(idx + 1); },
@@ -3515,7 +3525,7 @@ if (auth == undefined) {
             if (!itemsSnapshot.length) {
               //@ts-expect-error
               $('#invViewTabs a[href="#invTabList"]').tab("show");
-              //notiflix.Report.success("Invoice Saved", "Invoice added successfully.", "Ok");
+              notiflix.Report.success("Invoice Saved", "Invoice added successfully.", "Ok");
               const providerId = $("#providerListFilter").val();
               if (providerId) loadInvoiceList(providerId);
               loadInvoicesForForm();
@@ -3534,7 +3544,7 @@ if (auth == undefined) {
                 const msg = errors
                   ? "Invoice saved. " + errors + " item(s) had errors — check the product list."
                   : "Invoice and " + done + " item(s) saved successfully.";
-                //notiflix.Report.success("Done", msg, "Ok");
+                notiflix.Report.success("Done", msg, "Ok");
                 const providerId = $("#providerListFilter").val();
                 if (providerId) loadInvoiceList(providerId);
                 loadInvoicesForForm();
@@ -3544,7 +3554,7 @@ if (auth == undefined) {
               }
 
               const item = itemsSnapshot[idx];
-
+              console.log("Processing item:", item);
               if (item.type === 'restock') {
                 $.ajax({
                   url: api + "inventory/restock/" + item.productId,
@@ -3556,6 +3566,7 @@ if (auth == undefined) {
                     providerId: invProviderId,
                     costPrice:  item.cost,
                     entryDate:  invDate,
+                    expirationDate: item.expiry,
                   }),
                   success: function () { done++; processNext(idx + 1); },
                   error:   function () { errors++; processNext(idx + 1); },
@@ -4298,6 +4309,99 @@ if (auth == undefined) {
       $('#prodViewTabs a[href="#prodTabList"]').tab("show");
     });
 
+    $("#prodTabMovementsLink").on("click", function () {
+      loadStockMovements(true);
+      //@ts-expect-error
+      $('#prodViewTabs a[href="#prodTabMovements"]').tab("show");
+    });
+
+    $("#stockMovementFilterBtn, #stockMovementRefreshBtn").on("click", function () {
+      loadStockMovements(true);
+    });
+
+    $("#stockMovementLoadMoreBtn").on("click", function () {
+      loadStockMovements(false);
+    });
+
+    $("#prodTabSalesLink").on("click", function () {
+      //@ts-expect-error
+      $('#prodViewTabs a[href="#prodTabSales"]').tab("show");
+      $("#salesProductSearch").trigger("focus");
+    });
+
+    $("#salesProductSearch").on("input", function () {
+      const query = $(this).val().toString().trim();
+      clearTimeout(productSalesSearchTimer);
+      selectedSalesProduct = null;
+      $("#productSalesList").empty();
+      $("#productSalesHeading").text("Select a product to view its sales.");
+      $("#productSalesStatus").text("");
+
+      if (query.length < 2) {
+        $("#salesProductDropdown").empty().hide();
+        return;
+      }
+
+      productSalesSearchTimer = setTimeout(function () {
+        $.post(api + "inventory/product/name", { productName: query })
+          .done(function (products) {
+            if ($("#salesProductSearch").val().toString().trim() !== query) return;
+            const $dropdown = $("#salesProductDropdown").empty();
+            (products || []).slice(0, 10).forEach(function (product) {
+              const $option = $("<div>", {
+                class: "inv-drop-item sales-product-option",
+                role: "option",
+                tabindex: 0,
+              }).data("product", product);
+              $("<div>", { class: "inv-drop-name" }).text(product.name || "Unnamed product").appendTo($option);
+              $("<div>", { class: "inv-drop-meta" }).text("Barcode: " + (product.barcode || "-") + " | Stock: " + (product.quantity ?? 0)).appendTo($option);
+              $dropdown.append($option);
+            });
+            if (!$dropdown.children().length) {
+              $("<div>", { class: "inv-drop-item inv-drop-meta" }).text("No matching products").appendTo($dropdown);
+            }
+            $dropdown.show();
+          })
+          .fail(function () {
+            $("#productSalesStatus").text("Could not search products.");
+          });
+      }, 250);
+    });
+
+    $(document).on("click keydown", ".sales-product-option", function (event) {
+      if (event.type === "keydown" && event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      selectedSalesProduct = $(this).data("product");
+      if (!selectedSalesProduct) return;
+      $("#salesProductSearch").val(selectedSalesProduct.name || "");
+      $("#salesProductDropdown").empty().hide();
+      loadProductSales(selectedSalesProduct);
+    });
+
+    $(document).on("click", ".productSalesReceiptLink", function () {
+      const transaction = $(this).data("transaction");
+      //@ts-expect-error
+      if (transaction) $(this).viewTransaction(transaction);
+    });
+
+    $("#productSalesPreviousBtn").on("click", function () {
+      if (productSalesPage > 0 && selectedSalesProduct) {
+        loadProductSales(selectedSalesProduct, productSalesPage - 1);
+      }
+    });
+
+    $("#productSalesNextBtn").on("click", function () {
+      if ((productSalesPage + 1) * productSalesPageSize < productSalesTotal && selectedSalesProduct) {
+        loadProductSales(selectedSalesProduct, productSalesPage + 1);
+      }
+    });
+
+    $(document).on("click", function (event) {
+      if (!$(event.target).closest("#salesProductSearch, #salesProductDropdown").length) {
+        $("#salesProductDropdown").hide();
+      }
+    });
+
     $("#refresh").on("click", function () {
       loadProducts(loadProductList);
     });
@@ -4897,22 +5001,23 @@ $.fn.viewTransaction = function (index) {
   const rcptFont = isRtlReceipt ? 'Tahoma, Arial, sans-serif' : "'Courier New', Courier, monospace";
   const rcptPriceAlign = isRtlReceipt ? 'left' : 'right';
   const rcptDetailsAlign = isRtlReceipt ? 'right' : 'left';
-  let transaction_index = index;
+  const transaction = typeof index === "number" ? allTransactions[index] : index;
+  if (!transaction) return;
 
-  let discount = allTransactions[index].discount;
+  let discount = transaction.discount;
   let customer =
-    allTransactions[index].customer == 0
+    transaction.customer == 0
       ? "Walk in Customer"
-      : allTransactions[index].customer.username;
+      : transaction.customer.username;
   let refNumber =
-    allTransactions[index].ref_number != ""
-      ? allTransactions[index].ref_number
-      : allTransactions[index].order;
-  let orderNumber = allTransactions[index].order;
+    transaction.ref_number != ""
+      ? transaction.ref_number
+      : transaction.order;
+  let orderNumber = transaction.order;
   let paymentMethod = "";
   let tax_row = "";
   let items = "";
-  let products = allTransactions[index].items;
+  let products = transaction.items;
   let paymnetRow =""
   products.forEach((item) => {
     items += `<tr><td>${item.product_name}</td><td>${
@@ -4922,23 +5027,23 @@ $.fn.viewTransaction = function (index) {
     )} </td></tr>`;
   });
 
-  paymentMethod = allTransactions[index].payment_type;
-  let payment = allTransactions[index].payment;
+  paymentMethod = transaction.payment_type;
+  let payment = transaction.payment;
 
 
-  if (allTransactions[index].paid != "") {
+  if (transaction.paid != "") {
     paymnetRow = `<tr>
                     <td>${t('paid')}</td>
                     <td>:</td>
                     <td style="text-align: ${rcptPriceAlign}"> ${moneyFormat(
-                      Math.abs(allTransactions[index].paid).toFixed(2),
+                      Math.abs(transaction.paid).toFixed(2),
                     )}</td>
                 </tr>
                 <tr>
                     <td>${t('change')}</td>
                     <td>:</td>
                     <td style="text-align: ${rcptPriceAlign}"> ${moneyFormat(
-                      Math.abs(allTransactions[index].change).toFixed(2),
+                      Math.abs(transaction.change).toFixed(2),
                     )}</td>
                 </tr>
                 <tr>
@@ -4952,7 +5057,7 @@ $.fn.viewTransaction = function (index) {
     tax_row = `<tr>
                 <td>${t('receipt_vat_label')}(${validator.unescape(settings.percentage)})%</td>
                 <td>:</td>
-                <td style="text-align: ${rcptPriceAlign}">${moneyFormat(allTransactions[index].tax)}</td>
+                <td style="text-align: ${rcptPriceAlign}">${moneyFormat(transaction.tax)}</td>
             </tr>`;
   }
 
@@ -4979,12 +5084,12 @@ $.fn.viewTransaction = function (index) {
         ${t('receipt_invoice')} : ${orderNumber} <br>
         ${t('receipt_ref_no')} : ${refNumber} <br>
         ${t('receipt_customer')} : ${
-          allTransactions[index].customer == 0
+          transaction.customer == 0
             ? t('walk_in_customer')
-            : allTransactions[index].customer.name
+            : transaction.customer.name
         } <br>
-        ${t('cashier')} : ${allTransactions[index].user} <br>
-        ${t('date')} : ${moment(allTransactions[index].date).format(
+        ${t('cashier')} : ${transaction.user} <br>
+        ${t('date')} : ${moment(transaction.date).format(
           "DD MMM YYYY HH:mm:ss",
         )}<br>
         </p>
@@ -5005,7 +5110,7 @@ $.fn.viewTransaction = function (index) {
             <td><b>${t('subtotal')}</b></td>
             <td>:</td>
             <td style="text-align: ${rcptPriceAlign}"><b>${moneyFormat(
-              allTransactions[index].subtotal,
+              transaction.subtotal,
             )}</b></td>
         </tr>
         <tr>
@@ -5014,7 +5119,7 @@ $.fn.viewTransaction = function (index) {
             <td style="text-align: ${rcptPriceAlign}">${
               discount > 0
                 ? moneyFormat(
-                    parseFloat(allTransactions[index].discount).toFixed(2),
+                    parseFloat(transaction.discount).toFixed(2),
                   )
                 : moneyFormat(0)
             }</td>
@@ -5024,7 +5129,7 @@ $.fn.viewTransaction = function (index) {
             <td><h5>${t('total_col')}</h5></td>
             <td><h5>:</h5></td>
             <td style="text-align: ${rcptPriceAlign}">
-                <h5>${moneyFormat(allTransactions[index].total)}</h5>
+                <h5>${moneyFormat(transaction.total)}</h5>
             </td>
         </tr>
         ${payment == 0 ? "" : paymnetRow}
@@ -5208,6 +5313,7 @@ function loadProductList() {
       ? product_img
       : default_item_img;
     }
+    
     //render product list
     product_list +=
       `<tr ${isExpired(expiryDate) ? 'style="background-color: #ffdad7"': ""} >`+
@@ -5517,6 +5623,197 @@ $("#productList").DataTable({
     },
   ]
 });
+}
+
+function loadStockMovements(reset) {
+  if (stockMovementLoading) return;
+
+  const $stockTable = $("#stockMovementTable");
+  //@ts-expect-error
+  if ($.fn.DataTable.isDataTable($stockTable[0])) {
+    //@ts-expect-error
+    const dataTable = $stockTable.DataTable();
+    if (reset) dataTable.clear();
+    dataTable.destroy();
+  }
+
+  if (reset) {
+    stockMovementSkip = 0;
+    $("#stockMovementList").empty();
+  }
+
+  const params = {
+    limit: stockMovementPageSize,
+    skip: stockMovementSkip,
+  };
+  const productId = $("#stockMovementProductId").val();
+  const action = $("#stockMovementAction").val();
+  const startDate = $("#stockMovementStart").val();
+  const endDate = $("#stockMovementEnd").val();
+
+  if (productId) params.productId = productId;
+  if (action) params.action = action;
+  if (startDate) params.start = startDate + "T00:00:00.000Z";
+  if (endDate) params.end = endDate + "T23:59:59.999Z";
+
+  stockMovementLoading = true;
+  $("#stockMovementFilterBtn, #stockMovementRefreshBtn, #stockMovementLoadMoreBtn").prop("disabled", true);
+  $("#stockMovementStatus").text("Loading movements...");
+
+  $.get(api + "stockmovment", params)
+    .done(function (records) {
+      if (!Array.isArray(records)) records = [];
+
+      records.forEach(function (record) {
+        const $row = $("<tr>");
+        const timestamp = moment(record.timestamp).isValid()
+          ? moment(record.timestamp).format("YYYY-MM-DD HH:mm:ss")
+          : record.timestamp;
+        const actionLabel = String(record.action || "").replace(/_/g, " ");
+        const quantityChange = Number(record.quantityChange);
+        const changeLabel = Number.isFinite(quantityChange)
+          ? (quantityChange > 0 ? "+" : "") + quantityChange
+          : "-";
+        const actor = record.actor && typeof record.actor === "object"
+          ? (record.actor.name || record.actor.id || record.actor.ip || "-")
+          : (record.actor || "-");
+
+        [
+          timestamp || "-",
+          actionLabel || "-",
+          (record.productName || "Product") + " (#" + (record.productId || "-") + ")",
+          changeLabel,
+          record.quantityBefore,
+          record.quantityAfter,
+          record.reference,
+          actor,
+          record.source,
+        ].forEach(function (value) {
+          $("<td>").text(value == null || value === "" ? "-" : String(value)).appendTo($row);
+        });
+
+        $("#stockMovementList").append($row);
+      });
+
+      stockMovementSkip += records.length;
+      const loadedCount = $("#stockMovementList tr").length;
+      $("#stockMovementStatus").text(loadedCount ? loadedCount + " movements loaded" : "No movements found");
+      $("#stockMovementLoadMoreBtn").toggle(records.length === stockMovementPageSize);
+      initializeStockMovementTable($stockTable);
+    })
+    .fail(function () {
+      $("#stockMovementStatus").text("Could not load stock movements.");
+      $("#stockMovementLoadMoreBtn").toggle(stockMovementSkip > 0);
+      initializeStockMovementTable($stockTable);
+    })
+    .always(function () {
+      stockMovementLoading = false;
+      $("#stockMovementFilterBtn, #stockMovementRefreshBtn, #stockMovementLoadMoreBtn").prop("disabled", false);
+    });
+}
+
+function initializeStockMovementTable($table) {
+  $table.DataTable({
+    dom: "fti",
+    paging: false,
+    searching: true,
+    info: true,
+    ordering: true,
+    order: [[0, "desc"]],
+    autoWidth: false,
+  });
+}
+
+function loadProductSales(product, page) {
+  productSalesPage = page === undefined ? 0 : page;
+  const requestId = ++productSalesRequestId;
+  const $salesTable = $("#productSalesTable");
+  //@ts-expect-error
+  if ($.fn.DataTable.isDataTable($salesTable[0])) {
+    //@ts-expect-error
+    $salesTable.DataTable().clear().destroy();
+  }
+  $("#productSalesList").empty();
+  $("#productSalesHeading").text((product.name || "Product") + " (#" + product._id + ")");
+  $("#productSalesStatus").text("Loading sales...");
+  $("#productSalesPreviousBtn, #productSalesNextBtn").prop("disabled", true);
+
+  $.get(api + "sales-by-product/" + encodeURIComponent(product._id), {
+    limit: productSalesPageSize,
+    skip: productSalesPage * productSalesPageSize,
+  })
+    .done(function (result) {
+      if (requestId !== productSalesRequestId) return;
+      const transactions = Array.isArray(result)
+        ? result.slice(productSalesPage * productSalesPageSize, (productSalesPage + 1) * productSalesPageSize)
+        : (result.records || []);
+      productSalesTotal = Array.isArray(result) ? result.length : (result.total || 0);
+      let saleCount = 0;
+      (transactions || []).forEach(function (transaction) {
+        const matchedItems = transaction.matchedItems || transaction.items || [];
+        matchedItems.forEach(function (item) {
+          const quantity = Number(item.quantity) || 0;
+          const unitPrice = Number(item.price) || 0;
+          const customer = transaction.customer && typeof transaction.customer === "object"
+            ? (transaction.customer.name || transaction.customer.username || transaction.customer.id || "Customer")
+            : (transaction.customer && Number(transaction.customer) !== 0 ? transaction.customer : "Walk-in customer");
+          const saleDate = moment(transaction.date).isValid()
+            ? moment(transaction.date).format("YYYY-MM-DD HH:mm:ss")
+            : "-";
+          const values = [
+            saleDate,
+            customer,
+            quantity,
+            moneyFormat(unitPrice.toFixed(2)),
+            moneyFormat((quantity * unitPrice).toFixed(2)),
+            moneyFormat((Number(transaction.total) || 0).toFixed(2)),
+            transaction.payment_type || "-",
+            transaction.user || "-",
+            transaction.till || "-",
+          ];
+          const $row = $("<tr>");
+          const reference = transaction.ref_number || transaction.order || transaction._id || "-";
+          const $receiptLink = $("<button>", {
+            type: "button",
+            class: "btn btn-link btn-xs productSalesReceiptLink",
+            title: "View receipt " + reference,
+            "aria-label": "View receipt " + reference,
+          }).append($("<i>", { class: "fa fa-file-text-o", "aria-hidden": "true" }))
+            .data("transaction", transaction);
+          $("<td>").text(values[0]).appendTo($row);
+          $("<td>").append($receiptLink).appendTo($row);
+          values.slice(1).forEach(function (value) {
+            $("<td>").text(value == null || value === "" ? "-" : String(value)).appendTo($row);
+          });
+          $("#productSalesList").append($row);
+          saleCount++;
+        });
+      });
+      //@ts-expect-error
+      $salesTable.DataTable({
+        order: [[1, "desc"]],
+        dom: "lfrtBip", 
+        pageLength: 10,
+        lengthMenu: [5, 10, 25, 50, 100],
+      });
+      const firstSale = productSalesTotal === 0 ? 0 : productSalesPage * productSalesPageSize + 1;
+      const lastSale = Math.min(productSalesPage * productSalesPageSize + saleCount, productSalesTotal);
+      $("#productSalesStatus").text(productSalesTotal
+        ? "Showing " + firstSale + "-" + lastSale + " of " + productSalesTotal + " sales"
+        : "No sales found");
+      const pageCount = Math.ceil(productSalesTotal / productSalesPageSize);
+      $("#productSalesPageLabel").text("Page " + (productSalesPage + 1) + " of " + Math.max(pageCount, 1));
+      $("#productSalesPreviousBtn").prop("disabled", productSalesPage === 0);
+      $("#productSalesNextBtn").prop("disabled", (productSalesPage + 1) * productSalesPageSize >= productSalesTotal);
+    })
+    .fail(function () {
+      if (requestId !== productSalesRequestId) return;
+      $("#productSalesStatus").text("Could not load product sales.");
+    })
+    .always(function () {
+      if (requestId !== productSalesRequestId) return;
+      $("#productSalesPreviousBtn, #productSalesNextBtn").prop("disabled", false);
+    });
 }
 
 function loadCategoryList() {
@@ -6579,26 +6876,6 @@ function renderEvalualtionHistogramChart(data) {
   $("#histogramEvalEmptyState").hide();
 
 }
-
-// function updateEvaluationHistogramStats(data) {
-  
-//   // Update period
-//   const periodText = `${data.histogramData[0]?.monthName} to ${data.histogramData[data.histogramData.length - 1]?.monthName}`;
-//   $("#histogramEvalPeriod").text(periodText);
-
-//   // Update currentInventoryValue  
-//   $("#histogramCurrentInvetoryValue").text(moneyFormat(data.currentInventoryValue.toFixed(2)));
-
-//   // Update retailInventoryValue  
-//   $("#histogramRetailInvetoryValue").text(moneyFormat(data.retailInventoryValue.toFixed(2)));
-
-//   // Update total quantity
-//   $("#histogramProductsQty").text(data.totalQuantity);
-
-//   // Show stats row
-//   $("#evalStatsRow").show();
-
-// }
 
 /**
  * Update statistics cards with histogram data

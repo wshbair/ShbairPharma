@@ -12,7 +12,7 @@ var translations = {
     sign_in: 'Sign In',
 
     // Navbar
-    products: 'Products',
+    products: 'Stock',
     categories: 'Categories',
     providers: 'Providers',
     hold_orders: 'Hold Orders',
@@ -49,14 +49,14 @@ var translations = {
     sales: 'Sales',
     total_transactions: 'Transactions',
     items_sold: 'Items Sold',
-    total_products: 'Products',
+    total_products: 'Stock ',
     till: 'Till',
     cashier: 'Cashier',
     status: 'Status',
     paid: 'Paid',
     unpaid: 'Unpaid',
     date: 'Date',
-    products_title: 'Products',
+    products_title: 'Stock Products',
     name_col: 'Name',
     sold_col: 'Sold',
     available_col: 'Ava.',
@@ -130,7 +130,7 @@ var translations = {
     category_name_placeholder: 'Category name',
 
     // Products List Modal
-    products_modal: 'Products',
+    products_modal: 'Stock',
     barcode_col: 'Barcode',
     price_col: 'Price',
     cost_price_col: 'Cost Price',
@@ -366,7 +366,7 @@ var translations = {
     sign_in: 'تسجيل الدخول',
 
     // Navbar
-    products: 'المنتجات',
+    products: 'المستودع',
     categories: 'الفئات',
     providers: 'الموردون',
     hold_orders: 'الطلبات المعلقة',
